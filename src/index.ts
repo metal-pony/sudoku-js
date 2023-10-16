@@ -20,6 +20,13 @@ import Point from './engine/Point';
 import Polygon from './engine/Polygon';
 import Scene from './engine/Scene';
 
+import Blocky from './blocky/Blocky';
+import BlockyState from './blocky/BlockyState';
+import BlockyEvent from './blocky/BlockyEvent';
+import Piece from './blocky/Piece';
+import { Shape, SHAPES } from './blocky/Shape';
+import ShapeQueue from './blocky/ShapeQueue';
+
 export = {
   event: {
     Event,
@@ -56,5 +63,13 @@ export = {
     Point,
     Polygon,
     Scene
-  }
+  },
+
+  Blocky,
+  BlockyState,
+  BlockyEvent,
+  Piece,
+  Shape,
+  SHAPES,
+  ShapeQueue
 };

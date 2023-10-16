@@ -1,7 +1,7 @@
 {
-  "name": "@sparklicorn/gh-npm-package-template",
-  "version": "1.0.0",
-  "description": "A project template for publishing npm packages to GitHub",
+  "name": "@sparklicorn/bucket-ts",
+  "version": "0.0.1",
+  "description": "A bucket for my TypeScript/frontend utilities",
   "main": "./build/index.js",
   "module": "./build/index.js",
   "files": [
@@ -26,6 +26,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/sparklicorn/gh-npm-package-template.git"
+    "url": "https://github.com/sparklicorn/bucket-ts.git"
   }
 }

@@ -1,14 +1,31 @@
-# NPM Package Template
+# Bucket
+> A little place for my TypeScript / frontend utilities.
 
-> Template for NPM packages, incorporating TypeScript and Jest.
-
-Replace the package name and relevant registry / repository information in `package.json`.
-
-Included workflows:
-- run tests on PRs
-- publish package to GitHub on release*
-
-*Enable in repo settings: Actions > General > Workflow permissions: Read and Write permissions
+```
+./src
+├── engine          A basic 2D game engine.
+│   ├── Engine      Main game engine class. Scene management.
+│   ├── GameObj     Base class for all game objects.
+│   ├── Geo
+│   ├── LineSeg
+│   ├── Point
+│   ├── Polygon
+│   └── Scene       Updates and renders game objects.
+├── event
+│   ├── Event
+│   └── EventBus    Manages event listeners and dispatching.
+├── structs
+│   ├── Coord
+│   ├── Move
+│   ├── Position
+│   ├── Tuple
+│   └── Vector      Represents a 2D vector.
+└── util
+    ├── Freezable   Base class for locking down object properties.
+    ├── Timer       Executes a callback after a given amount of time. Repeatable.
+    ├── Util        Shuffling, generating ranges, number validation, etc.
+    └── ZMod        Maintains an integer bounded to a given range (the mod).
+```
 
 ## Scripts
 
@@ -17,17 +34,7 @@ Included workflows:
 | `build` | Compiles the TypeScript source code to JavaScript and places in `build/`. |
 | `test` | Runs the Jest test suite. |
 
-## Publishing
-
-Version bump and create a new commit and tag: `npm version <major|minor|patch>`
-
-Push the commit and tag to GitHub: `git push --follow-tags`
-
-Open a PR to merge the commit into `main`.
-
-Create a release on GitHub using the new tag. This triggers the action that will publish the package to GitHub.
-
-## Using a GitHub package
+## Installing
 
 Create a personal access token with the `read:packages` scope. Unfortunately, even public packages require an authentication token to install.
 
@@ -38,4 +45,4 @@ Add the GitHub package registry to your `.npmrc` file, replacing `GH_PAT` with y
 @GITHUB_USERNAME:registry=https://npm.pkg.github.com
 ```
 
-Install the package: `npm install @GITHUB_USERNAME/PACKAGE_NAME` from its `package.json` as normal.
+Install the package: `npm install @GITHUB_USERNAME/PACKAGE_NAME` as normal.

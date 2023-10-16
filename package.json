@@ -1,0 +1,31 @@
+{
+  "name": "@sparklicorn/gh-npm-package-template",
+  "version": "1.0.0",
+  "description": "A project template for publishing npm packages to GitHub",
+  "main": "./build/index.js",
+  "module": "./build/index.js",
+  "files": [
+    "build/"
+  ],
+  "scripts": {
+    "clean": "rm -rf ./build",
+    "build": "npm run clean && tsc",
+    "test": "jest",
+    "prepublishOnly": "npm i && npm run build && npm run test"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.5",
+    "@types/node": "^20.8.4",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2"
+  },
+  "publishConfig": {
+    "@sparklicorn:registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sparklicorn/gh-npm-package-template.git"
+  }
+}

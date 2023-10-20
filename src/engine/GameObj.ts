@@ -1,10 +1,10 @@
 import Engine from "./Engine";
 import Point from "./Point";
-import Poly from "./Polygon";
+import Polygon from "./Polygon";
 import Vector from "../structs/Vector";
 
 export type GameObjSpec = {
-  poly: Poly,
+  poly: Polygon,
   location: { x: number, y: number },
   orientation?: number,
   scale?: { scaleX: number, scaleY: number }
@@ -17,7 +17,7 @@ export type GameObjSpec = {
 
 export default class GameObj {
 
-  private _poly: Poly;
+  private _poly: Polygon;
 
   private _location: Point;
   private _orientation: number;
@@ -47,7 +47,8 @@ export default class GameObj {
     angularVelocity = 0,
     angularAcceleration = 0,
     mass = 0
-  }: GameObjSpec) {
+  }: GameObjSpec
+) {
     this._poly = poly;
     this._location = new Point({ x, y });
     this._orientation = orientation;
@@ -60,11 +61,11 @@ export default class GameObj {
     this._recalcBounds();
   }
 
-  get poly(): Poly {
+  get poly(): Polygon {
     return this._poly;
   }
 
-  set poly(poly: Poly) {
+  set poly(poly: Polygon) {
     this._poly = poly;
   }
 
@@ -163,25 +164,30 @@ export default class GameObj {
   }
 
   _recalcBounds() {
-    this._left = this.poly.points[0].x + this.location.x;
-    this._right = this.poly.points[0].x + this.location.x;
-    this._top = this.poly.points[0].y + this.location.y;
-    this._bottom = this.poly.points[0].y + this.location.y;
+    // this._left = this.poly.points[0].x + this.location.x;
+    // this._right = this.poly.points[0].x + this.location.x;
+    // this._top = this.poly.points[0].y + this.location.y;
+    // this._bottom = this.poly.points[0].y + this.location.y;
 
-    this.poly.points.forEach((pt) => {
-      if ((pt.x + this.location.x) < this._left) {
-        this._left = pt.x + this.location.x;
-      }
-      if ((pt.x + this.location.x) > this._right) {
-        this._right = pt.x + this.location.x;
-      }
-      if ((pt.y + this.location.y) < this._top) {
-        this._top = pt.y + this.location.y;
-      }
-      if ((pt.y + this.location.y) > this._bottom) {
-        this._bottom = pt.y + this.location.y;
-      }
-    });
+    this._left = this.location.x + this.poly.left;
+    this._right = this.location.x + this.poly.right;
+    this._top = this.location.y + this.poly.top;
+    this._bottom = this.location.y + this.poly.bottom;
+
+    // this.poly.points.forEach((pt) => {
+    //   if ((pt.x + this.location.x) < this._left) {
+    //     this._left = pt.x + this.location.x;
+    //   }
+    //   if ((pt.x + this.location.x) > this._right) {
+    //     this._right = pt.x + this.location.x;
+    //   }
+    //   if ((pt.y + this.location.y) < this._top) {
+    //     this._top = pt.y + this.location.y;
+    //   }
+    //   if ((pt.y + this.location.y) > this._bottom) {
+    //     this._bottom = pt.y + this.location.y;
+    //   }
+    // });
 
     this._width = this._right - this._left;
     this._height = this._bottom - this._top;
@@ -193,12 +199,17 @@ export default class GameObj {
     this._recalcBounds();
   }
 
-  update(engine: Engine) {
+  /**
+   *
+   * @param engine The game engine.
+   * @param elapsed The elapsed time since the last update.
+   */
+  update(engine: Engine, elapsedMs: number) {
     // Engine.debug('GameObj update');
 
-    // Move
-    this.location.x += this.velocity.x / engine.fps;
-    this.location.y += this.velocity.y / engine.fps;
+    // Move the object based on its velocity and the elapsed time
+    this.location.x += this.velocity.x * elapsedMs / 1000;
+    this.location.y += this.velocity.y * elapsedMs / 1000;
     this._recalcBounds();
   }
 
@@ -215,11 +226,11 @@ export default class GameObj {
     context.fillStyle = 'magenta';
 
     context.beginPath();
-    this.poly.points.forEach((point, i) => {
+    this.poly.lines.forEach((line, i) => {
       if (i === 0) {
-        context.moveTo(point.x, point.y);
+        context.moveTo(line.p1.x, line.p1.y);
       } else {
-        context.lineTo(point.x, point.y);
+        context.lineTo(line.p1.x, line.p1.y);
       }
     });
     context.closePath();

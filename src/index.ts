@@ -1,75 +1,117 @@
-import { Event } from './event/Event';
-import EventBus from './event/EventBus';
-
-import Freezable from './util/Freezable';
-import Timer from './util/Timer';
-import ZMod from './util/ZMod';
-
-import * as Util from './util/Util';
-
-import Coord from './structs/Coord';
-import Move from './structs/Move';
-import Position from './structs/Position';
-import Tuple from './structs/Tuple';
-import Vector from './structs/Vector';
-
-import Engine from './engine/Engine';
-import GameObj from './engine/GameObj';
-import LineSeg from './engine/LineSeg';
-import Point from './engine/Point';
-import Polygon from './engine/Polygon';
-import Scene from './engine/Scene';
-
-import Blocky from './blocky/Blocky';
-import BlockyState from './blocky/BlockyState';
-import BlockyEvent from './blocky/BlockyEvent';
-import Piece from './blocky/Piece';
-import { Shape, SHAPES } from './blocky/Shape';
-import ShapeQueue from './blocky/ShapeQueue';
-
-export = {
-  event: {
-    Event,
-    EventBus
-  },
-  util: {
-    Freezable,
-    Timer,
-    ZMod,
-
-    bounded: Util.bounded,
-    shuffle: Util.shuffle,
-    swap: Util.swap,
-    range: Util.range,
-
-    validateNonNegative: Util.validateNonNegative,
-    validatePositive: Util.validatePositive,
-    validateNegative: Util.validateNegative,
-    validateInteger: Util.validateInteger,
-    validatePositiveInteger: Util.validatePositiveInteger,
-    validateNegativeInteger: Util.validateNegativeInteger
-  },
-  structs: {
-    Coord,
-    Move,
-    Position,
-    Tuple,
-    Vector
-  },
-  engine: {
-    Engine,
-    GameObj,
-    LineSeg,
-    Point,
-    Polygon,
-    Scene
-  },
-
+import {
   Blocky,
   BlockyState,
   BlockyEvent,
   Piece,
-  Shape,
+  Shape as BlockyShape,
   SHAPES,
-  ShapeQueue
+  ShapeQueue,
+  IBlockyGame,
+  GameOptions,
+  BlockyEventName
+} from './blocky/index';
+import {
+  Engine,
+  Scene,
+  SceneDimensions,
+  GameObj,
+  GameObjSpec,
+  Point,
+  ILineSeg,
+  intersects,
+  LineSeg,
+  LinearLineSeg,
+  ArcLineSeg,
+  Shape,
+  Circle,
+  CircleIntersectionState,
+  CircleIntersectionResult,
+  Polygon
+} from './engine/index';
+import {
+  Event,
+  EventData,
+  EventListener,
+  IEventRegistrar,
+  EventBus,
+  IEventBussy
+} from './event/index';
+import {
+  Coord,
+  Move,
+  Position,
+  Vector
+} from './structs/index';
+import {
+  bounded,
+  shuffle,
+  swap,
+  range,
+  validateNonNegative,
+  validatePositive,
+  validateNegative,
+  validateInteger,
+  validatePositiveInteger,
+  validateNegativeInteger,
+  Freezable,
+  IFreezable,
+  Timer,
+  ZMod
+} from './util/index';
+
+export {
+  Blocky,
+  BlockyState,
+  BlockyEvent,
+  Piece,
+  BlockyShape,
+  SHAPES,
+  ShapeQueue,
+  IBlockyGame,
+  GameOptions,
+  BlockyEventName,
+
+  Engine,
+  Scene,
+  SceneDimensions,
+  GameObj,
+  GameObjSpec,
+  Point,
+  ILineSeg,
+  intersects,
+  LineSeg,
+  LinearLineSeg,
+  ArcLineSeg,
+  Shape,
+  Circle,
+  CircleIntersectionState,
+  CircleIntersectionResult,
+  Polygon,
+
+  Event,
+  EventData,
+  EventListener,
+  IEventRegistrar,
+  EventBus,
+  IEventBussy,
+
+  Coord,
+  Move,
+  Position,
+  Vector,
+
+  bounded,
+  shuffle,
+  swap,
+  range,
+  validateNonNegative,
+  validatePositive,
+  validateNegative,
+  validateInteger,
+  validatePositiveInteger,
+  validateNegativeInteger,
+  Freezable,
+  IFreezable,
+  Timer,
+  ZMod
 };

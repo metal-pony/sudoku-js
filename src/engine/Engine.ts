@@ -44,9 +44,9 @@ export default class Engine {
       throw new Error('Could not get canvas context!');
     }
 
-    this._timer = new Timer(() => {
+    this._timer = new Timer((elapsed: number) => {
       try {
-        this.gameloop();
+        this.gameloop(elapsed);
       } catch (error) {
         Engine.debug(error);
         this.stop();
@@ -144,13 +144,13 @@ export default class Engine {
     this.timer.stop();
   }
 
-  gameloop() {
+  gameloop(elapsed: number) {
     // Engine.debug('gameloop()');
     // process input
 
     // update game state then render
     if (this.activeScene) {
-      this.activeScene.update(this);
+      this.activeScene.update(this, elapsed);
 
       this.activeScene.render(this._canvas!);
     } else {

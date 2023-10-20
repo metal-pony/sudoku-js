@@ -1,4 +1,4 @@
-import LineSeg from "./LineSeg";
+import LinearLineSeg from "./LinearLineSeg";
 import Point from "./Point";
 
 export const EPSILON = 1e-10;
@@ -35,15 +35,15 @@ export const angleDeg = (
 );
 
 export const parallel = (
-  l1: LineSeg,
-  l2: LineSeg,
+  l1: LinearLineSeg,
+  l2: LinearLineSeg,
   epsilon: number = EPSILON
 ): boolean => (
   Math.abs(l1.m - l2.m) < epsilon
 );
 
 export const containsPoint = (
-  l: LineSeg,
+  l: LinearLineSeg,
   p: { x : number, y: number },
   epsilon: number = EPSILON
 ): boolean => {
@@ -63,8 +63,8 @@ export const containsPoint = (
 };
 
 export const intersects = (
-  l1: LineSeg,
-  l2: LineSeg,
+  l1: LinearLineSeg,
+  l2: LinearLineSeg,
   epsilon: number = EPSILON
 ): boolean => {
   // They are the same line.

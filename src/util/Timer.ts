@@ -1,5 +1,7 @@
 import { validateNonNegative, validatePositive } from "./Util";
 
+export type Runnable = (elapsed: number) => void;
+
 export default class Timer {
   static readonly DEFAULT_DELAY_MS = 1000;
 
@@ -12,14 +14,16 @@ export default class Timer {
   private _running: boolean = false;
   private _delay: number = Timer.DEFAULT_DELAY_MS;
   private _repeats: boolean = true;
-  private _runnable: () => void;
+  private _runnable: Runnable;
+
+  private _tickCallback: (timeStamp: number) => void = this._tick.bind(this);
 
   /**
    * Creates a new Timer with the given runnable.
    *
    * @param runnable The function to run on each tick.
    */
-  constructor(runnable: () => void) {
+  constructor(runnable: Runnable) {
     this._runnable = runnable;
   }
 
@@ -37,11 +41,11 @@ export default class Timer {
     if (elapsedTime >= this._delay) {
       this._lastTick += this._delay;
       this._tickCount++;
-      this._runnable();
+      this._runnable(elapsedTime);
     }
 
     if (this._repeats || this._tickCount < 1) {
-      window.requestAnimationFrame(this._tick.bind(this));
+      window.requestAnimationFrame(this._tickCallback);
       return;
     }
 
@@ -72,7 +76,7 @@ export default class Timer {
   /**
    * Gets the function that is run on each tick.
    */
-  get runnable(): () => void {
+  get runnable(): Runnable {
     return this._runnable;
   }
 
@@ -81,7 +85,7 @@ export default class Timer {
    *
    * @throws If the timer is currently running.
    */
-  set runnable(runnable: () => void) {
+  set runnable(runnable: Runnable) {
     if (this.isRunning) {
       throw new Error('Cannot set runnable while timer is running');
     }

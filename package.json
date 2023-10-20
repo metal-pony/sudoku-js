@@ -4,6 +4,11 @@
   "description": "A bucket for my TypeScript/frontend utilities",
   "main": "./build/index.js",
   "module": "./build/index.js",
+  "files":[
+    "build/",
+    "LICENSE",
+    "README.md"
+  ],
   "types": "./build/index.d.ts",
   "exports": {
     ".": {

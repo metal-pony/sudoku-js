@@ -17,9 +17,17 @@ export default class LinearLineSeg extends LineSeg {
     return LinearLineSeg.TYPE;
   }
 
+  get p1(): Point {
+    return super.p1;
+  }
+
   set p1(p1: Point) {
     super.p1 = p1;
     this._memo();
+  }
+
+  get p2(): Point {
+    return super.p2;
   }
 
   set p2(p2: Point) {
@@ -36,6 +44,10 @@ export default class LinearLineSeg extends LineSeg {
   }
 
   protected _memo(): void {
+    if (!this.p1 || !this.p2) {
+      return;
+    }
+
     super._memo();
 
     this._m = (this.p2.y - this.p1.y) / (this.p2.x - this.p1.x);

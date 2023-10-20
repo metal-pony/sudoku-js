@@ -1,6 +1,6 @@
 {
   "name": "@sparklicorn/bucket-ts",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "A bucket for my TypeScript/frontend utilities",
   "main": "./build/index.js",
   "module": "./build/index.js",

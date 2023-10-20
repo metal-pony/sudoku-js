@@ -1,5 +1,3 @@
-
-
 import { Event, EventListener } from '../event/Event';
 import EventBus from '../event/EventBus';
 import IEventBussy from '../event/IEventBussy';

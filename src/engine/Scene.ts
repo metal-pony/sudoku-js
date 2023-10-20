@@ -10,15 +10,12 @@ export type SceneDimensions = {
 };
 
 export default class Scene {
-
   private dims: SceneDimensions;
   private viewLocation: Point;
   private _objs: GameObj[];
   private _background: string;
 
-
   // layers
-
 
   constructor(dims: SceneDimensions) {
     this.dims = dims;
@@ -55,9 +52,9 @@ export default class Scene {
     ctx.clearRect(0, 0, engine.canvas.width, engine.canvas.height);
   }
 
-  update(engine: Engine) {
+  update(engine: Engine, elapsed: number) {
     this._objs.forEach(obj => {
-      obj.update(engine);
+      obj.update(engine, elapsed);
 
       // If the object is outside the bounds of the scene, bounce it back in
       if (obj.left < 0) {

@@ -4,9 +4,14 @@
   "description": "A bucket for my TypeScript/frontend utilities",
   "main": "./build/index.js",
   "module": "./build/index.js",
-  "files": [
-    "build/"
-  ],
+  "types": "./build/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "import": "./build/index.js",
+      "require": "./build/index.js"
+    }
+  },
   "scripts": {
     "clean": "rm -rf ./build",
     "build": "npm run clean && tsc",

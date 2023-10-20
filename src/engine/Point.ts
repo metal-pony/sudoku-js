@@ -1,9 +1,9 @@
 import Freezable from "../util/Freezable";
+import { EPSILON } from "./Geo";
 
 export default class Point extends Freezable {
-
-  private _x: number;
-  private _y: number;
+  protected _x: number;
+  protected _y: number;
 
   constructor({ x, y }: { x: number, y: number }) {
     super();
@@ -35,10 +35,10 @@ export default class Point extends Freezable {
   };
 
   toString() {
-    return `${this.isFrozen() ? 'F' : ''}(${this.x}, ${this.y})`;
+    return `${this.isFrozen() ? '!' : ''}(${this.x}, ${this.y})`;
   }
 
-  equals(other: Point): boolean {
-    return this.x === other.x && this.y === other.y;
+  equals(other: Point, epsilon: number = EPSILON): boolean {
+    return Math.abs(this.x - other.x) < epsilon && Math.abs(this.y - other.y) < epsilon;
   }
 }

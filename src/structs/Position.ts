@@ -74,6 +74,36 @@ export default class Position extends Move {
     this._normalizeRotation();
   }
 
+  get row(): number {
+    return this._offset.row;
+  }
+
+  set row(row: number) {
+    this.throwIfFrozen();
+    this._offset.row = row;
+  }
+
+  get col(): number {
+    return this._offset.col;
+  }
+
+  set col(col: number) {
+    this.throwIfFrozen();
+    this._offset.col = col;
+  }
+
+  /**
+   * Sets the location of this Position.
+   * Rotation will be normalized to be within the maximum.
+   *
+   * @throws {Error} If this Position is frozen
+   */
+  set location(location: Coord) {
+    this.throwIfFrozen();
+    this._offset.reset(location);
+    this._normalizeRotation();
+  }
+
   /**
    * Adds the given Move to this Position.
    * Rotation will be normalized to be within the maximum.
@@ -84,6 +114,12 @@ export default class Position extends Move {
    */
   add(other: Move): Position {
     super.add(other);
+    this._normalizeRotation();
+    return this;
+  }
+
+  reset(other: Position): Position {
+    super.set(other.offset, other.rotation);
     this._normalizeRotation();
     return this;
   }

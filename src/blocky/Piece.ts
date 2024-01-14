@@ -80,6 +80,11 @@ export default class Piece {
     return Position.copy(this._position);
   }
 
+  set position(position: Position) {
+    this._position.reset(position);
+    this._updateBlockCoords();
+  }
+
   /**
    * Gets whether or not the piece is active.
    */

@@ -10,6 +10,14 @@ export default class Move extends Freezable {
   static readonly CLOCKWISE = new Move(Coord.ZERO, -1).freeze();
   static readonly COUNTERCLOCKWISE = new Move(Coord.ZERO, 1).freeze();
 
+  static readonly ATOMIC_MOVES = [
+		this.DOWN,
+		this.LEFT,
+		this.RIGHT,
+		this.CLOCKWISE,
+		this.COUNTERCLOCKWISE
+  ];
+
   /**
    * Returns a new Move with the same row, col, and rotation as the given Move.
    *
@@ -67,6 +75,14 @@ export default class Move extends Freezable {
 	get rotation(): number {
 		return this._rotation;
 	}
+
+  /**
+   * Sets the offset of this Move.
+   */
+  set offset(offset: Coord) {
+    this.throwIfFrozen();
+    this._offset.reset(offset);
+  }
 
   /**
    * Sets the row of this Move.

@@ -30,7 +30,8 @@
 
 | Script | Description |
 | ------ | ----------- |
-| `build` | Compiles/transforms and places the output in `build/`. |
+| `clean` | Deletes the output directory, `build/`. |
+| `build` | Compiles/transforms and places the output directory, `build/`. |
 | `test` | Yay tests. |
 
 ## Installing

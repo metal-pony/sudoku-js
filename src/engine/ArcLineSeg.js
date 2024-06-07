@@ -7,10 +7,6 @@ const TYPE = 'arc';
 export default class ArcLineSeg extends LineSeg {
   static get TYPE() { return TYPE; }
 
-  // protected _radius: number;
-  // protected _startAngle: number;
-  // protected _endAngle: number;
-
   /**
    *
    * @param {{

@@ -77,28 +77,6 @@ export default class BlockyState {
     return copy;
 	}
 
-  // protected _rows = BlockyState.DEFAULT_OPTIONS.rows;
-  // protected _cols = BlockyState.DEFAULT_OPTIONS.cols;
-  // protected _entryCoord: Coord = BlockyState.DEFAULT_OPTIONS.entryCoord;
-	// protected _linesPerLevel | ((level) => number) = BlockyState.DEFAULT_OPTIONS.linesPerLevel;
-  // protected _board = [];
-  // protected _isGameOver: boolean = false;
-  // protected _isPaused: boolean = false;
-  // protected _isClearingLines: boolean = false;
-  // protected _hasStarted: boolean = false;
-  // protected _level = 0;
-  // protected _score = 0;
-  // protected _linesCleared = 0;
-  // protected _numPiecesDropped = 0;
-  // protected _linesUntilNextLevel = 0;
-  // protected _dist = [];
-  // protected _nextShapes: ShapeQueue = new ShapeQueue();
-  // protected _piece: Piece = new Piece(
-	// 	new Position(this._entryCoord, 0, this._nextShapes.peek().numRotations),
-	// 	this._nextShapes.poll()
-	// );
-	// protected _options: GameOptions;
-
   // TODO private pointsPerLineClear | ((linesCleared, level) => number);
   // TODO create function to calculate points per line cleared based property
 
@@ -564,7 +542,7 @@ export default class BlockyState {
 	 * Returns whether the game has started and is in progress.
 	 * TODO determine whether this should also take into account pausing
 	 */
-	isRunning()  {
+	isRunning() {
 		return this.hasStarted && !this.isGameOver;
 	}
 }

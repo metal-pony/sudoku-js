@@ -33,6 +33,7 @@ export default class Point extends Freezable {
   }
 
   /**
+   * Calculates the distance between this point and another.
    * @param {Point} other
    * @returns {number}
    */
@@ -48,7 +49,7 @@ export default class Point extends Freezable {
   }
 
   /**
-   *
+   * Determines if this point is equal to another point within the given epsilon.
    * @param {Point} other
    * @param {number} epsilon
    * @returns {boolean}

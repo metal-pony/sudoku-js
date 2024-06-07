@@ -2,11 +2,11 @@ import { range, shuffle } from '../util/Util';
 import { SHAPES, Shape } from './Shape';
 
 export default class ShapeQueue {
+  /** Default minimum queue size.*/
   static get DEFAULT_SIZE() { return 14; }
 
   /**
    * Returns a new ShapeQueue with the same minimum size and shapes as the given ShapeQueue.
-   *
    * @param {ShapeQueue} other The ShapeQueue to copy.
    * @returns {ShapeQueue} A copy of the given ShapeQueue.
    */
@@ -15,9 +15,6 @@ export default class ShapeQueue {
     copy._shapes.push(...other._shapes);
     return copy;
   }
-
-  // private _minSize: number;
-  // private _shapes: number[];
 
   /**
    * Creates a new ShapeQueue with the given minimum size.
@@ -80,16 +77,12 @@ export default class ShapeQueue {
     });
   }
 
-  /**
-   * Removes all elements from this ShapeQueue.
-   */
+  /** Removes all elements from this ShapeQueue.*/
   clear() {
     this._shapes = [];
   }
 
-  /**
-   * Ensures that this ShapeQueue has at least the given capacity.
-   */
+  /** Ensures that this ShapeQueue has at least the given capacity.*/
   _ensureCapacity(capacity) {
     while (this.size < capacity) {
       this._shapes.push(...randomizeShapeIndices());
@@ -97,9 +90,7 @@ export default class ShapeQueue {
   }
 }
 
-/**
- * @returns {number[]} An array of shape indices in random order.
- */
+/** @returns {number[]} An array of shape indices in random order.*/
 export const randomizeShapeIndices = () => {
   return shuffle(range(1, SHAPES.length));
 };

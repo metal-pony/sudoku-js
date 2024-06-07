@@ -1,8 +1,6 @@
 import Timer from "../util/Timer";
 import Scene from "./Scene";
 
-// type SceneMap = { [key: string]: Scene };
-
 export default class Engine {
   static get MIN_FPS() { return 10; }
   static get MAX_FPS() { return 120; }
@@ -15,15 +13,6 @@ export default class Engine {
       console.log(msg);
     }
   }
-
-  // private _canvas: HTMLCanvasElement | null;
-  // private _context: CanvasRenderingContext2D | null;
-  // private _timer: Timer | null;
-
-  // private _fps: number = 0;
-
-  // private _scenes: SceneMap;
-  // private _activeScene: string;
 
   constructor(/*{ width, height }: { width: number, height: number }*/) {
     // this.width = width;

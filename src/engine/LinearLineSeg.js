@@ -50,6 +50,9 @@ export default class LinearLineSeg extends LineSeg {
     return this._b;
   }
 
+  /**
+   * Calculates and caches the slope and y-intercept of the line.
+   */
   _memo() {
     if (!this.p1 || !this.p2) {
       return;
@@ -66,19 +69,26 @@ export default class LinearLineSeg extends LineSeg {
     }
   }
 
+  /**
+   * @returns {boolean} True if this LinearLineSeg has a slope; otherwise false.
+   */
   hasSlope() {
     return Math.abs(this._m) !== Infinity;
   }
 
+  /**
+   * @returns {boolean} True if this LinearLineSeg has a y-intercept; otherwise false.
+   */
   hasYIntercept() {
     return Math.abs(this._b) !== Infinity;
   }
 
   /**
    *
-   * @param {LineSeg} other
+   * @param {LinearLineSeg} other The other LinearLineSeg to compare.
+   * Must be an instance of LinearLineSeg.
    * @param {number} epsilon
-   * @returns {boolean}
+   * @returns {boolean} True if this LinearLineSeg is parallel to the other; otherwise false..
    */
   isParallel(other, epsilon = EPSILON) {
     if (other instanceof LinearLineSeg) {
@@ -92,26 +102,16 @@ export default class LinearLineSeg extends LineSeg {
     return Math.sqrt((this.p2.x - this.p1.x)**2 + (this.p2.y - this.p1.y)**2);
   }
 
-  /**
-   *
-   * @param {number} x
-   * @returns {number}
-   */
   calcY(x) {
     return this.m * x + this.b;
   }
 
-  /**
-   *
-   * @param {number} y
-   * @returns {number}
-   */
   calcX(y) {
     return (y - this.b) / this.m;
   }
 
   /**
-   *
+   * Determines whether this LinearLineSeg contains the given point.
    * @param {Point} pt
    * @param {number} epsilon
    * @returns {boolean}
@@ -140,7 +140,7 @@ export default class LinearLineSeg extends LineSeg {
   }
 
   /**
-   *
+   * Determines whether this LinearLineSeg is equal to another.
    * @param {LinearLineSeg} other
    * @param {number} epsilon
    * @returns {boolean}

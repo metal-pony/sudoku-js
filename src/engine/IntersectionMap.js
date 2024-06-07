@@ -5,7 +5,7 @@ import Point from "./Point";
 
 const linear = {
   /**
-   *
+   * Determines if the given line segments intersect within the given epsilon.
    * @param {LinearLineSeg} l1
    * @param {LinearLineSeg} l2
    * @param {number} epsilon
@@ -58,7 +58,9 @@ const IntersectionMap = {
 };
 
 /**
+ * Determines if the given line segments intersect within the given epsilon.
  *
+ * If there are no intersection handlers defined for the given types, an error will be thrown.
  * @param {LineSeg} l1
  * @param {LineSeg} l2
  * @param {number} epsilon

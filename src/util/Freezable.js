@@ -9,7 +9,6 @@ export default class Freezable {
 
   /**
    * Freezes this object.
-   *
    * @returns Itself for convenience.
    */
   freeze() {
@@ -19,7 +18,6 @@ export default class Freezable {
 
   /**
    * Unfreezes this object.
-   *
    * @returns Itself for convenience.
    */
   unfreeze() {

@@ -1,10 +1,10 @@
 /**
  * Returns a random integer between min and max, inclusive.
  *
- * @param value The value to bind.
- * @param min The minimum value, inclusive.
- * @param max The maximum value, inclusive.
- * @returns A random integer between min and max, inclusive.
+ * @param {number} value The value to bind.
+ * @param {number} min The minimum value, inclusive.
+ * @param {number} max The maximum value, inclusive.
+ * @returns {number} A random integer between min and max, inclusive.
  */
 export const bounded = (value, min, max) => {
   if (min > max) {
@@ -17,8 +17,8 @@ export const bounded = (value, min, max) => {
 /**
  * Shuffles the given array in place using the Fisher-Yates algorithm.
  *
- * @param arr The array to shuffle.
- * @returns The given array for convenience.
+ * @param {number[]} arr The array to shuffle.
+ * @returns {number[]} The given array for convenience.
  */
 export const shuffle = (arr) => {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -30,10 +30,10 @@ export const shuffle = (arr) => {
 /**
  * Swaps the elements at the given indices in the given array.
  *
- * @param arr The array in which to swap elements.
- * @param i The index of the first element to swap.
- * @param j The index of the second element to swap.
- * @returns The given array for convenience.
+ * @param {number[]} arr The array in which to swap elements.
+ * @param {number} i The index of the first element to swap.
+ * @param {number} j The index of the second element to swap.
+ * @returns {number[]} The given array for convenience.
  */
 export const swap = (arr, i, j) => {
   const temp = arr[i];
@@ -45,9 +45,9 @@ export const swap = (arr, i, j) => {
 /**
  * Returns an array of numbers from start to end, inclusive.
  *
- * @param start The first number in the range.
- * @param end The last number in the range.
- * @returns An array of numbers from start to end, inclusive.
+ * @param {number} start The first number in the range.
+ * @param {number} end The last number in the range.
+ * @returns {number[]} An array of numbers from start to end, inclusive.
  */
 export const range = (start, end) => {
   const result = [];

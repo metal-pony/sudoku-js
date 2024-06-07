@@ -120,10 +120,3 @@ export default class BlockyEvent extends Event {
     return this.add({ _piece: Piece.copy(blocky.getState().piece) });
   }
 };
-
-/** Contains the names of all BlockyEvents. */
-// export type BlockyEventName =
-//   'SETUP' | 'START' | 'STOP' | 'GAMELOOP' | 'GAME_OVER' |
-//   'PAUSE' | 'RESUME' | 'GRAVITY_ENABLED' | 'GRAVITY_DISABLED' |
-//   'PIECE_CREATE' | 'PIECE_SHIFT' | 'PIECE_ROTATE' | 'PIECE_PLACED' |
-//   'LINE_CLEAR' | 'SCORE_UPDATE' | 'LEVEL_UPDATE' | 'BLOCKS';

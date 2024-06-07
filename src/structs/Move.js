@@ -150,7 +150,7 @@ export default class Move extends Freezable {
 
   /**
    * Rotates this Move by the given amount.
-   * @param rotation The amount to rotate by.
+   * @param {number} rotation The amount to rotate by.
    * @returns {Move} This Move for convenience.
    */
   rotate(rotation) {
@@ -177,7 +177,7 @@ export default class Move extends Freezable {
 
   /**
    * Returns the squared distance between this Move and the given Move.
-   * @param other The Move to calculate the squared distance to.
+   * @param {Move} other The Move to calculate the squared distance to.
    * @returns {number} The squared distance between this Move and the given Move.
    */
   sqrDist(other) {

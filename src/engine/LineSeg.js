@@ -37,7 +37,9 @@ export default class LineSeg extends Freezable {
     this._length = this.calcLength();
   }
 
-  // abstract get type(): string;
+  get type() {
+    throw new Error('type must be implemented by subclasses');
+  }
 
   get p1() {
     return this._points[0];
@@ -147,7 +149,7 @@ export default class LineSeg extends Freezable {
    * @returns {string}
    */
   toString() {
-    return `${this.isFrozen() ? '!' : ''}LineSeg[${this.p1.toString()}, ${this.p2.toString()}]`;
+    return `${this.isFrozen() ? '!' : ''}LineSeg(ABSTRACT)[${this.p1.toString()}, ${this.p2.toString()}]`;
   }
 
   /**

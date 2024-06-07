@@ -11,14 +11,20 @@ export class Shape {
   static get T() { return T; }
 
   /**
+   * TODO Remove value, as it's only used to index into the SHAPES array.
    * @param {number} value
    * @returns {Shape | null}
    */
   static byValue(value) {
+    if (value < 1 || value > 7) {
+      throw new Error('Invalid shape value: ' + value);
+    }
+
     return SHAPES.find(shape => shape.value === value) || null;
   }
 
   /**
+   * TODO Remove value, as it's only used to index into the SHAPES array.
    * @param {number} value
    * @param {number[]} offsets
    */
@@ -48,26 +54,22 @@ export class Shape {
   buildOffsets(vals) {
 		const numRotations = Math.floor(vals.length / 8);
 
-    // initialize result double array
     /** @type {Coord[][]} */
     const result = new Array(numRotations);
 
-    // iterate over rotations
+    // Take the provided block offsets 1D array and convert it to 2D by rotation and block index
     for (
       let rotationIndex = 0;
       rotationIndex < numRotations;
       rotationIndex++
     ) {
-      // initialize result[rotationIndex] array
       result[rotationIndex] = new Array(4);
 
-      // iterate over blocks
       for (
         let blockIndex = 0;
         blockIndex < 4;
         blockIndex++
       ) {
-        // initialize result[rotationIndex][blockIndex] array
         result[rotationIndex][blockIndex] = new Coord(
           vals[rotationIndex * 8 + blockIndex * 2],
           vals[rotationIndex * 8 + blockIndex * 2 + 1]
@@ -113,4 +115,7 @@ const T = new Shape(7, [
   -1,0, 0,-1, 0,0, 1,0
 ]);
 
+/**
+ * Shapes included in the Blocky game.
+ */
 export const SHAPES = [O, I, S, Z, L, J, T];

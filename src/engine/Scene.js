@@ -11,10 +11,9 @@ import Point from "./Point";
  */
 
 export default class Scene {
-  // layers
+  // TODO Add layers
 
   /**
-   *
    * @param {SceneDimensions} dims
    */
   constructor(dims) {
@@ -38,7 +37,7 @@ export default class Scene {
   }
 
   /**
-   *
+   * Add the given object to the scene.
    * @param {GameObj} obj
    */
   addObj(obj) {
@@ -46,7 +45,7 @@ export default class Scene {
   }
 
   /**
-   *
+   * Remove the given object from the scene
    * @param {GameObj} obj
    */
   removeObj(obj) {

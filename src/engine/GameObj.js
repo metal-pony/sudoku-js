@@ -3,21 +3,8 @@ import Point from "./Point";
 import Polygon from "./Polygon";
 import Vector from "../structs/Vector";
 
-// export type GameObjSpec = {
-//   poly: Polygon,
-//   location: { x, y },
-//   orientation?,
-//   scale?: { scaleX, scaleY }
-//   velocity?: Vector,
-//   acceleration?: Vector,
-//   angularVelocity?,
-//   angularAcceleration?,
-//   mass?
-// };
-
 /**
  * Represents a game object.
- *
  * @typedef {Object} GameObjSpec - The specification for creating a game object.
  * @property {Polygon} poly - The polygon shape of the game object.
  * @property {Object} location - The location of the game object.
@@ -47,26 +34,6 @@ const defaultGameObjSpec = () => ({
 });
 
 export default class GameObj {
-  // private _poly: Polygon;
-
-  // private _location: Point;
-  // private _orientation: number;
-  // private _scale: Point;
-  // private _velocity: Vector;
-  // private _acceleration: Vector;
-  // private _angularVelocity: number;
-  // private _angularAcceleration: number;
-  // private _mass: number;
-
-  // // friction vars
-
-  // private _left: number = 0;
-  // private _right: number = 0;
-  // private _top: number = 0;
-  // private _bottom: number = 0;
-  // private _width: number = 0;
-  // private _height: number = 0;
-
   constructor(options = defaultGameObjSpec()) {
     this._poly = options.poly;
     this._location = options.location;

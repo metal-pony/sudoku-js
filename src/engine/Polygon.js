@@ -12,7 +12,7 @@ export default class Polygon extends Shape {
   static get CANNOT_CLOSE_ERR_MSG() { return CANNOT_CLOSE_ERR_MSG; }
 
   /**
-   *
+   * Creates a new Polygon from the given points.
    * @param {Point[]} points
    * @returns {Polygon}
    */
@@ -24,11 +24,6 @@ export default class Polygon extends Shape {
     poly.onUpdate();
     return poly;
   }
-
-  // protected _left: number = 0;
-  // protected _right: number = 0;
-  // protected _top: number = 0;
-  // protected _bottom: number = -0;
 
   constructor() {
     super();
@@ -64,7 +59,7 @@ export default class Polygon extends Shape {
   }
 
   /**
-   *
+   * Adds the given lines to the polygon, then calls onUpdate.
    * @param  {LinearLineSeg[]} lines
    * @returns  {Polygon}
    */
@@ -77,7 +72,7 @@ export default class Polygon extends Shape {
   }
 
   /**
-   *
+   * Adds a line from the last point in the polygon to the given point.
    * @param {Point} point
    * @returns {Polygon}
    */
@@ -93,6 +88,9 @@ export default class Polygon extends Shape {
     );
   }
 
+  /**
+   * Attempts to close the polygon by adding lines from the last point to the first point.
+   */
   close() {
     this.throwIfFrozen();
 

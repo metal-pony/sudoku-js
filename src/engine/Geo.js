@@ -4,7 +4,7 @@ import Point from "./Point";
 export const EPSILON = 1e-10;
 
 /**
- *
+ * Calculates the distance between the given points.
  * @param {Point} p1
  * @param {Point} p2
  * @returns {number}
@@ -12,8 +12,7 @@ export const EPSILON = 1e-10;
 export const dist = (p1, p2) => Math.sqrt((p2.x - p1.x)**2 + (p2.y - p1.y)**2);
 
 /**
- * Calculates the angle (radians) between the given points relative
- * to the x axis.
+ * Calculates the angle (radians) between the given points relative to the x axis.
  * @param {Point} p1
  * @param {Point} p2
  * @returns {number} The angle between the given points in radians.
@@ -30,7 +29,7 @@ export const angle = (p1, p2) => Math.atan2(p2.y - p1.y, p2.x - p1.x);
 export const angleDeg = (p1, p2) => (angle(p1, p2) * 180 / Math.PI);
 
 /**
- *
+ * Determines if the given line segments are parallel within the given epsilon.
  * @param {LinearLineSeg} l1
  * @param {LinearLineSeg} l2
  * @param {number} epsilon
@@ -39,7 +38,7 @@ export const angleDeg = (p1, p2) => (angle(p1, p2) * 180 / Math.PI);
 export const parallel = (l1, l2, epsilon = EPSILON) => (Math.abs(l1.m - l2.m) < epsilon);
 
 /**
- *
+ * Determines if the given line segment contains the given point within the given epsilon.
  * @param {LinearLineSeg} l
  * @param {Point} p
  * @param {number} epsilon
@@ -62,7 +61,7 @@ export const containsPoint = (l, p, epsilon = EPSILON) => {
 };
 
 /**
- *
+ * Determines if the given line segments intersect within the given epsilon.
  * @param {LinearLineSeg} l1
  * @param {LinearLineSeg} l2
  * @param {number} epsilon

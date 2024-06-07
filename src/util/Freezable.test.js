@@ -1,6 +1,7 @@
 import Freezable from "./Freezable.js";
 
 describe('Freezable', () => {
+  /** @type {Freezable} */
   let freezable;
 
   beforeEach(() => {

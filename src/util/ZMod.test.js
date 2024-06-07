@@ -2,6 +2,7 @@ import {jest} from '@jest/globals';
 import ZMod from "./ZMod";
 
 describe("ZMod", () => {
+  /** @type {ZMod} */
   let zmod;
 
   beforeEach(() => {
@@ -103,6 +104,7 @@ describe("ZMod", () => {
   });
 
   describe('add', () => {
+    /** @type {number} */
     let value;
 
     beforeEach(() => {
@@ -124,6 +126,7 @@ describe("ZMod", () => {
   });
 
   describe('subtract', () => {
+    /** @type {number} */
     let value;
 
     beforeEach(() => {

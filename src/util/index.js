@@ -1,8 +1,35 @@
 import {
-  bounded,
+  range,
   shuffle,
   swap,
-  range,
+  swapAllInArr,
+  isMatrix,
+  isSquareMatrix,
+  validateMatrixOrThrow,
+  validateSquareMatrixOrThrow,
+  rotateArr90,
+  reflectOverHorizontal,
+  reflectOverVertical,
+  reflectOverDiagonal,
+  reflectOverAntiDiagonal
+} from './arrays';
+import Debugger from './debug';
+import {
+  factorial,
+  bigFactorial,
+  nChooseK,
+  permutation, permutation2,
+  combo, allCombos,
+  bitLength, bitCombo, bitCombo2,
+  bitComboToR, randomBigInt, randomBigCombo,
+  forEachPerm, forEachCombo,
+  randomCombo, randomPermutation
+} from './perms';
+import {
+  bounded,
+  // shuffle,
+  // swap,
+  // range,
 
   validateNonNegative,
   validatePositive,
@@ -20,6 +47,29 @@ export {
   shuffle,
   swap,
   range,
+
+  swapAllInArr,
+  isMatrix,
+  isSquareMatrix,
+  validateMatrixOrThrow,
+  validateSquareMatrixOrThrow,
+  rotateArr90,
+  reflectOverHorizontal,
+  reflectOverVertical,
+  reflectOverDiagonal,
+  reflectOverAntiDiagonal,
+
+  Debugger,
+
+  factorial,
+  bigFactorial,
+  nChooseK,
+  permutation, permutation2,
+  combo, allCombos,
+  bitLength, bitCombo, bitCombo2,
+  bitComboToR, randomBigInt, randomBigCombo,
+  forEachPerm, forEachCombo,
+  randomCombo, randomPermutation,
 
   validateNonNegative,
   validatePositive,

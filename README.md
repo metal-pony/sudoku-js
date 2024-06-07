@@ -1,9 +1,9 @@
 # Bucket
-> A little place for my TypeScript / frontend utilities.
+> A bucket for my js utilities.
 
 ```
 ./src
-├── engine          A basic 2D game engine.
+├── engine [WIP]    Basic 2D game engine.
 │   ├── Engine      Main game engine class. Scene management.
 │   ├── GameObj     Base class for all game objects.
 │   ├── Geo
@@ -11,14 +11,13 @@
 │   ├── Point
 │   ├── Polygon
 │   └── Scene       Updates and renders game objects.
-├── event
+├── event           Simple event bussing.
 │   ├── Event
-│   └── EventBus    Manages event listeners and dispatching.
-├── structs
-│   ├── Coord
-│   ├── Move
-│   ├── Position
-│   ├── Tuple
+│   └── EventBussy  Manages event listeners and dispatching.
+├── structs         Random data structures.
+│   ├── Coord       2D Coordinates.
+│   ├── Move        2D Coordinates plus rotation.
+│   ├── Position    2D Coordinates plus rotation and maxRotation.
 │   └── Vector      Represents a 2D vector.
 └── util
     ├── Freezable   Base class for locking down object properties.
@@ -31,18 +30,23 @@
 
 | Script | Description |
 | ------ | ----------- |
-| `build` | Compiles the TypeScript source code to JavaScript and places in `build/`. |
-| `test` | Runs the Jest test suite. |
+| `build` | Compiles/transforms and places the output in `build/`. |
+| `test` | Yay tests. |
 
 ## Installing
 
-Create a personal access token with the `read:packages` scope. Unfortunately, even public packages require an authentication token to install.
+Unfortunately, even public GitHub packages require authentication to install.
 
-Add the GitHub package registry to your `.npmrc` file, replacing `GH_PAT` with your personal access token and `GITHUB_USERNAME` with your GitHub username:
+Create a personal access token with the `read:packages` scope.
+
+Add the GitHub package registry to your `.npmrc` file like below, replacing `GH_PAT` with your PAT:
 
 ```
 //npm.pkg.github.com/:_authToken=GH_PAT
-@GITHUB_USERNAME:registry=https://npm.pkg.github.com
+@sparklicorn:registry=https://npm.pkg.github.com
 ```
 
-Install the package: `npm install @GITHUB_USERNAME/PACKAGE_NAME` as normal.
+Then install the package as normal.
+```
+npm install @sparklicorn/bucket-js
+```

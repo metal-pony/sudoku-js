@@ -1,0 +1,59 @@
+import Freezable from "../util/Freezable";
+import { EPSILON } from "./Geo";
+
+export default class Point extends Freezable {
+  /**
+   * @param {object} point
+   * @param {number} point.x
+   * @param {number} point.y
+   */
+  constructor({ x, y }) {
+    super();
+
+    this._x = x;
+    this._y = y;
+  }
+
+  get x() {
+    return this._x;
+  }
+
+  get y() {
+    return this._y;
+  }
+
+  set x(x) {
+    this.throwIfFrozen();
+    this._x = x;
+  }
+
+  set y(y) {
+    this.throwIfFrozen();
+    this._y = y;
+  }
+
+  /**
+   * @param {Point} other
+   * @returns {number}
+   */
+  dist(other) {
+    return Math.sqrt((other.x - this.x)**2 + (other.y - this.y)**2)
+  };
+
+  /**
+   * @returns {string}
+   */
+  toString() {
+    return `${this.isFrozen() ? '!' : ''}(${this.x}, ${this.y})`;
+  }
+
+  /**
+   *
+   * @param {Point} other
+   * @param {number} epsilon
+   * @returns {boolean}
+   */
+  equals(other, epsilon = EPSILON) {
+    return Math.abs(this.x - other.x) < epsilon && Math.abs(this.y - other.y) < epsilon;
+  }
+}

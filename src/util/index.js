@@ -1,8 +1,38 @@
 import {
-  bounded,
+  range,
   shuffle,
   swap,
-  range,
+  swapAllInArr,
+  isMatrix,
+  isSquareMatrix,
+  validateMatrixOrThrow,
+  validateSquareMatrixOrThrow,
+  rotateArr90,
+  reflectOverHorizontal,
+  reflectOverVertical,
+  reflectOverDiagonal,
+  reflectOverAntiDiagonal
+} from './arrays';
+import Debugger from './debug';
+import {
+  factorial,
+  permutation,
+  shuffle as bigintShuffle,
+  forEachPerm,
+  nChooseK,
+  combo,
+  allCombos,
+  forEachCombo,
+  bitCombo,
+  bitComboToR,
+  bitLength,
+  randomBigInt,
+  randomPermutation,
+  randomCombo,
+  randomBitCombo
+} from './perms';
+import {
+  bounded,
 
   validateNonNegative,
   validatePositive,
@@ -10,17 +40,48 @@ import {
   validateInteger,
   validatePositiveInteger,
   validateNegativeInteger,
-} from './Util';
+} from './common';
 import Freezable from './Freezable';
 import Timer from './Timer';
 import ZMod from './ZMod';
 
 export {
-  bounded,
+  // arrays
   shuffle,
   swap,
   range,
+  swapAllInArr,
+  isMatrix,
+  isSquareMatrix,
+  validateMatrixOrThrow,
+  validateSquareMatrixOrThrow,
+  rotateArr90,
+  reflectOverHorizontal,
+  reflectOverVertical,
+  reflectOverDiagonal,
+  reflectOverAntiDiagonal,
 
+  Debugger,
+
+  // perms
+  factorial,
+  permutation,
+  bigintShuffle,
+  forEachPerm,
+  nChooseK,
+  combo,
+  allCombos,
+  forEachCombo,
+  bitCombo,
+  bitComboToR,
+  bitLength,
+  randomBigInt,
+  randomPermutation,
+  randomCombo,
+  randomBitCombo,
+
+  // common
+  bounded,
   validateNonNegative,
   validatePositive,
   validateNegative,

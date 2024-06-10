@@ -1,4 +1,4 @@
-import { validateInteger, validatePositiveInteger } from "./Util";
+import { validateInteger, validatePositiveInteger } from "./common";
 
 export default class ZMod {
   /**

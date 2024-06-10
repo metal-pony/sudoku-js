@@ -16,20 +16,23 @@ import {
 import Debugger from './debug';
 import {
   factorial,
-  bigFactorial,
+  permutation,
+  shuffle as bigintShuffle,
+  forEachPerm,
   nChooseK,
-  permutation, permutation2,
-  combo, allCombos,
-  bitLength, bitCombo, bitCombo2,
-  bitComboToR, randomBigInt, randomBigCombo,
-  forEachPerm, forEachCombo,
-  randomCombo, randomPermutation
+  combo,
+  allCombos,
+  forEachCombo,
+  bitCombo,
+  bitComboToR,
+  bitLength,
+  randomBigInt,
+  randomPermutation,
+  randomCombo,
+  randomBitCombo
 } from './perms';
 import {
   bounded,
-  // shuffle,
-  // swap,
-  // range,
 
   validateNonNegative,
   validatePositive,
@@ -37,17 +40,16 @@ import {
   validateInteger,
   validatePositiveInteger,
   validateNegativeInteger,
-} from './Util';
+} from './common';
 import Freezable from './Freezable';
 import Timer from './Timer';
 import ZMod from './ZMod';
 
 export {
-  bounded,
+  // arrays
   shuffle,
   swap,
   range,
-
   swapAllInArr,
   isMatrix,
   isSquareMatrix,
@@ -61,16 +63,25 @@ export {
 
   Debugger,
 
+  // perms
   factorial,
-  bigFactorial,
+  permutation,
+  bigintShuffle,
+  forEachPerm,
   nChooseK,
-  permutation, permutation2,
-  combo, allCombos,
-  bitLength, bitCombo, bitCombo2,
-  bitComboToR, randomBigInt, randomBigCombo,
-  forEachPerm, forEachCombo,
-  randomCombo, randomPermutation,
+  combo,
+  allCombos,
+  forEachCombo,
+  bitCombo,
+  bitComboToR,
+  bitLength,
+  randomBigInt,
+  randomPermutation,
+  randomCombo,
+  randomBitCombo,
 
+  // common
+  bounded,
   validateNonNegative,
   validatePositive,
   validateNegative,

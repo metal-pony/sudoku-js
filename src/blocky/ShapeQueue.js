@@ -1,4 +1,4 @@
-import { range, shuffle } from '../util/Util';
+import { range, shuffle } from '../util/arrays';
 import { SHAPES, Shape } from './Shape';
 
 export default class ShapeQueue {
@@ -92,5 +92,5 @@ export default class ShapeQueue {
 
 /** @returns {number[]} An array of shape indices in random order.*/
 export const randomizeShapeIndices = () => {
-  return shuffle(range(1, SHAPES.length));
+  return shuffle(range(SHAPES.length + 1, 1));
 };

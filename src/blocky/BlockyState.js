@@ -1,7 +1,7 @@
 import Coord from '../structs/Coord';
 import Move from '../structs/Move';
 import Position from '../structs/Position';
-import { bounded, validatePositiveInteger } from '../util/Util';
+import { bounded, validatePositiveInteger } from '../util/common';
 import Piece from './Piece';
 import { SHAPES, Shape } from './Shape';
 import ShapeQueue from './ShapeQueue';

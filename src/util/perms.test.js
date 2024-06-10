@@ -1,8 +1,6 @@
+import { range } from './arrays.js';
+import combos from './combos.js';
 import * as subject from './perms.js';
-
-const fail = (message = 'test nyi') => {
-  throw new Error(message)
-};
 
 describe('factorial', () => {
   const badInputs = [-100, -10, -3, -2, -1];
@@ -69,38 +67,38 @@ describe('permutation', () => {
     { n: 10, r: 3628800n + 1n, expected: 'err' },
 
     // GOOD INPUTS
-    // { n: 0, r: 0n, expected: [] },
-    // { n: 1, r: 0n, expected: [0] },
-    // { n: 2, r: 0n, expected: [0, 1] },
-    // { n: 2, r: 1n, expected: [1, 0] },
-    // { n: 3, r: 0n, expected: [0, 1, 2] },
-    // { n: 3, r: 1n, expected: [0, 2, 1] },
-    // { n: 3, r: 2n, expected: [1, 0, 2] },
-    // { n: 3, r: 3n, expected: [1, 2, 0] },
-    // { n: 3, r: 4n, expected: [2, 0, 1] },
-    // { n: 3, r: 5n, expected: [2, 1, 0] },
-    // { n: 4, r: 0n, expected: [0, 1, 2, 3] },
-    // { n: 4, r: 1n, expected: [0, 1, 3, 2] },
-    // { n: 4, r: 2n, expected: [0, 2, 1, 3] },
-    // { n: 4, r: 3n, expected: [0, 2, 3, 1] },
-    // { n: 4, r: 4n, expected: [0, 3, 1, 2] },
-    // { n: 4, r: 5n, expected: [0, 3, 2, 1] },
-    // { n: 4, r: 6n, expected: [1, 0, 2, 3] },
-    // { n: 4, r: 7n, expected: [1, 0, 3, 2] },
-    // { n: 4, r: 8n, expected: [1, 2, 0, 3] },
-    // { n: 4, r: 9n, expected: [1, 2, 3, 0] },
-    // { n: 4, r: 10n, expected: [1, 3, 0, 2] },
-    // { n: 4, r: 11n, expected: [1, 3, 2, 0] },
-    // { n: 4, r: 12n, expected: [2, 0, 1, 3] },
-    // { n: 4, r: 13n, expected: [2, 0, 3, 1] },
-    // { n: 4, r: 14n, expected: [2, 1, 0, 3] },
-    // { n: 4, r: 15n, expected: [2, 1, 3, 0] },
-    // { n: 4, r: 16n, expected: [2, 3, 0, 1] },
-    // { n: 4, r: 17n, expected: [2, 3, 1, 0] },
-    // { n: 4, r: 18n, expected: [3, 0, 1, 2] },
-    // { n: 4, r: 19n, expected: [3, 0, 2, 1] },
-    // { n: 4, r: 20n, expected: [3, 1, 0, 2] },
-    // { n: 4, r: 21n, expected: [3, 1, 2, 0] },
+    { n: 0, r: 0n, expected: [] },
+    { n: 1, r: 0n, expected: [0] },
+    { n: 2, r: 0n, expected: [0, 1] },
+    { n: 2, r: 1n, expected: [1, 0] },
+    { n: 3, r: 0n, expected: [0, 1, 2] },
+    { n: 3, r: 1n, expected: [0, 2, 1] },
+    { n: 3, r: 2n, expected: [1, 0, 2] },
+    { n: 3, r: 3n, expected: [1, 2, 0] },
+    { n: 3, r: 4n, expected: [2, 0, 1] },
+    { n: 3, r: 5n, expected: [2, 1, 0] },
+    { n: 4, r: 0n, expected: [0, 1, 2, 3] },
+    { n: 4, r: 1n, expected: [0, 1, 3, 2] },
+    { n: 4, r: 2n, expected: [0, 2, 1, 3] },
+    { n: 4, r: 3n, expected: [0, 2, 3, 1] },
+    { n: 4, r: 4n, expected: [0, 3, 1, 2] },
+    { n: 4, r: 5n, expected: [0, 3, 2, 1] },
+    { n: 4, r: 6n, expected: [1, 0, 2, 3] },
+    { n: 4, r: 7n, expected: [1, 0, 3, 2] },
+    { n: 4, r: 8n, expected: [1, 2, 0, 3] },
+    { n: 4, r: 9n, expected: [1, 2, 3, 0] },
+    { n: 4, r: 10n, expected: [1, 3, 0, 2] },
+    { n: 4, r: 11n, expected: [1, 3, 2, 0] },
+    { n: 4, r: 12n, expected: [2, 0, 1, 3] },
+    { n: 4, r: 13n, expected: [2, 0, 3, 1] },
+    { n: 4, r: 14n, expected: [2, 1, 0, 3] },
+    { n: 4, r: 15n, expected: [2, 1, 3, 0] },
+    { n: 4, r: 16n, expected: [2, 3, 0, 1] },
+    { n: 4, r: 17n, expected: [2, 3, 1, 0] },
+    { n: 4, r: 18n, expected: [3, 0, 1, 2] },
+    { n: 4, r: 19n, expected: [3, 0, 2, 1] },
+    { n: 4, r: 20n, expected: [3, 1, 0, 2] },
+    { n: 4, r: 21n, expected: [3, 1, 2, 0] },
     { n: 4, r: 22n, expected: [3, 2, 0, 1] },
     { n: 4, r: 23n, expected: [3, 2, 1, 0] },
 
@@ -173,11 +171,147 @@ describe('permutation', () => {
   test('performs as expected', () => {
     permsExpected.forEach(({ n, r, expected }) => {
       if (expected === 'err') {
-        expect(() => subject.permutation2(n, r), `permutation(${n}, ${r}) expected to throw`).toThrow();
+        expect(() => subject.permutation(n, r), `permutation(${n}, ${r}) expected to throw`).toThrow();
       } else {
-        expect(subject.permutation2(n, r), `permutation(${n}, ${r}) expected ${expected}`).toStrictEqual(expected);
+        expect(subject.permutation(n, r), `permutation(${n}, ${r}) expected ${expected}`).toStrictEqual(expected);
       }
     });
+  });
+});
+
+describe('shuffle', () => {
+  test('throws when input array is null', () => {
+    expect(() => subject.shuffle(null)).toThrow();
+  });
+
+  test('returns empty array when input array is empty', () => {
+    expect(subject.shuffle([])).toEqual([]);
+  });
+
+  test('returns the input array when it has less than 2 elements', () => {
+    const NUM_TESTS = 100;
+    for (let test = 0; test < NUM_TESTS; test++) {
+      expect(subject.shuffle([1])).toEqual([1]);
+    }
+  });
+
+  test('produces a fairly uniform distribution', () => {
+    const N = 10;
+    const NUM_SHUFFLES = 1000;
+    let matrix = Array(N).fill(0).map(() => Array(N).fill(0));
+    // We'll shuffle the numbers 0..N-1 NUM_SHUFFLES times and record the
+    // frequency of each number in each position.
+    for (let i = 0; i < NUM_SHUFFLES; i++) {
+      const shuffled = subject.shuffle(range(N));
+      for (let j = 0; j < N; j++) {
+        matrix[j][shuffled[j]]++;
+      }
+    }
+
+    // Calculate and print the stardard deviation of the frequencies.
+    let sum = 0;
+    for (let i = 0; i < N; i++) {
+      for (let j = 0; j < N; j++) {
+        sum += matrix[i][j];
+      }
+    }
+    const mean = sum / (N * N);
+    let variance = 0;
+    for (let i = 0; i < N; i++) {
+      for (let j = 0; j < N; j++) {
+        variance += (matrix[i][j] - mean) ** 2;
+      }
+    }
+    const stdDev = Math.sqrt(variance / (N * N));
+
+    // The standard deviation should be less than 20% of the mean.
+    // This is a very loose bound, but it's a simple test.
+    expect(stdDev).toBeLessThan(0.2 * mean);
+  });
+});
+
+describe('nChooseK', () => {
+  const badInputs = [
+    // n < 0
+    { n: -10, k: 0, expected: 'err' },
+    { n: -2, k: 0, expected: 'err' },
+    { n: -1, k: 0, expected: 'err' },
+    // k < 0
+    { n: 0, k: -10, expected: 'err' },
+    { n: 0, k: -2, expected: 'err' },
+    { n: 0, k: -1, expected: 'err' },
+    // k > n
+    { n: 0, k: 2, expected: 'err' },
+    { n: 1, k: 2, expected: 'err' },
+    { n: 10, k: 11, expected: 'err' },
+  ];
+  const goodInputs = [
+    { n: 0, expected: [1] },
+    { n: 1, expected: [1, 1] },
+    { n: 2, expected: [1, 2, 1] },
+    { n: 3, expected: [1, 3, 3, 1] },
+    { n: 4, expected: [1, 4, 6, 4, 1] },
+    { n: 5, expected: [1, 5, 10, 10, 5, 1] },
+    { n: 6, expected: [1, 6, 15, 20, 15, 6, 1] },
+    { n: 7, expected: [1, 7, 21, 35, 35, 21, 7, 1] },
+    { n: 8, expected: [1, 8, 28, 56, 70, 56, 28, 8, 1] },
+    { n: 9, expected: [1, 9, 36, 84, 126, 126, 84, 36, 9, 1] },
+    { n: 10, expected: [1, 10, 45, 120, 210, 252, 210, 120, 45, 10, 1] },
+    { n: 11, expected: [1, 11, 55, 165, 330, 462, 462, 330, 165, 55, 11, 1] },
+    { n: 12, expected: [1, 12, 66, 220, 495, 792, 924, 792, 495, 220, 66, 12, 1] }
+  ];
+
+  test('performs as expected', () => {
+    badInputs.forEach(({ n, k, expected }) => {
+      if (expected === 'err') {
+        expect(() => subject.nChooseK(n, k), `nChooseK(${n}, ${k}) expected to throw`).toThrow();
+      } else {
+        expect(subject.nChooseK(n, k), `nChooseK(${n}, ${k}) expected ${expected}`).toBe(expected);
+      }
+    });
+
+    goodInputs.forEach(({ n, expected }) => {
+      expected.forEach((expectedValue, k) => {
+        expect(
+          Number(subject.nChooseK(n, k)),
+          `nChooseK(${n}, ${k}) expected ${expectedValue}`
+        ).toBe(expectedValue);
+      });
+    });
+  });
+});
+
+describe('combo', () => {
+  test('performs as expected', () => {
+    const N = 10;
+
+    // Generate all combos N choose K and verify that they match the expected
+    // values from the pre-generated combos test fixture.
+    for (let n = 1; n < N; n++) {
+      for (let k = 0; k < n; k++) {
+        const nck = subject.nChooseK(n, k);
+        for (let r = 0n; r < nck; r++) {
+          expect(subject.combo(n, k, r).join('')).toBe(combos[n][k][r]);
+        }
+      }
+    }
+
+    // Test all combos for uniqueness.
+    for (let n = 1; n < 10; n++) {
+      /** @type {string[]} */
+      const comboSet = new Set();
+      for (let k = 0; k < n; k++) {
+        const nck = subject.nChooseK(n, k);
+        for (let r = 0n; r < nck; r++) {
+          const _comboStr = subject.combo(n, k, r).join('');
+          expect(
+            comboSet.has(_comboStr),
+            `combo((${n} choose ${k}), r=${r} [${_comboStr}]) is not unique`
+          ).toBe(false);
+          comboSet.add(_comboStr);
+        }
+      }
+    }
   });
 });
 
@@ -284,6 +418,29 @@ describe('bitLength', () => {
   });
 });
 
+describe('bitCombo', () => {
+  test('performs as expected', () => {
+    const N = 10;
+
+    // Generate all combos N choose K and verify that they match the expected
+    // values from the pre-generated combos test fixture.
+    for (let n = 1; n < N; n++) {
+      for (let k = 0; k < n; k++) {
+        const nck = subject.nChooseK(n, k);
+        for (let r = 0n; r < nck; r++) {
+          const actual = subject.bitCombo(n, k, r).toString(2);
+          let expected = 0n;
+          for (let i of combos[n][k][r]) {
+            const _i = Number(i);
+            expected |= (1n << BigInt(n - _i - 1));
+          }
+          expect(actual).toBe(expected.toString(2));
+        }
+      }
+    }
+  });
+});
+
 describe('bitComboToR', () => {
   test('converts as expected', () => {
     const N = 8;
@@ -315,47 +472,3 @@ describe('randomBigInt', () => {
     }
   });
 });
-
-// describe('randomBigInt vs randomBigInt2', () => {
-//   const NUM_TESTS = 1000;
-//   const UPPERBOUND = 514;
-//   const _UPPERBOUND = BigInt(UPPERBOUND);
-
-//   test(`randomBigInt ${NUM_TESTS}`, () => {
-//     for (let n = 0; n < NUM_TESTS; n++) {
-//       expect(subject.randomBigInt(_UPPERBOUND)).toBeLessThan(_UPPERBOUND);
-//     }
-//   });
-
-//   test(`randomBigInt2 ${NUM_TESTS}`, () => {
-//     for (let n = 0; n < NUM_TESTS; n++) {
-//       expect(subject.randomBigInt2(_UPPERBOUND)).toBeLessThan(_UPPERBOUND);
-//     }
-//   });
-
-//   // Test the spread of both functions
-//   test(`Log spread over ${NUM_TESTS}`, () => {
-//     const spread1 = new Array(UPPERBOUND).fill(0);
-//     const spread2 = new Array(UPPERBOUND).fill(0);
-//     for (let n = 0; n < NUM_TESTS; n++) {
-//       const rand1 = Number(subject.randomBigInt(_UPPERBOUND));
-//       spread1[rand1]++;
-//       const rand2 = Number(subject.randomBigInt2(_UPPERBOUND));
-//       spread2[rand2]++;
-//     }
-//     // Log the mean, standard deviation, and extremes
-//     const mean1 = spread1.reduce((a, b) => a + b) / spread1.length;
-//     const variance1 = spread1.reduce((a, b) => (a + (b - mean1) ** 2)) / spread1.length;
-//     const stdDev1 = Math.sqrt(variance1);
-//     const min1 = Math.min(...spread1);
-//     const max1 = Math.max(...spread1);
-//     console.log('randomBigInt spread:', { mean: mean1, stdDev: stdDev1, min: min1, max: max1 });
-
-//     const mean2 = spread2.reduce((a, b) => a + b) / spread2.length;
-//     const variance2 = spread2.reduce((a, b) => (a + (b - mean2) ** 2)) / spread2.length;
-//     const stdDev2 = Math.sqrt(variance2);
-//     const min2 = Math.min(...spread2);
-//     const max2 = Math.max(...spread2);
-//     console.log('randomBigInt2 spread:', { mean: mean2, stdDev: stdDev2, min: min2, max: max2 });
-//   });
-// });

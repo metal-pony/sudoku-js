@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Bucket of js utilities",
   "type": "module",
-  "private": true,
   "license": "MIT",
   "files": [
     "build/",
@@ -31,6 +30,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/sparklicorn/bucket-js.git"
+    "url": "git+https://github.com/sparklicorn/bucket-js.git"
   }
 }

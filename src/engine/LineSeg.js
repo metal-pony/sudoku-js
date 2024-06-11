@@ -1,4 +1,5 @@
-import { Freezable } from '../util';
+
+import Freezable from '../util/Freezable';
 import { EPSILON } from './Geo';
 import { intersects } from './IntersectionMap';
 import Point from './Point';

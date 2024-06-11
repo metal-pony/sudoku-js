@@ -10,9 +10,7 @@ import {
 import {
   Engine,
   Scene,
-  SceneDimensions,
   GameObj,
-  GameObjSpec,
   Point,
   intersects,
   LineSeg,
@@ -93,9 +91,7 @@ export {
 
   Engine,
   Scene,
-  SceneDimensions,
   GameObj,
-  GameObjSpec,
   Point,
   intersects,
   LineSeg,

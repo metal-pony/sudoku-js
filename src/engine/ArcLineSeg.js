@@ -1,6 +1,6 @@
-import { EPSILON, dist } from "./Geo";
-import LineSeg from "./LineSeg";
-import Point from "./Point";
+import { EPSILON, dist } from './Geo';
+import LineSeg from './LineSeg';
+import Point from './Point';
 
 const TYPE = 'arc';
 
@@ -95,7 +95,7 @@ export default class ArcLineSeg extends LineSeg {
    */
   isParallel(other, epsilon = EPSILON) {
     if (other instanceof ArcLineSeg) {
-      throw new Error("Method not implemented.");
+      throw new Error('Method not implemented.');
     }
 
     return false;

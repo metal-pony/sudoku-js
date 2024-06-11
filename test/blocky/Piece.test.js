@@ -1,10 +1,12 @@
-import Piece from "./Piece";
-import { Shape } from "./Shape";
-import BlockyState from "./BlockyState";
-import Coord from "../structs/Coord";
-import Position from "../structs/Position";
-import Move from "../structs/Move";
-import ZMod from "../util/ZMod";
+import {
+  BlockyState,
+  Coord,
+  Move,
+  Piece,
+  Position,
+  BlockyShape as Shape,
+  ZMod
+} from '../../index';
 
 describe('Piece', () => {
   /** @type {Piece} */

@@ -38,7 +38,7 @@ export default class Move extends Freezable {
 
   /** @throws {Error} Operation not supported.*/
 	unfreeze() {
-		throw new Error("Operation not supported.");
+		throw new Error('Operation not supported.');
 	}
 
   /**

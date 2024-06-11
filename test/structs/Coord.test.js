@@ -1,5 +1,5 @@
 import {jest} from '@jest/globals';
-import Coord from './Coord';
+import { Coord } from '../../index';
 
 describe('Coord', () => {
   describe('static', () => {

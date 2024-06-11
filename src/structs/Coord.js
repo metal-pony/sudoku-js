@@ -1,4 +1,4 @@
-import Freezable from "../util/Freezable";
+import Freezable from '../util/Freezable';
 
 /**
  * Contains row, column coordinates.
@@ -52,7 +52,7 @@ export default class Coord extends Freezable {
 	}
 
 	unfreeze() {
-		throw new Error("Operation not supported.");
+		throw new Error('Operation not supported.');
 	}
 
 	/**

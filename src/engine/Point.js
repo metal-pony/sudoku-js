@@ -1,5 +1,5 @@
-import Freezable from "../util/Freezable";
-import { EPSILON } from "./Geo";
+import Freezable from '../util/Freezable';
+import { EPSILON } from './Geo';
 
 export default class Point extends Freezable {
   /**

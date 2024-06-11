@@ -1,5 +1,5 @@
-import LinearLineSeg from "./LinearLineSeg";
-import Point from "./Point";
+import LinearLineSeg from './LinearLineSeg';
+import Point from './Point';
 
 export const EPSILON = 1e-10;
 

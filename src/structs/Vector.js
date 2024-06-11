@@ -1,4 +1,4 @@
-import Freezable from "../util/Freezable";
+import Freezable from '../util/Freezable';
 
 export default class Vector extends Freezable {
   /**

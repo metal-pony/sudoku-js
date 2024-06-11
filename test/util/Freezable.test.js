@@ -1,4 +1,4 @@
-import Freezable from "./Freezable.js";
+import { Freezable } from '../../index';
 
 describe('Freezable', () => {
   /** @type {Freezable} */

@@ -1,7 +1,7 @@
 import {jest} from '@jest/globals';
-import ZMod from "./ZMod";
+import {ZMod} from '../../index';
 
-describe("ZMod", () => {
+describe('ZMod', () => {
   /** @type {ZMod} */
   let zmod;
 

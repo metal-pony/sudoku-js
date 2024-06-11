@@ -1,5 +1,4 @@
-import Circle from './Circle';
-import Point from './Point';
+import { Circle, Point } from '../../index';
 
 describe('Circle', () => {
   describe('intersection', () => {

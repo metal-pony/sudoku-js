@@ -1,9 +1,11 @@
 import {jest} from '@jest/globals';
-import Coord from '../structs/Coord';
-import { Shape } from "./Shape";
-import BlockyState from "./BlockyState";
-import Position from '../structs/Position';
-import Move from '../structs/Move';
+import {
+  Coord,
+  BlockyShape as Shape,
+  BlockyState,
+  Move,
+  Position
+} from "../../index";
 
 describe('BlockyState', () => {
   let options;

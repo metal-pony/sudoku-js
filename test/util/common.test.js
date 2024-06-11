@@ -1,4 +1,4 @@
-import * as common from './common.js';
+import * as common from '../../src/util/common';
 
 describe('bounded', () => {
   describe('when min > max', () => {

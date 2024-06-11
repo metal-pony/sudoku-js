@@ -1,4 +1,4 @@
-import Freezable from "../util/Freezable";
+import Freezable from '../util/Freezable';
 
 /**
  * An Event is a named object that may contain data to be consumed by listeners.
@@ -18,7 +18,7 @@ export default class Event extends Freezable {
 
   /** @throws {Error} Operation not supported.*/
 	unfreeze() {
-		throw new Error("Operation not supported.");
+		throw new Error('Operation not supported.');
 	}
 
   /**

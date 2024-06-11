@@ -1,7 +1,7 @@
-import Engine from "./Engine";
-import Point from "./Point";
-import Polygon from "./Polygon";
-import Vector from "../structs/Vector";
+import Engine from './Engine';
+import Point from './Point';
+import Polygon from './Polygon';
+import Vector from '../structs/Vector';
 
 /**
  * Represents a game object.

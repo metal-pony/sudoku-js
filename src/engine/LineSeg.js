@@ -1,7 +1,7 @@
-import { Freezable } from "../util";
-import { EPSILON } from "./Geo";
-import { intersects } from "./IntersectionMap";
-import Point from "./Point";
+import { Freezable } from '../util';
+import { EPSILON } from './Geo';
+import { intersects } from './IntersectionMap';
+import Point from './Point';
 
 const MIN_POINTS = 2;
 const INVALID_POINTS_ERR_MSG = `A Line segment must have exactly ${MIN_POINTS} points`;

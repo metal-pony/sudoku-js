@@ -1,10 +1,12 @@
 import {jest} from '@jest/globals';
-import Event from "../event/Event";
-import EventBus from "../event/EventBus";
-import Move from "../structs/Move";
-import Blocky from "./Blocky";
-import BlockyEvent from "./BlockyEvent";
-import BlockyState from "./BlockyState";
+import {
+  Blocky,
+  BlockyState,
+  BlockyEvent,
+  Event,
+  EventBus,
+  Move
+} from '../../index';
 
 const mockTimer = {
   delayNextTick: jest.fn(),
@@ -15,7 +17,7 @@ const mockTimer = {
 // jest.mock('../util/Timer', () => jest.fn().mockImplementation(() => mockTimer));
 
 describe("Blocky", () => {
-  /** @type {GameOptions} */
+  // GameOptions
   let options;
 
   /** @type {BlockyState} */

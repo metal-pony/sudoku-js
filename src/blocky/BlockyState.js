@@ -381,7 +381,7 @@ export default class BlockyState {
 			return Move.copy(move);
 		}
 
-		// Attempt to "kick off" an edge or block if rotating too close.
+		// Attempt to 'kick off' an edge or block if rotating too close.
 		const kickLeft = Move.copy(move);
 		const kickRight = Move.copy(move);
 		for (let colOffset = 1; colOffset < 3; colOffset++) {

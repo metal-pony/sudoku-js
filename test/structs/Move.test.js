@@ -1,6 +1,5 @@
 import {jest} from '@jest/globals';
-import Coord from './Coord';
-import Move from './Move';
+import { Coord, Move } from '../../index';
 
 describe('Move', () => {
   /** @type {Move} */

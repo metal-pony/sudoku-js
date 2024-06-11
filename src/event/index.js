@@ -1,5 +1,5 @@
-import Event from "./Event";
-import EventBus from "./EventBus";
+import Event from './Event';
+import EventBus from './EventBus';
 
 export { Event, EventBus };
 

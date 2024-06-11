@@ -117,7 +117,7 @@ export default class BlockyAi extends Blocky {
 		const possiblePlacements = this.getPossiblePlacements();
 		possiblePlacements.forEach((placement) => {
 			// debug(
-			// 	"Looking at %s @ %s\n",
+			// 	'Looking at %s @ %s\n',
 			// 	game.shape.name(),
 			// 	placement.toString()
 			// );
@@ -133,7 +133,7 @@ export default class BlockyAi extends Blocky {
 			prevPositionsCopy.push(placement);
 
 			const rank = this.ranker(stateCopy);
-			// debug("Rank: " + rank);
+			// debug('Rank: ' + rank);
 
 			placements.push({
 				game: copy,
@@ -152,7 +152,7 @@ export default class BlockyAi extends Blocky {
 		const sublist = placements.slice(0, numToKeep);
 		//placements.subList(0, numToKeep);
 		// debug(
-		// 	"TopPlacements ([%d], [%d] possible, [%.2f] keepPercentage): %s\n",
+		// 	'TopPlacements ([%d], [%d] possible, [%.2f] keepPercentage): %s\n',
 		// 	sublist.size(),
 		// 	possiblePlacements.size(),
 		// 	percentage,
@@ -168,7 +168,7 @@ export default class BlockyAi extends Blocky {
 	 * @return {Set<Position>} The set of all possible placements for the current piece.
 	 */
 	getPossiblePlacements() {
-		// debug("getPossiblePlacements()");
+		// debug('getPossiblePlacements()');
 		/** @type {Set<Position>} */
 		const placements = new Set();
 		/** @type {(position: Position) => Boolean} */
@@ -195,20 +195,20 @@ export default class BlockyAi extends Blocky {
 
 		while (q.length > 0) {
 			const currentPosition = q.shift();
-			// debug("Looking at " + currentPosition.toString());
+			// debug('Looking at ' + currentPosition.toString());
 
 			// Is the move legal?
 			// I don't think this this condition will ever be true, given the acceptCriteria on the queue.
 			if (!this.state.isPositionValid(currentPosition)) {
-				// debug("Invalid, skipping...");
+				// debug('Invalid, skipping...');
 				continue;
 			}
 
 			// Is the new position terminal / i.e. can we move down?
 			if (!this.state.isPositionValid(Position.copy(currentPosition).add(Move.DOWN))) {
-				// debug("Terminal position! Adding to result set.");
+				// debug('Terminal position! Adding to result set.');
 				placements.add(currentPosition);
-				// debug(".");
+				// debug('.');
 			}
 
 			Move.ATOMIC_MOVES.forEach((nextMove) => {
@@ -217,11 +217,11 @@ export default class BlockyAi extends Blocky {
 					!seen.has(nextPosition) &&
 					acceptance(nextPosition)
 				) {
-					// System.out.printf("Added %s to the queue.\n", nextPosition.toString());
+					// System.out.printf('Added %s to the queue.\n', nextPosition.toString());
 					q.push(nextPosition);
 				} else {
 					// System.out.printf(
-					// 	"Tried to add %s to the queue, but failed. [seen: %b; passedCriteria: %b]\n",
+					// 	'Tried to add %s to the queue, but failed. [seen: %b; passedCriteria: %b]\n',
 					// 	nextPosition.toString(),
 					// 	q.hasSeen(nextPosition),
 					// 	acceptance.apply(nextPosition)

@@ -1,4 +1,4 @@
-import ShapeQueue from "./ShapeQueue";
+import { ShapeQueue } from "../../index";
 
 describe("ShapeQueue", () => {
   /** @type {ShapeQueue} */

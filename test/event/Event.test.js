@@ -1,5 +1,5 @@
 import {jest} from '@jest/globals';
-import Event from "./Event";
+import { Event } from '../../index';
 
 describe('Event', () => {
   /** @type {string} */

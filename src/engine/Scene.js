@@ -1,6 +1,6 @@
-import Engine from "./Engine";
-import GameObj from "./GameObj";
-import Point from "./Point";
+import Engine from './Engine';
+import GameObj from './GameObj';
+import Point from './Point';
 
 /**
  * @typedef {Object} SceneDimensions

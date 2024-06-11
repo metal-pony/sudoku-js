@@ -1,5 +1,5 @@
-import { Freezable } from "../util";
-import LineSeg from "./LineSeg";
+import { Freezable } from '../util';
+import LineSeg from './LineSeg';
 
 export default class Shape extends Freezable {
   constructor() {

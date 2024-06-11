@@ -28,3 +28,21 @@ export {
   CircleIntersectionStates,
   Polygon
 };
+
+export default {
+  Engine,
+  Scene,
+  SceneDimensions,
+  GameObj,
+  GameObjSpec,
+  Point,
+  ILineSeg,
+  intersects,
+  LineSeg,
+  LinearLineSeg,
+  ArcLineSeg,
+  Shape,
+  Circle,
+  CircleIntersectionStates,
+  Polygon
+};

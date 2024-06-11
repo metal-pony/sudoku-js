@@ -1,7 +1,9 @@
 import Event from "./Event";
 import EventBus from "./EventBus";
 
-export {
+export { Event, EventBus };
+
+export default {
   Event,
   EventBus
 };

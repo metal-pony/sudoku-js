@@ -20,6 +20,9 @@ import BlockyState from './BlockyState';
 const PIECE_PLACED_DELAY_MS = 250;
 const POINTS_BY_LINES_CLEARED = Object.freeze([0, 40, 100, 300, 1200]);
 
+/**
+ * Controls a game of Blocky.
+ */
 export default class Blocky {
 	static get PIECE_PLACED_DELAY_MS() { return PIECE_PLACED_DELAY_MS; }
 	static get POINTS_BY_LINES_CLEARED() { return POINTS_BY_LINES_CLEARED; };

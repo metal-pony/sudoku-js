@@ -5,7 +5,15 @@ import Piece from './Piece';
 import { Shape, SHAPES } from './Shape';
 import ShapeQueue from './ShapeQueue';
 
-export {
+export { Blocky };
+export { BlockyState };
+export { BlockyEvent };
+export { Piece };
+export { Shape };
+export { SHAPES };
+export { ShapeQueue };
+
+export default {
   Blocky,
   BlockyState,
   BlockyEvent,

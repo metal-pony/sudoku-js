@@ -1,51 +1,39 @@
 import {
-  range,
-  shuffle,
-  swap,
-  swapAllInArr,
-  isMatrix,
-  isSquareMatrix,
-  validateMatrixOrThrow,
-  validateSquareMatrixOrThrow,
-  rotateArr90,
-  reflectOverHorizontal,
-  reflectOverVertical,
-  reflectOverDiagonal,
-  reflectOverAntiDiagonal
-} from './arrays';
-import Debugger from './debug';
+  Blocky,
+  BlockyState,
+  BlockyEvent,
+  Piece,
+  Shape as BlockyShape,
+  SHAPES,
+  ShapeQueue
+} from './src/blocky/index.js';
 import {
-  factorial,
-  permutation,
-  shuffle as bigintShuffle,
-  forEachPerm,
-  nChooseK,
-  combo,
-  allCombos,
-  forEachCombo,
-  bitCombo,
-  bitComboToR,
-  bitLength,
-  randomBigInt,
-  randomPermutation,
-  randomCombo,
-  randomBitCombo
-} from './perms';
+  Engine,
+  Scene,
+  SceneDimensions,
+  GameObj,
+  GameObjSpec,
+  Point,
+  intersects,
+  LineSeg,
+  LinearLineSeg,
+  ArcLineSeg,
+  Shape,
+  Circle,
+  CircleIntersectionStates,
+  Polygon
+} from './src/engine/index.js';
 import {
-  bounded,
-
-  validateNonNegative,
-  validatePositive,
-  validateNegative,
-  validateInteger,
-  validatePositiveInteger,
-  validateNegativeInteger,
-} from './common';
-import Freezable from './Freezable';
-import Timer from './Timer';
-import ZMod from './ZMod';
-
-export {
+  Event,
+  EventBus
+} from './src/event/index.js';
+import {
+  Coord,
+  Move,
+  Position,
+  Vector
+} from './src/structs/index.js';
+import {
   // arrays
   shuffle,
   swap,
@@ -92,9 +80,40 @@ export {
   Freezable,
   Timer,
   ZMod
-};
+} from './src/util/index.js';
 
-export default {
+export {
+  Blocky,
+  BlockyState,
+  BlockyEvent,
+  Piece,
+  BlockyShape,
+  SHAPES,
+  ShapeQueue,
+
+  Engine,
+  Scene,
+  SceneDimensions,
+  GameObj,
+  GameObjSpec,
+  Point,
+  intersects,
+  LineSeg,
+  LinearLineSeg,
+  ArcLineSeg,
+  Shape,
+  Circle,
+  CircleIntersectionStates,
+  Polygon,
+
+  Event,
+  EventBus,
+
+  Coord,
+  Move,
+  Position,
+  Vector,
+
   // arrays
   shuffle,
   swap,

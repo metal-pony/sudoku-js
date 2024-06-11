@@ -1,41 +1,39 @@
+// blocky
+import Blocky from './src/blocky/Blocky.js'
+import BlockyState from './src/blocky/BlockyState.js'
+import BlockyEvent from './src/blocky/BlockyEvent.js'
+import Piece from './src/blocky/Piece.js'
+import { Shape as BlockyShape, SHAPES } from './src/blocky/Shape.js'
+import ShapeQueue from './src/blocky/ShapeQueue.js'
+
+// engine
+import Engine from './src/engine/Engine.js';
+import Scene from './src/engine/Scene.js';
+import GameObj from './src/engine/GameObj.js';
+import Point from './src/engine/Point.js';
+import { intersects } from './src/engine/IntersectionMap.js';
+import LineSeg from './src/engine/LineSeg.js';
+import LinearLineSeg from './src/engine/LinearLineSeg.js';
+import ArcLineSeg from './src/engine/ArcLineSeg.js';
+import Shape from './src/engine/Shape.js';
+import Circle, { CircleIntersectionStates } from './src/engine/Circle.js';
+import Polygon from './src/engine/Polygon.js';
+
+// event
+import Event from './src/event/Event.js';
+import EventBus from './src/event/EventBus.js';
+
+// structs
+import Coord from './src/structs/Coord.js';
+import Move from './src/structs/Move.js';
+import Position from './src/structs/Position.js';
+import Vector from './src/structs/Vector.js';
+
+// util
 import {
-  Blocky,
-  BlockyState,
-  BlockyEvent,
-  Piece,
-  Shape as BlockyShape,
-  SHAPES,
-  ShapeQueue
-} from './src/blocky/index.js';
-import {
-  Engine,
-  Scene,
-  GameObj,
-  Point,
-  intersects,
-  LineSeg,
-  LinearLineSeg,
-  ArcLineSeg,
-  Shape,
-  Circle,
-  CircleIntersectionStates,
-  Polygon
-} from './src/engine/index.js';
-import {
-  Event,
-  EventBus
-} from './src/event/index.js';
-import {
-  Coord,
-  Move,
-  Position,
-  Vector
-} from './src/structs/index.js';
-import {
-  // arrays
   shuffle,
-  swap,
   range,
+  swap,
   swapAllInArr,
   isMatrix,
   isSquareMatrix,
@@ -46,13 +44,12 @@ import {
   reflectOverVertical,
   reflectOverDiagonal,
   reflectOverAntiDiagonal,
-
-  Debugger,
-
-  // perms
+} from './src/util/arrays.js';
+import Debugger from './src/util/debug.js';
+import {
   factorial,
   permutation,
-  bigintShuffle,
+  shuffle as bigintShuffle,
   forEachPerm,
   nChooseK,
   combo,
@@ -64,9 +61,9 @@ import {
   randomBigInt,
   randomPermutation,
   randomCombo,
-  randomBitCombo,
-
-  // common
+  randomBitCombo
+} from './src/util/perms.js';
+import {
   bounded,
   validateNonNegative,
   validatePositive,
@@ -74,13 +71,13 @@ import {
   validateInteger,
   validatePositiveInteger,
   validateNegativeInteger,
-
-  Freezable,
-  Timer,
-  ZMod
-} from './src/util/index.js';
+} from './src/util/common.js';
+import Freezable from './src/util/Freezable.js';
+import Timer from './src/util/Timer.js';
+import ZMod from './src/util/ZMod.js';
 
 export {
+  // blocky
   Blocky,
   BlockyState,
   BlockyEvent,
@@ -89,6 +86,7 @@ export {
   SHAPES,
   ShapeQueue,
 
+  // engine
   Engine,
   Scene,
   GameObj,
@@ -102,9 +100,11 @@ export {
   CircleIntersectionStates,
   Polygon,
 
+  // event
   Event,
   EventBus,
 
+  // structs
   Coord,
   Move,
   Position,

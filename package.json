@@ -1,6 +1,6 @@
 {
   "name": "@sparklicorn/bucket-js",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Bucket of js utilities",
   "type": "module",
   "license": "MIT",

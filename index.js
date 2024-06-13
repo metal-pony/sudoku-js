@@ -76,6 +76,38 @@ import Freezable from './src/util/Freezable.js';
 import Timer from './src/util/Timer.js';
 import ZMod from './src/util/ZMod.js';
 
+// sudoku
+import Sudoku, {
+  indicesFor,
+  masksFor,
+  cellRow,
+  cellCol,
+  cellRegion,
+  cellRegion2D
+} from './src/sudoku/Sudoku.js';
+import SudokuSieve, {validateSieve} from './src/sudoku/SudokuSieve.js';
+import {
+  sieveCombos,
+  sieveCombos2,
+  sieveCombos3,
+  sieveCombos4,
+  reductionMatrix,
+  createBoardMaskFromSieve,
+  f,
+  f2,
+  searchForPrimeInvalidFromMask,
+  verifySieveItems,
+  sieve
+} from './src/sudoku/exp2.js';
+import {
+  createSieve,
+  findUnsolvablePairs,
+  isUnsolvablePair,
+  createSieve2,
+  isIrreducableChain,
+  analyzeEmptyCellChain
+} from './src/sudoku/siever.js';
+
 export {
   // blocky
   Blocky,
@@ -155,5 +187,38 @@ export {
 
   Freezable,
   Timer,
-  ZMod
+  ZMod,
+
+  // sudoku
+  Sudoku,
+  indicesFor,
+  masksFor,
+  cellRow,
+  cellCol,
+  cellRegion,
+  cellRegion2D,
+
+  SudokuSieve,
+  validateSieve,
+
+  // exp2
+  sieveCombos,
+  sieveCombos2,
+  sieveCombos3,
+  sieveCombos4,
+  reductionMatrix,
+  createBoardMaskFromSieve,
+  f,
+  f2,
+  searchForPrimeInvalidFromMask,
+  verifySieveItems,
+  sieve,
+
+  // siever
+  createSieve,
+  findUnsolvablePairs,
+  isUnsolvablePair,
+  createSieve2,
+  isIrreducableChain,
+  analyzeEmptyCellChain
 };

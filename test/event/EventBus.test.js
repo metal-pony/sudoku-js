@@ -1,5 +1,5 @@
 import {jest} from '@jest/globals';
-import { Event, EventBus } from '../../index';
+import { Event, EventBus } from '../../index.js';
 
 describe('EventBus', () => {
   /** @type {EventBus} */

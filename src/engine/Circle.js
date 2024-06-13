@@ -1,7 +1,7 @@
-import ArcLineSeg from './ArcLineSeg';
-import { EPSILON } from './Geo';
-import Point from './Point';
-import Shape from './Shape';
+import ArcLineSeg from './ArcLineSeg.js';
+import { EPSILON } from './Geo.js';
+import Point from './Point.js';
+import Shape from './Shape.js';
 
 export const CircleIntersectionStates = Object.freeze({
   UNKNOWN: 'unknown',

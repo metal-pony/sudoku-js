@@ -1,10 +1,10 @@
-import Coord from '../structs/Coord';
-import Move from '../structs/Move';
-import Position from '../structs/Position';
-import { bounded, validatePositiveInteger } from '../util/common';
-import Piece from './Piece';
-import { SHAPES, Shape } from './Shape';
-import ShapeQueue from './ShapeQueue';
+import Coord from '../structs/Coord.js';
+import Move from '../structs/Move.js';
+import Position from '../structs/Position.js';
+import { bounded, validatePositiveInteger } from '../util/common.js';
+import Piece from './Piece.js';
+import { SHAPES, Shape } from './Shape.js';
+import ShapeQueue from './ShapeQueue.js';
 
 const MIN_ROWS = 5;
 const MIN_COLS = 5;

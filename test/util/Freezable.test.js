@@ -1,4 +1,4 @@
-import { Freezable } from '../../index';
+import { Freezable } from '../../index.js';
 
 describe('Freezable', () => {
   /** @type {Freezable} */

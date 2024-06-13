@@ -1,6 +1,6 @@
-import { EPSILON, dist } from './Geo';
-import LineSeg from './LineSeg';
-import Point from './Point';
+import { EPSILON, dist } from './Geo.js';
+import LineSeg from './LineSeg.js';
+import Point from './Point.js';
 
 const TYPE = 'arc';
 

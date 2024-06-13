@@ -6,7 +6,7 @@ import {
   Event,
   EventBus,
   Move
-} from '../../index';
+} from '../../index.js';
 
 const mockTimer = {
   delayNextTick: jest.fn(),

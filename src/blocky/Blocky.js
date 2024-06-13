@@ -1,10 +1,10 @@
-import Event from '../event/Event';
-import EventBus from '../event/EventBus';
-import Coord from '../structs/Coord';
-import Move from '../structs/Move';
-import Timer from '../util/Timer';
-import BlockyEvent from './BlockyEvent';
-import BlockyState from './BlockyState';
+import Event from '../event/Event.js';
+import EventBus from '../event/EventBus.js';
+import Coord from '../structs/Coord.js';
+import Move from '../structs/Move.js';
+import Timer from '../util/Timer.js';
+import BlockyEvent from './BlockyEvent.js';
+import BlockyState from './BlockyState.js';
 
 /**
  * @typedef {Object} GameOptions

@@ -3,7 +3,7 @@ import {
   Blocky,
   BlockyEvent,
   BlockyState
-} from '../../index';
+} from '../../index.js';
 
 describe('BlockyEvent', () => {
   /** @type {BlockyEvent} */

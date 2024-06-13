@@ -1,4 +1,4 @@
-import Event from './Event';
+import Event from './Event.js';
 
 /**
  * An EventBus contains a registry of event listeners that can be invoked by throwing events.

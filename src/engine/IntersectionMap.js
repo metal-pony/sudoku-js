@@ -1,7 +1,7 @@
-import { EPSILON } from './Geo';
-import LineSeg from './LineSeg';
-import LinearLineSeg from './LinearLineSeg';
-import Point from './Point';
+import { EPSILON } from './Geo.js';
+import LineSeg from './LineSeg.js';
+import LinearLineSeg from './LinearLineSeg.js';
+import Point from './Point.js';
 
 const linear = {
   /**

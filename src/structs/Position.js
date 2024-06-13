@@ -1,7 +1,7 @@
-import Coord from './Coord';
-import Move from './Move';
-import { validatePositiveInteger } from '../util/common';
-import ZMod from '../util/ZMod';
+import Coord from './Coord.js';
+import Move from './Move.js';
+import { validatePositiveInteger } from '../util/common.js';
+import ZMod from '../util/ZMod.js';
 
 export default class Position extends Move {
   /**

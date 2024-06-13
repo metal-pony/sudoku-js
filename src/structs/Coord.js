@@ -1,4 +1,4 @@
-import Freezable from '../util/Freezable';
+import Freezable from '../util/Freezable.js';
 
 /**
  * Contains row, column coordinates.

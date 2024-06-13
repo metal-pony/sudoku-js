@@ -1,7 +1,7 @@
-import Move from '../structs/Move';
-import Position from '../structs/Position';
-import Blocky from './Blocky';
-import BlockyState from './BlockyState';
+import Move from '../structs/Move.js';
+import Position from '../structs/Position.js';
+import Blocky from './Blocky.js';
+import BlockyState from './BlockyState.js';
 
 let DEBUG = true;
 const debug = (...args) => {

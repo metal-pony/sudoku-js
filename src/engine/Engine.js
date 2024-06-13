@@ -1,5 +1,5 @@
-import Timer from '../util/Timer';
-import Scene from './Scene';
+import Timer from '../util/Timer.js';
+import Scene from './Scene.js';
 
 export default class Engine {
   static get MIN_FPS() { return 10; }

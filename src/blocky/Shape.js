@@ -1,5 +1,5 @@
-import Coord from '../structs/Coord';
-import ZMod from '../util/ZMod';
+import Coord from '../structs/Coord.js';
+import ZMod from '../util/ZMod.js';
 
 export class Shape {
   static get O() { return O; }

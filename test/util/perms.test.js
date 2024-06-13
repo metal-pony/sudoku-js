@@ -1,5 +1,5 @@
 import * as subject from '../../src/util/perms.js';
-import { range } from '../../index';
+import { range } from '../../index.js';
 
 const combos = [
   null,

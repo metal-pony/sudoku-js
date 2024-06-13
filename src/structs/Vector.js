@@ -1,4 +1,4 @@
-import Freezable from '../util/Freezable';
+import Freezable from '../util/Freezable.js';
 
 export default class Vector extends Freezable {
   /**

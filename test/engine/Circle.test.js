@@ -1,4 +1,4 @@
-import { Circle, Point } from '../../index';
+import { Circle, Point } from '../../index.js';
 
 describe('Circle', () => {
   describe('intersection', () => {

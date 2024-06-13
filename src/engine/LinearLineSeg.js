@@ -1,6 +1,6 @@
-import Point from './Point';
-import { EPSILON } from './Geo';
-import LineSeg from './LineSeg';
+import Point from './Point.js';
+import { EPSILON } from './Geo.js';
+import LineSeg from './LineSeg.js';
 
 const TYPE = 'linear';
 

@@ -1,5 +1,5 @@
-import Piece from './Piece';
-import Event from '../event/Event';
+import Piece from './Piece.js';
+import Event from '../event/Event.js';
 
 /**
  * Represents an event that can be emitted by a Blocky instance.

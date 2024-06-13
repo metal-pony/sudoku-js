@@ -1,5 +1,5 @@
-import Freezable from '../util/Freezable';
-import LineSeg from './LineSeg';
+import Freezable from '../util/Freezable.js';
+import LineSeg from './LineSeg.js';
 
 export default class Shape extends Freezable {
   constructor() {

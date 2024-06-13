@@ -1,6 +1,6 @@
-import Point from './Point';
-import LinearLineSeg from './LinearLineSeg';
-import Shape from './Shape';
+import Point from './Point.js';
+import LinearLineSeg from './LinearLineSeg.js';
+import Shape from './Shape.js';
 
 const MIN_LINES = 3;
 const MIN_LINES_TO_CLOSE = 2;

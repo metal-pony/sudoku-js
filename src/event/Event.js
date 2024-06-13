@@ -1,4 +1,4 @@
-import Freezable from '../util/Freezable';
+import Freezable from '../util/Freezable.js';
 
 /**
  * An Event is a named object that may contain data to be consumed by listeners.

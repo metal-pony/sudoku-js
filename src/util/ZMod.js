@@ -1,4 +1,4 @@
-import { validateInteger, validatePositiveInteger } from './common';
+import { validateInteger, validatePositiveInteger } from './common.js';
 
 export default class ZMod {
   /**

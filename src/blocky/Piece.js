@@ -1,9 +1,9 @@
-import { Shape } from './Shape';
-import BlockyState from './BlockyState';
-import Position from '../structs/Position';
-import Coord from '../structs/Coord';
-import Move from '../structs/Move';
-import ZMod from '../util/ZMod';
+import { Shape } from './Shape.js';
+import BlockyState from './BlockyState.js';
+import Position from '../structs/Position.js';
+import Coord from '../structs/Coord.js';
+import Move from '../structs/Move.js';
+import ZMod from '../util/ZMod.js';
 
 export default class Piece {
   /**

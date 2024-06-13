@@ -1,5 +1,5 @@
-import { range, shuffle } from '../util/arrays';
-import { SHAPES, Shape } from './Shape';
+import { range, shuffle } from '../util/arrays.js';
+import { SHAPES, Shape } from './Shape.js';
 
 export default class ShapeQueue {
   /** Default minimum queue size.*/

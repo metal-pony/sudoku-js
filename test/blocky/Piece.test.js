@@ -6,7 +6,7 @@ import {
   Position,
   BlockyShape as Shape,
   ZMod
-} from '../../index';
+} from '../../index.js';
 
 describe('Piece', () => {
   /** @type {Piece} */

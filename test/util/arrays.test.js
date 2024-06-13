@@ -12,7 +12,7 @@ import {
   reflectOverVertical,
   reflectOverDiagonal,
   reflectOverAntiDiagonal
-} from '../../index';
+} from '../../index.js';
 
 const when = (msg, testFuncs) => {
   describe(`when ${msg}`, testFuncs);

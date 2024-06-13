@@ -1,5 +1,5 @@
-import Coord from './Coord';
-import Freezable from '../util/Freezable';
+import Coord from './Coord.js';
+import Freezable from '../util/Freezable.js';
 
 export default class Move extends Freezable {
   static get STAND() {return STAND; }

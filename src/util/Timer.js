@@ -1,4 +1,4 @@
-import { validateNonNegative, validatePositive } from './common';
+import { validateNonNegative, validatePositive } from './common.js';
 
 export default class Timer {
   static get DEFAULT_DELAY_MS() { return 1000; }

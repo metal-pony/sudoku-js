@@ -3,7 +3,7 @@ import {
   Coord,
   Move,
   Position
-} from '../../index';
+} from '../../index.js';
 
 describe('Position', () => {
   /** @type {Position} */

@@ -1,7 +1,7 @@
-import Engine from './Engine';
-import Point from './Point';
-import Polygon from './Polygon';
-import Vector from '../structs/Vector';
+import Engine from './Engine.js';
+import Point from './Point.js';
+import Polygon from './Polygon.js';
+import Vector from '../structs/Vector.js';
 
 /**
  * Represents a game object.

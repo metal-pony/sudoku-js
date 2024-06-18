@@ -30,6 +30,9 @@ export const NUM_SPACES = 81;
 /** The minimum number of clues required for a Sudoku puzzle.*/
 export const MIN_CLUES = 17;
 
+/** @type {number[]} */
+const EMPTY_BOARD = Object.freeze(Array(NUM_SPACES).fill(0));
+
 /**
  * Maps digits (the indices) to their encoded board values.
  * @type {number[]}
@@ -85,7 +88,7 @@ export const indicesFor = Object.freeze({
 });
 
 /**
- * Bit masks for different types of Sudoku board areas by area index.
+ * 81-Bit board masks useful for filtering different board areas.
  * @type {{none: bigint, all: bigint, row: bigint[], col: bigint[], region: bigint[]}}
  */
 export const masksFor = {
@@ -101,28 +104,28 @@ export const masksFor = {
  * @param {number} digit From 0 - 9
  * @returns {number}
  */
-const encode = (digit) => (ENCODER[Math.min(Math.max(digit, 0), ENCODER.length)]);
+const encode = (digit) => ENCODER[digit];
 
 /**
  * Decodes an encoded value.
  * @param {number} encoded
  * @returns {number}
  */
-const decode = (encoded) => (DECODER[Math.min(Math.max(encoded, 0), DECODER.length)]);
+const decode = (encoded) => DECODER[encoded];
 
 /**
  * Returns whether the given encoded value represents a digit.
  * @param {number} encoded
  * @returns {boolean}
  */
-const isDigit = (encoded) => decode(encoded) > 0;
+const isDigit = (encoded) => DECODER[encoded] > 0;
 
 /**
  * Returns the row index of the given cell.
  * @param {number} cellIndex
  * @returns {number}
  */
-export const cellRow = (cellIndex) => Math.floor(cellIndex / NUM_DIGITS);
+export const cellRow = (cellIndex) => (cellIndex / NUM_DIGITS) | 0;
 
 /**
  * Returns the column index of the given cell.
@@ -136,7 +139,7 @@ export const cellCol = (cellIndex) => cellIndex % NUM_DIGITS;
  * @param {number} cellIndex
  * @returns {number}
  */
-export const cellRegion = (cellIndex) => Math.floor(cellRow(cellIndex) / 3) * 3 + Math.floor(cellCol(cellIndex) / 3);
+export const cellRegion = (cellIndex) => ((cellIndex / 27) | 0) * 3 + (((cellIndex % 9) / 3) | 0);
 
 /**
  * Returns the region index of the given cell.
@@ -144,9 +147,7 @@ export const cellRegion = (cellIndex) => Math.floor(cellRow(cellIndex) / 3) * 3 
  * @param {number} col
  * @returns {number}
  */
-export function cellRegion2D(row, col) {
-  return Math.floor(row / 3) * 3 + Math.floor(col / 3);
-}
+export const cellRegion2D = (row, col) => ((row / 3) | 0) * 3 + ((col / 3) | 0);
 
 /**
  * Returns whether an area on a Sudoku board (row, column, or region)
@@ -266,9 +267,11 @@ export class SudokuNode {
  * Represents a Sudoku board.
  */
 export class Sudoku {
-  /** @link {NUM_DIGITS} */
+  /** 9; The number of digits that appear on a Sudoku board.*/
   static get NUM_DIGITS() { return NUM_DIGITS; }
+  /** 81; The number of spaces on a Sudoku board. */
   static get NUM_SPACES() { return NUM_SPACES; }
+  /** 17; The minimum number of clues required for a proper Sudoku puzzle.*/
   static get MIN_CLUES() { return MIN_CLUES; }
 
   /**
@@ -326,15 +329,6 @@ export class Sudoku {
     return board;
   }
 
-  /**
-   * Counts the number of clues in the given board array.
-   * @param {number[]} board
-   * @returns {number}
-   */
-  static getNumClues(board) {
-    return board.reduce((count, val) => (isDigit(val) ? count + 1 : count), 0);
-  }
-
   static ROW_MASK = ALL << (NUM_DIGITS * 2);
   static COLUMN_MASK = ALL << NUM_DIGITS;
   static REGION_MASK = ALL;
@@ -362,7 +356,7 @@ export class Sudoku {
           }
         });
         return reductionMatrix;
-      }, Array(NUM_SPACES).fill(0));
+      }, [...EMPTY_BOARD]);
 
       const maxValueCells = reductionMatrix.reduce((max, val, ci) => {
         if (val === maximum) {
@@ -499,7 +493,7 @@ export class Sudoku {
       // let sieve = null;
       if (useSieve) {
         const sieveGenerationStart = Date.now();
-        // TODO Sudoku.loadSieveFile(filename) Supplies low-clue generation with a sieve for finding puzzles.
+        // TODO #25 Sudoku.loadSieveFile(filename) Supplies low-clue generation with a sieve for finding puzzles.
         //      Maybe this should be loaded automatically if it exists in the same directory. I just don't know
         //      how that might work with a browser version.
         // TODO Sudoku.findOrGenerateSieve(config, options) Finds the sieve for the given config, or generates one.
@@ -568,7 +562,7 @@ export class Sudoku {
             puzzleNode.dispose();
             result.pops++;
 
-            // TODO #24 explore whether it's possible to keep a history for each node,
+            // TODO explore whether it's possible to keep a history for each node,
             //  i.e. track which cells were attempted to be removed.
             //  Then, this won't need any sort of restart fail-safe.
 
@@ -637,17 +631,6 @@ export class Sudoku {
     return results;
   }
 
-  static generatePuzzles(numPuzzles, numClues) {
-    const puzzles = [];
-    for (let i = 0; i < numPuzzles; i++) {
-      const puzzle = this.generatePuzzle(numClues);
-      if (puzzle !== null) {
-        puzzles.push(puzzle);
-      }
-    }
-    return puzzles;
-  }
-
   // Uses DFS to locate valid sudoku puzzle.
   /**
    *
@@ -660,7 +643,7 @@ export class Sudoku {
     const rootNode = new SudokuNode(config);
     let puzzleStack = [rootNode];
 
-    // let _board = Array(NUM_SPACES).fill(0);
+    // let _board = [...EMPTY_BOARD];
     // puzzleStack.push(rootNode);
 
     let numPops = 0; // Number of pops. If the search resets, so does this.
@@ -677,7 +660,7 @@ export class Sudoku {
         puzzleStack.pop();
         puzzleNode.dispose();
 
-        // TODO #24 explore whether it's possible to keep a history for each node,
+        // TODO explore whether it's possible to keep a history for each node,
         //  i.e. track which cells were attempted to be removed.
         //  Then, this won't need any sort of restart fail-safe.
 
@@ -1538,11 +1521,9 @@ export class Sudoku {
      * - `0b000000100` = 3, and so on...
      * - `0b101110111` = candidates 1, 2, 3, 5, 6, 7, 9 (no 4 or 8)
      * - `0b111111111` = all candidates (1 - 9)
-     *
-     * @private
      * @type {number[]}
      */
-    this._board = Array(NUM_SPACES).fill(ALL);
+    this._board;
 
     /**
      * Contains puzzle constraints in the form
@@ -1554,16 +1535,15 @@ export class Sudoku {
      *
      * Use `Constraints.ROW_MASK`, `Constraints.COL_MASK`, and
      * `Constraints.REGION_MASK` to filter constraint values.
-     *
      * @type {number[]}
      */
-    this._constraints = Array(NUM_DIGITS).fill(0);
+    this._constraints;
 
     /**
      * The initial clues on the board.
      * @type {number[]}
      */
-    this._clues = Array(NUM_SPACES).fill(0);
+    this._clues;
 
     /**
      * Keeps track of the number of empty cells on the board.
@@ -1583,7 +1563,10 @@ export class Sudoku {
       this._clues = parsed.clues;
       this._numEmptyCells = parsed._numEmptyCells;
     } else if (Array.isArray(data)) {
-      if (data.length > 0) {
+      this._board = [...EMPTY_BOARD];
+      this._constraints = Array(NUM_DIGITS).fill(0);
+      this._clues = [...EMPTY_BOARD];
+      if (data.length === NUM_SPACES) {
         this.setBoard(data);
         this._clues = this.board;
       }
@@ -1673,11 +1656,10 @@ export class Sudoku {
     } else if (!isDigit(prevVal) && isDigit(newVal)) {
       this._numEmptyCells--;
       this._addConstraint(index, digit);
-    }
-    // If both the previous and new values are digits, then the
-    // constraint for the previous value is removed and the
-    // constraint for the new value is added.
-    else if (isDigit(prevVal) && isDigit(newVal)) {
+    } else if (isDigit(prevVal) && isDigit(newVal)) {
+      // If both the previous and new values are digits, then the
+      // constraint for the previous value is removed and the
+      // constraint for the new value is added.
       this._removeConstraint(index, decode(prevVal));
       this._addConstraint(index, digit);
     }
@@ -1691,7 +1673,7 @@ export class Sudoku {
    * or if any of the numbers provided are not digits.
    */
   setBoard(digits) {
-    if (digits.length != NUM_SPACES) {
+    if (digits.length !== NUM_SPACES) {
       throw new Error(`board is invalid (length): ${digits.length}.`);
     }
 
@@ -2046,7 +2028,7 @@ export class Sudoku {
     }
 
     // ? If candidate constraints reduces to 0, then the board is likely invalid.
-    // TODO #23 Reason out and test what happens when the board is invalid.
+    // TODO Reason out and test what happens when the board is invalid.
     let reducedCandidates = (candidates & ~this._cellConstraints(cellIndex));
     if (reducedCandidates <= 0) {
       // console.log(`reduce ${cellIndex} (${cellRow(cellIndex) + 1},${cellCol(cellIndex) + 1}): [${decode(candidates)}].  constraints reduced to 0... ERROR ERROR ERROR`);

@@ -2,10 +2,27 @@ import {
   Sudoku,
   cellCol,
   cellRegion,
+  cellRegion2D,
   cellRow,
-  masksFor
+  masksFor,
+  range
 } from '../../index.js';
 import puzzles from './puzzles24.js';
+
+describe('cellRow, cellCol, cellRegion, cellRegion2D', () => {
+  test('correct values', () => {
+    for (let cellIndex = 80; cellIndex >= 0; cellIndex--) {
+      const row = cellRow(cellIndex);
+      const col = cellCol(cellIndex);
+      const region = cellRegion(cellIndex);
+      const region2D = cellRegion2D(row, col);
+      expect(row).toBe(Math.floor(cellIndex / 9));
+      expect(col).toBe(cellIndex % 9);
+      expect(region).toBe(Math.floor(row / 3) * 3 + Math.floor(col / 3));
+      expect(region2D).toBe(region);
+    }
+  });
+});
 
 describe('Sudoku', () => {
   describe('static', () => {

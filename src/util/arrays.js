@@ -36,7 +36,7 @@ export const range = (end, start = 0) => {
 export function shuffle(arr) {
   let tmp, j;
   for (let i = arr.length - 1; i > 0; i--) {
-    j = Math.floor(Math.random() * (i+1));
+    j = (Math.random() * (i+1)) | 0;
     tmp = arr[i];
     arr[i] = arr[j];
     arr[j] = tmp;

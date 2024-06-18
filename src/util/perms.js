@@ -1,6 +1,6 @@
 import { range } from './arrays.js';
 
-const _rand = (max) => (Math.floor(Math.random() * max));
+const _randInt = (max) => ((Math.random() * max) | 0);
 
 const _factorialMap = [1n, 1n];
 const _factorialMapMaxSize = (1<<10);
@@ -344,21 +344,21 @@ export function randomBigInt(upperBound = BigInt(Number.MAX_SAFE_INTEGER)) {
 
   while (bound > 0n) {
     if (bound >= 65536n) {
-      result |= (BigInt(_rand(65536)) << i);
+      result |= (BigInt(_randInt(65536)) << i);
       i += 16n;
       bound >>= 16n;
     } else if (bound >= 256n) {
-      result |= (BigInt(_rand(256)) << i);
+      result |= (BigInt(_randInt(256)) << i);
       i += 8n;
       bound >>= 8n;
     } else if (bound >= 16n) {
-      result |= (BigInt(_rand(16)) << i);
+      result |= (BigInt(_randInt(16)) << i);
       i += 4n;
       bound >>= 4n;
     } else {
       let r = 0;
       do {
-        r = BigInt(_rand(Number(bound)));
+        r = BigInt(_randInt(Number(bound)));
       } while ((result | (BigInt(r) << i)) >= upperBound);
       result |= (r << i);
       bound = 0n;

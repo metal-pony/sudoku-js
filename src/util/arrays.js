@@ -21,11 +21,11 @@ function errIfIndicesOutOfBounds(arr, a, b) {
  * @returns {number[]}
  */
 export const range = (end, start = 0) => {
-  if (start === 0) {
-    return [...Array(end).keys()];
-  } else {
-    return [...Array(end - start).keys()].map(v => v + start);
+  const result = [];
+  for (let i = start; i < end; i++) {
+    result.push(i);
   }
+  return result;
 };
 
 /**

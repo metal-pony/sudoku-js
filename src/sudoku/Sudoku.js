@@ -34,6 +34,10 @@ export const NUM_SPACES = 81;
 /** The minimum number of clues required for a Sudoku puzzle.*/
 export const MIN_CLUES = 17;
 
+function cellMask(cellIndex) { return 1n << (BigInt(NUM_SPACES - cellIndex - 1)); }
+const CELL_MASKS = range(NUM_SPACES).map(cellMask);
+
+
 /** @type {number[]} */
 const EMPTY_BOARD = Object.freeze(Array(NUM_SPACES).fill(0));
 
@@ -2208,6 +2212,23 @@ export class Sudoku {
   isPrimeInvalid(config) {
     // TODO
     return false;
+  }
+
+  /**
+  * Returns a mask of the differences between this config and another.
+  * @param {Sudoku} config
+  * @returns {bigint}
+  */
+  diff(config) {
+    const a = this.board;
+    const b = config.board;
+    let mask = 0n;
+    for (let ci = 0; ci < NUM_SPACES; ci++) {
+      if (a[ci] !== b[ci]) {
+        mask |= cellMask[ci];
+      }
+    }
+    return mask;
   }
 }
 

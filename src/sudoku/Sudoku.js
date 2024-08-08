@@ -2230,6 +2230,20 @@ export class Sudoku {
     }
     return mask;
   }
+
+  /**
+   * Finds all unavoidable sets (UAs) in this puzzle.
+   * @param {bigint} mask A mask for the initial puzzle to search for UAs.
+   * @returns {bigint[]} An array of masks representing the UAs found.
+   */
+  findUAs(mask) {
+    return this.filter(mask).searchForSolutions3().solutions.reduce((acc, solution) => {
+      if (this.diff(solution) > 0n) {
+        acc.push(this.diff(solution));
+      }
+      return acc;
+    });
+  }
 }
 
 export default Sudoku;

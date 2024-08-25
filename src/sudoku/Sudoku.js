@@ -1002,7 +1002,7 @@ export class Sudoku {
     return _puzzle.board.reduce((acc, digit, ci) => {
       if (digit === 0) {
         _puzzle.getCandidates(ci).forEach((candidate) => {
-          const newPuzzle = new Sudoku(puzzle);
+          const newPuzzle = new Sudoku(_puzzle);
           newPuzzle.setDigit(candidate, ci);
           acc.push(newPuzzle);
         });

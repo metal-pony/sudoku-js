@@ -2,31 +2,68 @@ import {
   Debugger,
   Sudoku,
   SudokuSieve,
-  f,
-  sieveCombos4,
-  verifySieveItems
+  bitCombo,
+  cellMask,
+  digitMask,
+  nChooseK,
+  sieveCombos4
 } from '../../index.js';
+import {
+  NUM_DIGITS,
+  NUM_SPACES
+} from '../../src/sudoku/Sudoku.js';
 
 const debug = new Debugger(true);
 
-const generationResults = Sudoku.generate();
-/** @type {Sudoku} */
-const config = generationResults[0].solutions[0];
-const sieve = f(config, null, 1000);
-
-if (verifySieveItems(config, sieve, (failReason) => { debug.log(failReason); })) {
-  debug.log('✅ sieve verified.');
-} else {
-  debug.log('❌ sieve verification failed.');
-  process.exit(1);
+/**
+ *
+ * @param {number} k
+ * @param {(digitCombo: number) => void} cb
+ */
+function forEachDigitCombo(k, cb) {
+  const nck = nChooseK(NUM_DIGITS, k);
+  for (let r = 0n; r < nck; r++) {
+    cb(Number(bitCombo(NUM_DIGITS, k, r)));
+  }
 }
 
-const ss = new SudokuSieve({ config, items: sieve });
-const maxComboLength = 17;
+// const generationResults = Sudoku.generate({ normalize: true });
+/** @type {Sudoku} */
+const config = new Sudoku('218574639573896124469123578721459386354681792986237415147962853695318247832745961');
+// const config = generationResults[0].solutions[0];
+const configBoard = config.board;
+const ss = new SudokuSieve({ config });
 
-debug.log(`Generating combos (maxLength: ${maxComboLength}) from sieve (length: ${sieve.length})...`);
+// Populates the sieve with all possible UAs made with combinations of k digits
+const k = 3;
+forEachDigitCombo(2, (dCombo) => {
+  ss.addFromMask(~configBoard.reduce((pMask, d, ci) => (
+    (digitMask(d) & dCombo) ? (pMask |= cellMask(ci)) : pMask
+  ), 0n));
+});
+
+// console.log('ss2.items:');
+// ss.items.forEach(item => console.log(item));
+
+const ss3 = new SudokuSieve({ config });
+forEachDigitCombo(3, (dCombo) => {
+  ss3.addFromMask(~configBoard.reduce((pMask, d, ci) => (
+    (digitMask(d) & dCombo) ? (pMask |= cellMask(ci)) : pMask
+  ), 0n));
+});
+
+// console.log('\n\nss3.items:');
+ss3.items.forEach(item => console.log(`  ${item}n,`));
+
+
+
+
+// const sieve = ss.items;
+const maxComboLength = 17;
+const maxResultSet = 1000000;
+debug.log(`Generating combos sieveCombos4(maxLen: ${maxComboLength}) from sieve (length: ${ss.length})...`);
 const start = Date.now();
-const results = sieveCombos4(ss, maxComboLength);
+const results = sieveCombos4(ss, maxComboLength, maxResultSet);
 debug.log(`Done in ${(Date.now() - start)}ms`);
 debug.log(`config: ${config.toString()}`);
 
@@ -40,15 +77,15 @@ results.forEach((masks, numClues) => {
   debug.log(`Verifying ${masks.size} results (numClues: ${numClues})...`);
   const _masks = Array.from(masks);
   _masks.forEach((mask) => {
-    // if (sieve.filter((item) => (item & mask) === 0n).length > 0) {
-    if (sieve.some(item => (item & mask) === 0n)) {
+    // if (sieve.some(item => (item & mask) === 0n)) {
+    if (!ss.doesMaskSatisfy(mask)) {
       allCovered = false;
       debug.log(`\n❌ ${mask.toString(2).padStart(81, '0').replace(/0/g, '.').replace(/1/g, '#')}  ${numClues}`);
     }
   });
 });
 if (allCovered) {
-  debug.log('✅ sieveCombos3() results verified.');
+  debug.log('✅ sieveCombos4() results verified.');
 }
 
 // Reading sieve combos from maxLength to the min generated,

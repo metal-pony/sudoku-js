@@ -2225,7 +2225,7 @@ export class Sudoku {
     let mask = 0n;
     for (let ci = 0; ci < NUM_SPACES; ci++) {
       if (a[ci] !== b[ci]) {
-        mask |= cellMask[ci];
+        mask |= cellMask(ci);
       }
     }
     return mask;

@@ -11,7 +11,6 @@ import {
 import { randomCombo } from '../util/perms.js';
 import Debugger from '../util/debug.js';
 import SudokuSieve from './SudokuSieve.js';
-import { createSieve2 } from './siever.js';
 
 const debug = new Debugger(false);
 
@@ -36,7 +35,6 @@ export const MIN_CLUES = 17;
 
 function cellMask(cellIndex) { return 1n << (BigInt(NUM_SPACES - cellIndex - 1)); }
 const CELL_MASKS = range(NUM_SPACES).map(cellMask);
-
 
 /** @type {number[]} */
 const EMPTY_BOARD = Object.freeze(Array(NUM_SPACES).fill(0));
@@ -484,7 +482,9 @@ export class Sudoku {
 
         // These 2-digit invalid cycles are extremely fast to generate, so we'll make sure
         // the sieve has at least these few basic items.
-        sieve.add(...createSieve2(config, { maxDigits: 2, maxLength: 18 }));
+
+        console.log(`TODO: Update once after sieve search re-implemented`);
+        // sieve.add(...searchForSieve2(config, { maxDigits: 2, maxLength: 18 }));
         // console.log(`          Done in ${Date.now() - sieveGenerationStart}ms. Sieve length: ${sieve.length}`);
 
         // Create reduction matrix for the sieve.

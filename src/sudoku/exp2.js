@@ -224,116 +224,62 @@ export function sieveCombos4(sieve, maxLen = 21, maxSize = 2500) { // TODO I WAS
 
 // Cache to collect puzzle masks whose solutions flag has been calculated > 2.
 // Also collect puzzle masks for flag == 1 where #clues <= 27
-const solutionsFlagCache = {
-  /** @type {Set<bigint>} */
-  _2set: new Set(),
-  _2setHits: 0,
-  _2setMisses: 0,
-
-  _1set: new Set(),
-  _1setHits: 0,
-  _1setMisses: 0,
-
-  // An array of sets of single solution masks.
-  // Single solutions are sorted into these sets based on the number of clues.
-  // Index 0 = 17 clues, up to 27 clues.
-  /** @type {Set<bigint>[]} */
-  _singleSolutionMasks: range(11).map(() => new Set()),
-
-  /**
-   * @param {Sudoku} board
-   * @returns {number}
-   */
-  getFor(board) {
-    const clues = 81 - board.numEmptyCells;
-    const copy = new Sudoku(board);
-    copy._resetEmptyCells();
-    copy._reduce();
-    const mask = copy.mask;
-    const in2sCache = this._2set.has(mask);
-
-    if (in2sCache) {
-      this._2setHits++;
-      return 2;
-    } else {
-      this._2setMisses++;
-      const in1sCache = this._1set.has(mask);
-      if (in1sCache) {
-        this._1setHits++;
-        return 1;
-      } else {
-        this._1setMisses++;
-        const flag = board.solutionsFlag();
-        if (flag > 1) {
-          this._2set.add(mask);
-        } else if (flag === 1) {
-          this._1set.add(mask);
-          if (clues <= 27) {
-            this._singleSolutionMasks[clues - 17].add(board.mask);
-          }
-        }
-        return flag;
-      }
-    }
-  }
-};
-
-// TODO Add options for maxEmptyCells (default 18). Convert search to depth-first approach.
 /**
- *
- * @param {SudokuSieve} ss
- * @param {bigint} mask
- * @param {solutionsFlagCache} cache
- * @returns {bigint}
+ * Returns a new cache object for storing solutions flags for puzzles.
+ * @returns {{getFor: (board: Sudoku) => number}}
  */
-export function searchForPrimeInvalidFromMask(ss, mask, cache) {
-  const config = ss.config;
-  const configBoard = config.board;
-  let board = config.filter(mask);
-  // let board = config.filter(~mask);
-  board._resetEmptyCells();
-  board._reduce();
+export function createSolutionsFlagCache() {
+  return ({
+    /** @type {Set<bigint>} */
+    _2set: new Set(),
+    _2setHits: 0,
+    _2setMisses: 0,
 
-  if (cache.getFor(board) < 2) {
-    return -1n;
-  }
+    _1set: new Set(),
+    _1setHits: 0,
+    _1setMisses: 0,
 
-  // whenDebugging.log(board.toString());
+    // An array of sets of single solution masks.
+    // Single solutions are sorted into these sets based on the number of clues.
+    // Index 0 = 17 clues, up to 27 clues.
+    /** @type {Set<bigint>[]} */
+    _singleSolutionMasks: range(11).map(() => new Set()),
 
-  let keepGoing = true;
-  let i = 0;
-  while (keepGoing) {
-    // TODO Sudoku class could keep track of this
-    const emptyCells = board.board.reduce((_emptyCells, digit, ci) => {
-      if (digit === 0) {
-        _emptyCells.push(ci);
-      }
-      return _emptyCells;
-    }, []);
-    shuffle(emptyCells);
-    const chosen = emptyCells.reduce((_chosen, ci) => {
-      if (_chosen.length === 0) {
-        const next = new Sudoku(board);
-        next.setDigit(configBoard[ci], ci);
-        next._resetEmptyCells();
-        next._reduce();
-        const nFlag = cache.getFor(next);
-        if (nFlag > 1) {
-          _chosen.push({ board: next, ci });
+    /**
+     * @param {Sudoku} board
+     * @returns {number}
+     */
+    getFor(board) {
+      const clues = 81 - board.numEmptyCells;
+      // const copy = new Sudoku(board);
+      // copy._resetEmptyCells();
+      // copy._reduce();
+      const mask = board.mask;
+      const in2sCache = this._2set.has(mask);
+
+      if (in2sCache) {
+        this._2setHits++;
+        return 2;
+      } else {
+        this._2setMisses++;
+        const in1sCache = this._1set.has(mask);
+        if (in1sCache) {
+          this._1setHits++;
+          return 1;
+        } else {
+          this._1setMisses++;
+          const flag = board.solutionsFlag();
+          if (flag > 1) {
+            this._2set.add(mask);
+          } else if (flag === 1) {
+            this._1set.add(mask);
+            if (clues <= 27) {
+              this._singleSolutionMasks[clues - 17].add(board.mask);
+            }
+          }
+          return flag;
         }
       }
-
-      return _chosen;
-    }, []);
-
-    if (chosen.length > 0) {
-      // whenDebugging.log(board.toString().padStart(80 + i, ' '));
-      board = chosen[0].board;
-      i++;
-    } else {
-      // whenDebugging.log(board.toString().padStart(80 + i, ' '), ' ✅');
-      // whenDebugging.log(`  '${board.toString()}',`);
-      return board.emptyCellMask;
     }
-  }
+  });
 }

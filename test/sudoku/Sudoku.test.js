@@ -4,8 +4,7 @@ import {
   cellRegion,
   cellRegion2D,
   cellRow,
-  masksFor,
-  range
+  masksFor
 } from '../../index.js';
 import puzzles from './puzzles24.js';
 

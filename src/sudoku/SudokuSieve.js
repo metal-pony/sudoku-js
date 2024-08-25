@@ -313,7 +313,9 @@ export default class SudokuSieve {
    * @returns {boolean}
    */
   isDerivative(mask) {
-    // return this._items.some(subItems => subItems.some(item => (item & mask) === item));
+    if (mask === 0n) {
+      return true;
+    }
 
     const len = this._items.length;
     for (let m = 0; m < len; m++) {

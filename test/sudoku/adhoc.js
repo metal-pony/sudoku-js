@@ -35,32 +35,16 @@ const configBoard = config.board;
 const ss = new SudokuSieve({ config });
 
 // Populates the sieve with all possible UAs made with combinations of k digits
-const k = 3;
-forEachDigitCombo(2, (dCombo) => {
+const k = 2;
+forEachDigitCombo(k, (dCombo) => {
   ss.addFromMask(~configBoard.reduce((pMask, d, ci) => (
     (digitMask(d) & dCombo) ? (pMask |= cellMask(ci)) : pMask
   ), 0n));
 });
 
-// console.log('ss2.items:');
-// ss.items.forEach(item => console.log(item));
-
-const ss3 = new SudokuSieve({ config });
-forEachDigitCombo(3, (dCombo) => {
-  ss3.addFromMask(~configBoard.reduce((pMask, d, ci) => (
-    (digitMask(d) & dCombo) ? (pMask |= cellMask(ci)) : pMask
-  ), 0n));
-});
-
-// console.log('\n\nss3.items:');
-ss3.items.forEach(item => console.log(`  ${item}n,`));
-
-
-
-
 // const sieve = ss.items;
 const maxComboLength = 17;
-const maxResultSet = 1000000;
+const maxResultSet = 1_000_000;
 debug.log(`Generating combos sieveCombos4(maxLen: ${maxComboLength}) from sieve (length: ${ss.length})...`);
 const start = Date.now();
 const results = sieveCombos4(ss, maxComboLength, maxResultSet);

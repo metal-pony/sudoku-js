@@ -268,6 +268,27 @@ export default class SudokuSieve {
     return added;
   }
 
+  /**
+   * Generates sieve items from the given board mask and adds them if not yet acquired.
+   * @param {bigint} mask
+   * @returns {number} The number of items added.
+   */
+  addFromMask(mask) {
+    const initialCount = this._length;
+    const puzzle = this._config.filter(mask);
+    puzzle.searchForSolutions3({
+      solutionFoundCallback: (solution) => {
+        const diff = this._config.diff(solution);
+        if (diff > 0n) {
+          this.add(diff);
+        }
+        return true;
+      }
+    });
+
+    return (this._length - initialCount);
+  }
+
   // /**
   //  *
   //  * @param {bigint} item

@@ -85,28 +85,15 @@ import Sudoku, {
   cellRegion,
   cellRegion2D
 } from './src/sudoku/Sudoku.js';
-import SudokuSieve, {validateSieve} from './src/sudoku/SudokuSieve.js';
+import SudokuSieve, {
+  cellMask,
+  cellsFromMask,
+  digitMask
+} from './src/sudoku/SudokuSieve.js';
 import {
-  sieveCombos,
-  sieveCombos2,
-  sieveCombos3,
   sieveCombos4,
-  reductionMatrix,
-  createBoardMaskFromSieve,
-  f,
-  f2,
-  searchForPrimeInvalidFromMask,
-  verifySieveItems,
-  sieve
+  createSolutionsFlagCache
 } from './src/sudoku/exp2.js';
-import {
-  createSieve,
-  findUnsolvablePairs,
-  isUnsolvablePair,
-  searchForSieve2,
-  isIrreducableChain,
-  analyzeEmptyCellChain
-} from './src/sudoku/siever.js';
 
 export {
   // blocky
@@ -199,26 +186,11 @@ export {
   cellRegion2D,
 
   SudokuSieve,
-  validateSieve,
+  cellMask,
+  cellsFromMask,
+  digitMask,
 
   // exp2
-  sieveCombos,
-  sieveCombos2,
-  sieveCombos3,
   sieveCombos4,
-  reductionMatrix,
-  createBoardMaskFromSieve,
-  f,
-  f2,
-  searchForPrimeInvalidFromMask,
-  verifySieveItems,
-  sieve,
-
-  // siever
-  createSieve,
-  findUnsolvablePairs,
-  isUnsolvablePair,
-  searchForSieve2 as searchForSieve2,
-  isIrreducableChain,
-  analyzeEmptyCellChain
+  createSolutionsFlagCache
 };

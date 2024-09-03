@@ -8,9 +8,9 @@ import {
   shuffle,
   swapAllInArr
 } from '../util/arrays.js';
-import { randomCombo } from '../util/perms.js';
+import { bitCombo, nChooseK, randomCombo } from '../util/perms.js';
 import Debugger from '../util/debug.js';
-import SudokuSieve from './SudokuSieve.js';
+import SudokuSieve, { countBits, digitMask } from './SudokuSieve.js';
 
 const debug = new Debugger(false);
 
@@ -2243,6 +2243,51 @@ export class Sudoku {
       }
       return acc;
     });
+  }
+
+  // TODO Cache fingerprints until board changes. Maybe make these getters.
+  fingerprint_d(level) {
+    if (!this.isConfig()) {
+      throw new Error('Invalid configuration.');
+    }
+
+    if (level < 2 || level > 4) {
+      throw new Error('Invalid level. [2 <= level <= 4]');
+    }
+
+    const _board = this.board;
+    const ss = new SudokuSieve({ config: this });
+
+    const nck = nChooseK(NUM_DIGITS, level);
+    for (let r = 0n; r < nck; r++) {
+      const dCombo = Number(bitCombo(NUM_DIGITS, level, r));
+      const mask = _board.reduce((pMask, d, ci) => (
+        (digitMask(d) & dCombo) ? (pMask |= cellMask(ci)) : pMask
+      ), 0n);
+      ss.addFromMask(~mask);
+    }
+
+    let _sum = 0;
+    let minM = NUM_SPACES;
+    let maxM = 0;
+    /** @type {number[]} */
+    const itemsByM = Array(NUM_SPACES).fill(0);
+    ss.items.forEach(item => {
+      const count = countBits(item);
+      itemsByM[count]++;
+      if (count < minM) minM = count;
+      if (count > maxM) maxM = count;
+      _sum += count;
+    });
+
+    let items = itemsByM.slice(minM, maxM + 1).map(count => (count > 0) ? `${count.toString(16)}` : '');
+    if (level === 2) {
+      items = items.filter((_, i) => (i % 2) === 0);
+    }
+    // const includeSum = level > 2;
+    const includeSum = false;
+
+    return `${(includeSum) ? `${_sum.toString(16)}_` : ''}${items.join(':')}`;
   }
 }
 

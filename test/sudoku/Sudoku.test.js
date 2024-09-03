@@ -108,6 +108,51 @@ describe('Sudoku', () => {
       });
     }
   });
+
+  test('fingerprint_d2', () => {
+    const config = new Sudoku('218574639573896124469123578721459386354681792986237415147962853695318247832745961');
+    const subject = new Sudoku(config);
+    const fp2 = config.fingerprint_d(2);
+
+    // Transforms that should be symmetry-preserving
+    const transforms = [
+      () => subject.shuffleDigits(),
+      () => subject.rotate90(),
+      () => subject.reflectOverHorizontal(),
+      () => subject.reflectOverVertical(),
+      () => subject.reflectOverDiagonal(),
+      () => subject.reflectOverAntidiagonal()
+    ];
+
+    const nTransforms = 13 + (100 * Math.random()) | 0;
+    for (let i = 0; i < nTransforms; i++) {
+      transforms[(transforms.length * Math.random()) | 0]();
+      expect(subject.fingerprint_d(2)).toBe(fp2);
+    }
+  });
+
+  // This test is disabled to save time.
+  // test('fingerprint_d3', () => {
+  //   const config = new Sudoku('218574639573896124469123578721459386354681792986237415147962853695318247832745961');
+  //   const subject = new Sudoku(config);
+  //   const fp3 = config.fingerprint_d(3);
+
+  //   // Transforms that should be symmetry-preserving
+  //   const transforms = [
+  //     () => subject.shuffleDigits(),
+  //     () => subject.rotate90(),
+  //     () => subject.reflectOverHorizontal(),
+  //     () => subject.reflectOverVertical(),
+  //     () => subject.reflectOverDiagonal(),
+  //     () => subject.reflectOverAntidiagonal()
+  //   ];
+
+  //   const nTransforms = 13 + (100 * Math.random()) | 0;
+  //   for (let i = 0; i < nTransforms; i++) {
+  //     transforms[(transforms.length * Math.random()) | 0]();
+  //     expect(subject.fingerprint_d(3)).toBe(fp3);
+  //   }
+  // });
 });
 
 /**

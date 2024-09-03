@@ -38,6 +38,28 @@ export function cellsFromMask(mask) {
 }
 
 /**
+ * Returns the number of 1 bits in the given bigint.
+ *
+ * If negative, uses `(-n)`.
+ * @param {bigint} n
+ * @returns {number}
+ */
+export function countBits(n) {
+  if (n < 0n) {
+    n = -n;
+  }
+
+  let count = 0;
+  while (n > 0n) {
+    if (n & 1n) {
+      count++;
+    }
+    n >>= 1n;
+  }
+  return count;
+}
+
+/**
  * Validates the given items for the configuration.
  * @param {Sudoku} config
  * @param  {bigint} item

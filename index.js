@@ -90,6 +90,7 @@ import Sudoku, {
 import SudokuSieve, {
   cellMask,
   cellsFromMask,
+  countBits,
   digitMask
 } from './src/sudoku/SudokuSieve.js';
 import {
@@ -192,6 +193,7 @@ export {
   SudokuSieve,
   cellMask,
   cellsFromMask,
+  countBits,
   digitMask,
 
   // exp2

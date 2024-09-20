@@ -3,12 +3,6 @@ import Sudoku from './Sudoku.js';
 
 const debug = new Debugger(true);
 
-// const generationResults = Sudoku.generate();
-// const config = generationResults[0].solutions[0];
-// const config = new Sudoku('956817342183524697274369185891273564347658921625491738439785216568132479712946853');
-// const configBoard = config.board;
-// const sieve = f(config, null, 1);
-
 const resultsForNonSieve = Sudoku.generate({
   amount: 100,
   numClues: 24,

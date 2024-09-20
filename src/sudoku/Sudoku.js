@@ -8,12 +8,15 @@ import {
   shuffle,
   swapAllInArr
 } from '../util/arrays.js';
-import { randomCombo } from '../util/perms.js';
+import { bitCombo, nChooseK, randomCombo } from '../util/perms.js';
 import Debugger from '../util/debug.js';
-import SudokuSieve from './SudokuSieve.js';
-import { createSieve2 } from './siever.js';
+import SudokuSieve, { countBits, digitMask } from './SudokuSieve.js';
 
 const debug = new Debugger(false);
+
+const randInt = (max => ((Math.random() * max) | 0));
+const chooseRandom = (arr => (arr.length > 0) ? arr[randInt(arr.length)] : null);
+const removeRandom = (arr => (arr.length > 0) ? arr.splice(randInt(arr.length), 1)[0] : null);
 
 /**
  * @callback SolutionFoundCallback
@@ -29,6 +32,9 @@ const ALL = 511;
 export const NUM_SPACES = 81;
 /** The minimum number of clues required for a Sudoku puzzle.*/
 export const MIN_CLUES = 17;
+
+function cellMask(cellIndex) { return 1n << (BigInt(NUM_SPACES - cellIndex - 1)); }
+const CELL_MASKS = range(NUM_SPACES).map(cellMask);
 
 /** @type {number[]} */
 const EMPTY_BOARD = Object.freeze(Array(NUM_SPACES).fill(0));
@@ -206,60 +212,26 @@ export class SudokuNode {
     this.nexts = null;
   }
 
-  findNexts(omittedNextCells = []) {
-    if (this.nexts === null) {
-      this.nexts = this.sudoku.board.reduce((nexts, val, ci) => {
-        if (val > 0 && !omittedNextCells.includes(ci)) {
-          const bCopy = new Sudoku(this.sudoku);
-          bCopy.setDigit(0, ci);
-          nexts.push(new SudokuNode(bCopy, this));
-        }
-        return nexts;
-      }, []);
-
-      // this.nexts = Array(NUM_SPACES - this.sudoku.numEmptyCells);
-      // let index = 0;
-      // for (let i = 0; i < NUM_SPACES; i++) {
-      //   if (this.sudoku.getDigit(i) > 0) {
-      //     const bCopy = new Sudoku(this.sudoku);
-      //     bCopy.setDigit(0, i);
-      //     this.nexts[index++] = new SudokuNode(bCopy, this);
-      //   }
-      // }
-    }
+  _findNexts(omittedNextCells = []) {
+    this.nexts ??= this.sudoku.board.reduce((nexts, digit, ci) => {
+      if (digit > 0 && !omittedNextCells.includes(ci)) {
+        const bCopy = new Sudoku(this.sudoku);
+        bCopy.setDigit(0, ci);
+        nexts.push(new SudokuNode(bCopy, this));
+      }
+      return nexts;
+    }, []);
   }
-
-  // /**
-  //  *
-  //  * @returns {SudokuNode[]}
-  //  */
-  // getNeighbors() {
-  //   this.findNexts();
-  //   return this.nexts;
-  // }
 
   /**
    * Attempts to get a random, unvisited neighbor of this node.
    * Populates the list of neighbors for this node if it does not yet exist.
-   *
    * @param {number[]} [omittedNextCells] An array of cell indices to omit from the list of neighbors.
    * @return {SudokuNode} A random unvisited neighbor node.
    */
   getNextUnvisited(omittedNextCells = []) {
-    // Generates .nexts if it doesn't exist
-    this.findNexts(omittedNextCells);
-
-    const choices = this.nexts.filter(next => next !== null && !next.visited);
-    return (choices.length > 0) ? choices[Math.floor(Math.random() * choices.length)] : null;
-
-    // const bag = [];
-    // for (let next of this.nexts) {
-    //   if (next !== null && !next.visited) {
-    //     bag.push(next);
-    //   }
-    // }
-
-    // return (bag.length === 0) ? null : bag[Math.floor(Math.random() * bag.length)];
+    this._findNexts(omittedNextCells);
+    return chooseRandom(this.nexts.filter(n => (n !== null && !n.visited)));
   }
 }
 
@@ -365,7 +337,7 @@ export class Sudoku {
         return max;
       }, []);
 
-      const cellToKeep = maxValueCells[Math.floor(Math.random() * maxValueCells.length)];
+      const cellToKeep = chooseRandom(maxValueCells);
       cellsToKeep.push(cellToKeep);
 
       // Filter out all sieve items that use the cell
@@ -510,7 +482,9 @@ export class Sudoku {
 
         // These 2-digit invalid cycles are extremely fast to generate, so we'll make sure
         // the sieve has at least these few basic items.
-        sieve.add(...createSieve2(config, { maxDigits: 2, maxLength: 18 }));
+
+        console.log(`TODO: Update once after sieve search re-implemented`);
+        // sieve.add(...searchForSieve2(config, { maxDigits: 2, maxLength: 18 }));
         // console.log(`          Done in ${Date.now() - sieveGenerationStart}ms. Sieve length: ${sieve.length}`);
 
         // Create reduction matrix for the sieve.
@@ -871,7 +845,7 @@ export class Sudoku {
 
       if (top.nexts.length > 0) {
         // Get a random next
-        const next = top.nexts.splice(Math.floor(Math.random() * top.nexts.length), 1)[0];
+        const next = removeRandom(top.nexts);
         stack.push({ sudoku: next, nexts: null });
         // debug.log(`    ++++ ${next.toString()}`);
       } else {
@@ -1028,7 +1002,7 @@ export class Sudoku {
     return _puzzle.board.reduce((acc, digit, ci) => {
       if (digit === 0) {
         _puzzle.getCandidates(ci).forEach((candidate) => {
-          const newPuzzle = new Sudoku(puzzle);
+          const newPuzzle = new Sudoku(_puzzle);
           newPuzzle.setDigit(candidate, ci);
           acc.push(newPuzzle);
         });
@@ -1242,7 +1216,7 @@ export class Sudoku {
       if (top.nexts.length > 0) {
         result.branches++;
         // Pick randomly from the list of nexts, and push it onto the stack.
-        const next = top.nexts.splice(Math.floor(Math.random() * top.nexts.length), 1)[0];
+        const next = removeRandom(top.nexts);
         stack.push({ sudoku: next, nexts: null });
       } else {
         stack.pop();
@@ -2142,11 +2116,8 @@ export class Sudoku {
   }
 
   /**
-   * Returns the index of an empty cell which contains the fewest candidates.
-   *
-   * If the board has no empty cell, returns `-1`.
-   *
-   * @return {number} Index of an empty cell, or `-1` if there are none.
+   * Finds the index of an empty cell which contains the fewest candidates.
+   * @return {number} Cell index, or `-1` if there are no empty cells.
    */
   _pickEmptyCell() {
     let minCandidates = NUM_DIGITS + 1;
@@ -2160,62 +2131,14 @@ export class Sudoku {
     }, range(NUM_DIGITS + 1).map(_=>[]));
 
     // If there are no empty cells, then minCandidates would not have changed
-    if (minCandidates === NUM_DIGITS + 1) {
-      return -1;
-    }
+    if (minCandidates === (NUM_DIGITS + 1)) return -1;
 
-    const fewestCandidateCells = _numCandidatesMap[minCandidates];
-    const chosen = fewestCandidateCells[Math.floor(Math.random() * fewestCandidateCells.length)];
-    return chosen;
-
-    // TODO Remove old code once new code is verified.
-    // let minIndex = -1;
-    // let minCandidates = NUM_DIGITS + 1;
-    // for (let i = 0; i < NUM_SPACES; i++) {
-    //   if (isDigit(this._board[i])) {
-    //     continue;
-    //   }
-
-    //   const numCandidates = this.getCandidates(i).length;
-
-    //   if (numCandidates === 2) {
-    //     return i;
-    //   }
-
-    //   if (numCandidates < minCandidates) {
-    //     minIndex = i;
-    //     minCandidates = numCandidates;
-    //   }
-    // }
-
-    // return minIndex;
+    return chooseRandom(_numCandidatesMap[minCandidates]);
   }
 
   /**
-   * Returns the index of a random empty cell on the board.
-   *
-   * If the board has no empty cell, returns `-1`.
-   *
-   * @returns {number} Index of a random empty cell, or `-1` if there are none.
-   */
-  _pickRandomEmptyCell() {
-    if (this._numEmptyCells === 0) {
-      return -1;
-    }
-
-    const emptyCells = [];
-    for (let i = 0; i < NUM_SPACES; i++) {
-      if (!isDigit(this._board[i])) {
-        emptyCells.push(i);
-      }
-    }
-
-    return emptyCells[Math.floor(Math.random() * emptyCells.length)];
-  }
-
-  /**
-   *
-   * @returns {boolean}
+   * Determines whether this puzzle has a single solution.
+   * @returns {boolean} True if the puzzle has a unique solution; otherwise false.
    */
   hasUniqueSolution() {
     return this.solutionsFlag() === 1;
@@ -2290,43 +2213,82 @@ export class Sudoku {
     // TODO
     return false;
   }
+
+  /**
+  * Returns a mask of the differences between this config and another.
+  * @param {Sudoku} config
+  * @returns {bigint}
+  */
+  diff(config) {
+    const a = this.board;
+    const b = config.board;
+    let mask = 0n;
+    for (let ci = 0; ci < NUM_SPACES; ci++) {
+      if (a[ci] !== b[ci]) {
+        mask |= cellMask(ci);
+      }
+    }
+    return mask;
+  }
+
+  /**
+   * Finds all unavoidable sets (UAs) in this puzzle.
+   * @param {bigint} mask A mask for the initial puzzle to search for UAs.
+   * @returns {bigint[]} An array of masks representing the UAs found.
+   */
+  findUAs(mask) {
+    return this.filter(mask).searchForSolutions3().solutions.reduce((acc, solution) => {
+      if (this.diff(solution) > 0n) {
+        acc.push(this.diff(solution));
+      }
+      return acc;
+    });
+  }
+
+  // TODO Cache fingerprints until board changes. Maybe make these getters.
+  fingerprint_d(level) {
+    if (!this.isConfig()) {
+      throw new Error('Invalid configuration.');
+    }
+
+    if (level < 2 || level > 4) {
+      throw new Error('Invalid level. [2 <= level <= 4]');
+    }
+
+    const _board = this.board;
+    const ss = new SudokuSieve({ config: this });
+
+    const nck = nChooseK(NUM_DIGITS, level);
+    for (let r = 0n; r < nck; r++) {
+      const dCombo = Number(bitCombo(NUM_DIGITS, level, r));
+      const mask = _board.reduce((pMask, d, ci) => (
+        (digitMask(d) & dCombo) ? (pMask |= cellMask(ci)) : pMask
+      ), 0n);
+      ss.addFromMask(~mask);
+    }
+
+    let _sum = 0;
+    let minM = NUM_SPACES;
+    let maxM = 0;
+    /** @type {number[]} */
+    const itemsByM = Array(NUM_SPACES).fill(0);
+    ss.items.forEach(item => {
+      const count = countBits(item);
+      itemsByM[count]++;
+      if (count < minM) minM = count;
+      if (count > maxM) maxM = count;
+      _sum += count;
+    });
+
+    let items = itemsByM.slice(minM, maxM + 1).map(count => (count > 0) ? `${count.toString(16)}` : '');
+    if (level === 2) {
+      items = items.filter((_, i) => (i % 2) === 0);
+    }
+    // const includeSum = level > 2;
+    const includeSum = false;
+
+    return `${(includeSum) ? `${_sum.toString(16)}_` : ''}${items.join(':')}`;
+  }
 }
 
 export default Sudoku;
-
-// Test how many solutions this puzzle has.
-// const subject = new Sudoku('5..7....4.9.1..6....783....16.47.8......5....9......6..3.....28..1..8.9..4.......');
-// console.log(subject.toString());
-// console.log(subject.toFullString());
-// subject._reduce();
-// console.log(subject.toString());
-// console.log(subject.toFullString());
-
-// console.log('searchForSolutions:');
-// subject.searchForSolutions((solution) => {
-//   console.log(solution.toString());
-//   return true;
-// });
-
-
-// console.log('\nsearchForSolutions2:');
-// subject.searchForSolutions2((solution) => {
-//   console.log(solution.toString());
-//   return true;
-// });
-
-// Checking that a puzzle with 65 clues has more than one solution.
-// const p = '1234.6..99782316.46.48..213.9167843.7.65491284851239.75197.23.6342.65..1867314592';
-// const s = new Sudoku(p);
-// console.log(s.toString());
-// console.log(s.toFullString());
-
-// s._reduce();
-// console.log(s.toString());
-// console.log(s.toFullString());
-
-// console.log('searchForSolutions2:');
-// s.searchForSolutions2((solution) => {
-//   console.log(solution.toString());
-//   return true;
-// });

@@ -220,6 +220,40 @@ export function forEachCombo(n, k, callback) {
 }
 
 /**
+ * Performs a callback for each combination of k bits set to 1 from n bits.
+ * @param {number} n
+ * @param {number} k
+ * @param {(bitCombo: bigint) => boolean} callback Function that takes a combination and
+ * returns a boolean indicating whether to continue iterating.
+ */
+export function forEachBitCombo(n, k, callback) {
+  const nck = nChooseK(n, k);
+  for (let r = 0n; r < nck; r++) {
+    if (!callback(bitCombo(n, k, r))) {
+      break;
+    }
+  }
+}
+
+/**
+ * Generates all possible combinations of k bits set to 1 from n bits.
+ *
+ * IMPORTANT: This function is not efficient for large values of n and k.
+ *
+ * @param {number} n
+ * @param {number} k
+ * @returns {bigint[]}
+ */
+export function allBitCombos(n, k) {
+  const nck = nChooseK(n, k);
+  const combos = [];
+  for (let r = 0n; r < nck; r++) {
+    combos.push(bitCombo(n, k, r));
+  }
+  return combos;
+}
+
+/**
  * Given (n choose k) possible combinations, generates the r'th combination represented as a bigint.
  * The n-bit number will have k bits set to 1.
  * @param {number} n

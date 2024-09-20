@@ -6,6 +6,7 @@ import {
   cellRow,
   masksFor
 } from '../../index.js';
+import { puzzle as puzzleFixture, solutions } from './puzzle_solutions_fixture.js';
 import puzzles from './puzzles24.js';
 
 describe('cellRow, cellCol, cellRegion, cellRegion2D', () => {
@@ -74,6 +75,22 @@ describe('Sudoku', () => {
         solution: new Sudoku(sudoku.solution)
       });
     });
+  });
+
+  test('Finds all solutions', () => {
+    const puzzle = puzzleFixture();
+    const expectedSolutions = solutions();
+    const collectedSolutions = new Set();
+    puzzle.searchForSolutions3({
+      solutionFoundCallback: (solution) => {
+        const solutionStr = solution.normalize().toString();
+        collectedSolutions.add(solutionStr);
+        expect(expectedSolutions).toContain(solutionStr);
+        return true; // continue searching
+      }
+    });
+
+    expect(collectedSolutions.size).toBe(expectedSolutions.length);
   });
 
   test('Configuration generation', () => {

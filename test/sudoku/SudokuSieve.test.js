@@ -235,6 +235,26 @@ describe('SudokuSieve', () => {
     sieve = new SudokuSieve({ config });
   });
 
+  describe('constructor', () => {
+    test('throws error when config is undefined', () => {
+      expect(() => { new SudokuSieve(); }).toThrow();
+    });
+
+    test('throws error when config is not a Sudoku obj', () => {
+      expect(() => { new SudokuSieve({ config: 'meow' }); }).toThrow();
+    });
+
+    test('throws error when config is not valid', () => {
+      let invalidConfig = new Sudoku(config);
+      invalidConfig.setDigit(0, 0);
+      expect(() => { new SudokuSieve({ config: invalidConfig }); }).toThrow();
+
+      invalidConfig = new Sudoku(config);
+      invalidConfig.setDigit(config.getDigit(1), 0);
+      expect(() => { new SudokuSieve({ config: invalidConfig }); }).toThrow();
+    });
+  });
+
   describe('addFromMask', () => {
     test('finds all expected UAs containing 2 and 3 digits', () => {
       expect(expectedSieveItemsByK[3]).toEqual(expect.arrayContaining(expectedSieveItemsByK[2]));
@@ -366,22 +386,22 @@ describe('SudokuSieve', () => {
     });
   });
 
-  describe('_generateMask', () => {
-    // TODO Test that results have bit counts of < maxSelections
+  // describe('_generateMask', () => {
+  //   // TODO Test that results have bit counts of < maxSelections
 
-    // TODO If the sieve is empty, then the mask should be 0n
+  //   // TODO If the sieve is empty, then the mask should be 0n
 
-    // TODO Test that results satisfy all sieve items such that the mask overlaps btest(s) with
-    //      all sieve items.
+  //   // TODO Test that results satisfy all sieve items such that the mask overlaps btest(s) with
+  //   //      all sieve items.
 
-    // TODO What is the expected behavior when it's impossible or difficult to generate a mask that satisfies
-    //     all sieve items within the maxSelections?
-    //     - Should it return 0n?
-    //     - Should it return a mask that satisfies the most sieve items and ignore maxSelections?
-    //     - How many attempts should it make before increasing maxSelections?
+  //   // TODO What is the expected behavior when it's impossible or difficult to generate a mask that satisfies
+  //   //     all sieve items within the maxSelections?
+  //   //     - Should it return 0n?
+  //   //     - Should it return a mask that satisfies the most sieve items and ignore maxSelections?
+  //   //     - How many attempts should it make before increasing maxSelections?
 
-    test('', () => {
+  //   test('', () => {
 
-    });
-  });
+  //   });
+  // });
 });

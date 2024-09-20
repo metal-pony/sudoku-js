@@ -85,6 +85,14 @@ export default class SudokuSieve {
    * @param {bigint[]} options.items
    */
   constructor({ config, items = [] }) {
+    if (
+      !Boolean(config) ||
+      !(config instanceof Sudoku) ||
+      !config.isConfig()
+    ) {
+      throw new Error('Given config is not valid.');
+    }
+
     this._config = new Sudoku(config);
     this._configBoard = this._config.board;
 
@@ -335,7 +343,7 @@ export default class SudokuSieve {
       const subArr = this._items[numCells];
       if (subArr && subArr.length > 0) {
         this._items[numCells] = subArr.filter((item) => {
-          if ((item & mask) > 0n) {
+          if (item & mask) {
             removed.push(item);
             this._removeItemFromMatrix(item);
             this._length--;

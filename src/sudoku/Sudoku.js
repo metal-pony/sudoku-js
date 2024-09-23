@@ -1720,15 +1720,6 @@ export class Sudoku {
   }
 
   /**
-   * Returns true if the given row is full.
-   * @param {number} row
-   * @returns {boolean}
-   */
-  isRowFull(row) {
-    return isAreaFull(this.rowVals(row));
-  }
-
-  /**
    * Returns true if the given column is valid.
    * @param {number} col
    * @returns {boolean}
@@ -1738,30 +1729,12 @@ export class Sudoku {
   }
 
   /**
-   * Returns true if the given column is full.
-   * @param {number} col
-   * @returns {boolean}
-   */
-  isColFull(col) {
-    return isAreaFull(this.colVals(col));
-  }
-
-  /**
    * Returns true if the given region is valid.
    * @param {number} reg
    * @returns {boolean}
    */
   isRegionValid(reg) {
     return isAreaValid(this.regionVals(reg));
-  }
-
-  /**
-   * Returns true if the given region is full.
-   * @param {number} reg
-   * @returns {boolean}
-   */
-  isRegionFull(reg) {
-    return isAreaFull(this.regionVals(reg));
   }
 
   /**

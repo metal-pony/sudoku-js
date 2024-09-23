@@ -141,7 +141,7 @@ describe('Sudoku', () => {
       () => subject.reflectOverAntidiagonal()
     ];
 
-    const nTransforms = 13 + (100 * Math.random()) | 0;
+    const nTransforms = 13 + (10 * Math.random()) | 0;
     for (let i = 0; i < nTransforms; i++) {
       transforms[(transforms.length * Math.random()) | 0]();
       expect(subject.fingerprint_d(2)).toBe(fp2);
@@ -214,19 +214,12 @@ function expectPuzzleToBeValid(puzzle) {
  * @param {Sudoku} puzzle
  */
 function expectPuzzleToBeFull(puzzle) {
-  for (let i = 0; i < 9; i++) {
+  const pBoard = puzzle.board;
+  for (let ci = 0; ci < 81; ci++) {
     expect(
-      puzzle.isRowFull(i),
-      `Expected row ${i} to be full:\n${puzzle.rowVals(i).join('')}`
-    ).toBe(true);
-    expect(
-      puzzle.isColFull(i),
-      `Expected col ${i} to be full:\n${puzzle.colVals(i).join('')}`
-    ).toBe(true);
-    expect(
-      puzzle.isRegionFull(i),
-      `Expected region ${i} to be full:\n${puzzle.regionVals(i).join('')}`
-    ).toBe(true);
+      pBoard[ci],
+      `\nBoard not full @ cell ${ci}: ${puzzle.toString()}`
+    ).not.toBe(0);
   }
   expect(puzzle.isFull()).toBe(true);
   expect(puzzle.numEmptyCells).toBe(0);

@@ -1777,18 +1777,8 @@ export class Sudoku {
     ));
   }
 
-  /**
-   * Returns true if the board is full.
-   * @returns {boolean}
-   */
-  isFull() {
-    // TODO return this._numEmptyCells === 0;
-    return range(NUM_DIGITS).every((i) => (
-      this.isRowFull(i) &&
-      this.isColFull(i) &&
-      this.isRegionFull(i)
-    ));
-  }
+  /** Returns true if the board is full. */
+  isFull() { return this._numEmptyCells === 0; }
 
   /**
    * Returns true if the board is full and valid.

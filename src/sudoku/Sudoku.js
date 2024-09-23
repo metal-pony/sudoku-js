@@ -239,32 +239,6 @@ export class SudokuNode {
  * Represents a Sudoku board.
  */
 export class Sudoku {
-  /** 9; The number of digits that appear on a Sudoku board.*/
-  static get NUM_DIGITS() { return NUM_DIGITS; }
-  /** 81; The number of spaces on a Sudoku board. */
-  static get NUM_SPACES() { return NUM_SPACES; }
-  /** 17; The minimum number of clues required for a proper Sudoku puzzle.*/
-  static get MIN_CLUES() { return MIN_CLUES; }
-
-  /**
-   * Returns the row index of the given cell.
-   * @param {number} cellIndex
-   * @returns {number}
-   */
-  static cellRow(cellIndex) { return cellRow(cellIndex); }
-  /**
-   * Returns the column index of the given cell.
-   * @param {number} cellIndex
-   * @returns {number}
-   */
-  static cellCol(cellIndex) { return cellCol(cellIndex); }
-  /**
-   * Returns the region index of the given cell.
-   * @param {number} cellIndex
-   * @returns {number}
-   */
-  static cellRegion(cellIndex) { return cellRegion(cellIndex);}
-
   /**
    * Builds a Sudoku board from a string, where:
    * - `.` represents an empty cell.
@@ -1040,28 +1014,6 @@ export class Sudoku {
    */
   equals(other) {
     return this.board.every((val, i) => val === other.board[i]);
-  }
-
-  /**
-   *
-   * @returns {Sudoku[]}
-   */
-  getAllSolutions() {
-    /** @type {Sudoku[]} */
-    const results = [];
-    // const board = puzzle.board.map(encode);
-    this.searchForSolutions3({
-      solutionFoundCallback: (solution) => {
-        debug.log(`SOLUTION FOUND >> ${solution.toString()}`);
-        if (!results.some((s) => s.equals(solution))) {
-          results.push(solution);
-        } else {
-          debug.log('DUPLICATE SOLUTION IGNORED');
-        }
-      }
-    });
-
-    return results;
   }
 
   /**

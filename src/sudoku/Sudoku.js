@@ -33,6 +33,13 @@ export const NUM_SPACES = 81;
 /** The minimum number of clues required for a Sudoku puzzle.*/
 export const MIN_CLUES = 17;
 
+/** Used to pull out row constraints. */
+const ROW_MASK = ALL << (NUM_DIGITS * 2);
+/** Used to pull out column constraints. */
+const COLUMN_MASK = ALL << NUM_DIGITS;
+/** Used to pull out region constraints. */
+const REGION_MASK = ALL;
+
 function cellMask(cellIndex) { return 1n << (BigInt(NUM_SPACES - cellIndex - 1)); }
 const CELL_MASKS = range(NUM_SPACES).map(cellMask);
 
@@ -274,10 +281,6 @@ export class Sudoku {
 
     return board;
   }
-
-  static ROW_MASK = ALL << (NUM_DIGITS * 2);
-  static COLUMN_MASK = ALL << NUM_DIGITS;
-  static REGION_MASK = ALL;
 
   /**
    *
@@ -1369,7 +1372,7 @@ export class Sudoku {
    * represents the presence of a digit in the row.
    */
   _rowConstraints(rowIndex) {
-    return (this._constraints[rowIndex] & Sudoku.ROW_MASK) >> (NUM_DIGITS * 2);
+    return (this._constraints[rowIndex] & ROW_MASK) >> (NUM_DIGITS * 2);
   }
 
   /**
@@ -1379,7 +1382,7 @@ export class Sudoku {
    * represents the presence of a digit in the column.
    */
   _colConstraints(columnIndex) {
-    return (this._constraints[columnIndex] & Sudoku.COLUMN_MASK) >> NUM_DIGITS;
+    return (this._constraints[columnIndex] & COLUMN_MASK) >> NUM_DIGITS;
   }
 
   /**
@@ -1389,7 +1392,7 @@ export class Sudoku {
    * represents the presence of a digit in the region.
    */
   _regionConstraints(regionIndex) {
-    return this._constraints[regionIndex] & Sudoku.REGION_MASK;
+    return this._constraints[regionIndex] & REGION_MASK;
   }
 
   /**
@@ -1459,8 +1462,7 @@ export class Sudoku {
      * where each bit represents a digit, and is set to 1 if the digit
      * is present in the row, column, or region.
      *
-     * Use `Constraints.ROW_MASK`, `Constraints.COL_MASK`, and
-     * `Constraints.REGION_MASK` to filter constraint values.
+     * Use `ROW_MASK`, `COL_MASK`, and `REGION_MASK` to filter constraint values.
      * @type {number[]}
      */
     this._constraints;

@@ -39,6 +39,8 @@ const ROW_MASK = ALL << (NUM_DIGITS * 2);
 const COLUMN_MASK = ALL << NUM_DIGITS;
 /** Used to pull out region constraints. */
 const REGION_MASK = ALL;
+/** bigConstraints will be this value when board is complate. */
+const FULL_CONSTRAINTS = ((1n << 243n) - 1n);
 
 function cellMask(cellIndex) { return 1n << (BigInt(NUM_SPACES - cellIndex - 1)); }
 const CELL_MASKS = range(NUM_SPACES).map(cellMask);
@@ -1218,9 +1220,9 @@ export class Sudoku {
    */
   searchForSolutions3({
     timeOutMs = 0,
-    solutionFoundCallback = (solution) => true,
+    solutionFoundCallback = () => true,
     concurrentBranches = 9,
-  }) {
+  } = {}) {
     timeOutMs = Number(timeOutMs) || 0;
 
     const isTimeConstraint = timeOutMs > 0;
@@ -1372,7 +1374,7 @@ export class Sudoku {
    * represents the presence of a digit in the row.
    */
   _rowConstraints(rowIndex) {
-    return (this._constraints[rowIndex] & ROW_MASK) >> (NUM_DIGITS * 2);
+    return ((this._constraints >> BigInt(rowIndex * 27)) & BigInt(ROW_MASK)) >> BigInt(NUM_DIGITS * 2);
   }
 
   /**
@@ -1382,7 +1384,7 @@ export class Sudoku {
    * represents the presence of a digit in the column.
    */
   _colConstraints(columnIndex) {
-    return (this._constraints[columnIndex] & COLUMN_MASK) >> NUM_DIGITS;
+    return ((this._constraints >> BigInt(columnIndex * 27)) & BigInt(COLUMN_MASK)) >> BigInt(NUM_DIGITS);
   }
 
   /**
@@ -1392,7 +1394,7 @@ export class Sudoku {
    * represents the presence of a digit in the region.
    */
   _regionConstraints(regionIndex) {
-    return this._constraints[regionIndex] & REGION_MASK;
+    return ((this._constraints >> BigInt(regionIndex * 27)) & BigInt(REGION_MASK));
   }
 
   /**
@@ -1402,7 +1404,7 @@ export class Sudoku {
    * represents the presence of a digit in the cell's row, column, or region.
    */
   _cellConstraints(cellIndex) {
-    return (
+    return Number(
       this._rowConstraints(cellRow(cellIndex)) |
       this._colConstraints(cellCol(cellIndex)) |
       this._regionConstraints(cellRegion(cellIndex))
@@ -1419,22 +1421,20 @@ export class Sudoku {
     const rowIndex = cellRow(cellIndex);
     const columnIndex = cellCol(cellIndex);
     const regionIndex = cellRegion(cellIndex);
-    // System.out.printf("Adding constraint on %d (%d,%d) -> %d\n", cellIndex, rowIndex + 1, columnIndex + 1, digit);
 
-    this._constraints[rowIndex] |= 1 << (digit - 1 + (NUM_DIGITS * 2));
-    this._constraints[columnIndex] |= 1 << (digit - 1 + NUM_DIGITS);
-    this._constraints[regionIndex] |= 1 << (digit - 1);
+    this._constraints |= (BigInt(1 << (digit - 1 + (NUM_DIGITS * 2))) << BigInt(27 * rowIndex));
+    this._constraints |= (BigInt(1 << (digit - 1 + (NUM_DIGITS))) << BigInt(27 * columnIndex));
+    this._constraints |= (BigInt(1 << (digit - 1)) << BigInt(27 * regionIndex));
   }
 
   _removeConstraint(cellIndex, prevDigit) {
     const rowIndex = cellRow(cellIndex);
     const columnIndex = cellCol(cellIndex);
     const regionIndex = cellRegion(cellIndex);
-    // System.out.printf("Removing constraint on %d (%d,%d) -> %d\n", cellIndex, rowIndex + 1, columnIndex + 1, prevDigit);
 
-    this._constraints[rowIndex] &= ~(1 << (prevDigit - 1 + (NUM_DIGITS * 2)));
-    this._constraints[columnIndex] &= ~(1 << (prevDigit - 1 + NUM_DIGITS));
-    this._constraints[regionIndex] &= ~(1 << (prevDigit - 1));
+    this._constraints &= ~(BigInt(1 << (prevDigit - 1 + (NUM_DIGITS * 2))) << BigInt(27 * rowIndex));
+    this._constraints &= ~(BigInt(1 << (prevDigit - 1 + NUM_DIGITS)) << BigInt(27 * columnIndex));
+    this._constraints &= ~(BigInt(1 << (prevDigit - 1)) << BigInt(27 * regionIndex));
   }
 
   /**
@@ -1455,17 +1455,17 @@ export class Sudoku {
     this._board;
 
     /**
-     * Contains puzzle constraints in the form
+     * Contains puzzle constraints in the form of 27-bit blocks,
      *
-     * `[... other bits][9 row bits][9 column bits][9 region bits]`,
+     * `[9 row bits][9 column bits][9 region bits]`,
      *
      * where each bit represents a digit, and is set to 1 if the digit
      * is present in the row, column, or region.
      *
      * Use `ROW_MASK`, `COL_MASK`, and `REGION_MASK` to filter constraint values.
-     * @type {number[]}
+     * @type {bigint}
      */
-    this._constraints;
+    this._constraints = 0n;
 
     /**
      * The initial clues on the board.
@@ -1481,18 +1481,17 @@ export class Sudoku {
 
     if (data instanceof Sudoku) {
       this._board = [...data._board];
-      this._constraints = [...data._constraints];
+      this._constraints = data._constraints;
       this._clues = data.board;
       this._numEmptyCells = data._numEmptyCells;
     } else if (typeof data === 'string') {
       const parsed = Sudoku.fromString(data);
       this._board = [...parsed._board];
-      this._constraints = [...parsed._constraints];
+      this._constraints = parsed._constraints;
       this._clues = parsed.clues;
       this._numEmptyCells = parsed._numEmptyCells;
     } else if (Array.isArray(data)) {
       this._board = [...EMPTY_BOARD];
-      this._constraints = Array(NUM_DIGITS).fill(0);
       this._clues = [...EMPTY_BOARD];
       if (data.length === NUM_SPACES) {
         this.setBoard(data);
@@ -1668,7 +1667,7 @@ export class Sudoku {
    */
   clear() {
     this._board.fill(ALL);
-    this._constraints.fill(0);
+    this._constraints = 0n;
     this._clues.fill(0);
     this._numEmptyCells = NUM_SPACES;
   }
@@ -1678,7 +1677,7 @@ export class Sudoku {
    */
   reset() {
     this._board.fill(ALL);
-    this._constraints.fill(0);
+    this._constraints = 0n;
     this._numEmptyCells = NUM_SPACES;
     this._clues.forEach((digit, index) => this.setDigit(digit, index));
   }
@@ -1758,7 +1757,7 @@ export class Sudoku {
    * @returns {boolean}
    */
   isSolved() {
-    return this.isFull() && this.isValid();
+    return this.isFull() && this._constraints === FULL_CONSTRAINTS;
   }
 
   /**
@@ -1866,7 +1865,7 @@ export class Sudoku {
   }
 
   _resetConstraints() {
-    this._constraints = Array(NUM_DIGITS).fill(0);
+    this._constraints = 0n;
     this.board.forEach((digit, i) => {
       if (digit > 0) {
         this._addConstraint(i, digit);

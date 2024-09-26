@@ -10,7 +10,7 @@ import {
 } from '../util/arrays.js';
 import { bitCombo, nChooseK, randomCombo } from '../util/perms.js';
 import Debugger from '../util/debug.js';
-import SudokuSieve, { countBits, digitMask } from './SudokuSieve.js';
+import SudokuSieve, { countBigBits, countBits, digitMask } from './SudokuSieve.js';
 
 const debug = new Debugger(false);
 
@@ -43,6 +43,7 @@ const REGION_MASK = ALL;
 const FULL_CONSTRAINTS = ((1n << 243n) - 1n);
 
 function cellMask(cellIndex) { return 1n << (BigInt(NUM_SPACES - cellIndex - 1)); }
+
 const CELL_MASKS = range(NUM_SPACES).map(cellMask);
 
 /** @type {number[]} */
@@ -82,6 +83,8 @@ const CANDIDATE_DECODINGS = Object.freeze(range(1<<NUM_DIGITS).map(encoded => {
 const CANDIDATES = Object.freeze(CANDIDATE_DECODINGS.map(candidates =>
   Object.freeze(candidates.map(digit => ENCODER[digit]))
 ));
+
+const BIT_COUNT_MAP = range(1<<NUM_DIGITS).map(countBits);
 
 /**
  * Cache of Sudoku board indices for each row, column, and region.
@@ -2189,7 +2192,7 @@ export class Sudoku {
     /** @type {number[]} */
     const itemsByM = Array(NUM_SPACES).fill(0);
     ss.items.forEach(item => {
-      const count = countBits(item);
+      const count = countBigBits(item);
       itemsByM[count]++;
       if (count < minM) minM = count;
       if (count > maxM) maxM = count;

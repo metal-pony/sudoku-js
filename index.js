@@ -91,6 +91,7 @@ import SudokuSieve, {
   cellMask,
   cellsFromMask,
   countBits,
+  countBigBits,
   digitMask
 } from './src/sudoku/SudokuSieve.js';
 import {
@@ -194,6 +195,7 @@ export {
   cellMask,
   cellsFromMask,
   countBits,
+  countBigBits,
   digitMask,
 
   // exp2

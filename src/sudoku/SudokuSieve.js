@@ -41,20 +41,42 @@ export function cellsFromMask(mask) {
  * Returns the number of 1 bits in the given bigint.
  *
  * If negative, uses `(-n)`.
- * @param {bigint} n
+ * @param {bigint} bigN
+ * @returns {number}
+ */
+export function countBigBits(bigN) {
+  if (bigN < 0n) {
+    bigN = -bigN;
+  }
+
+  let count = 0;
+  while (bigN > 0n) {
+    if (bigN & 1n) {
+      count++;
+    }
+    bigN >>= 1n;
+  }
+  return count;
+}
+
+/**
+ * Returns the number of 1 bits in the given number.
+ *
+ * If negative, uses `(-n)`.
+ * @param {number} n
  * @returns {number}
  */
 export function countBits(n) {
-  if (n < 0n) {
+  if (n < 0) {
     n = -n;
   }
 
   let count = 0;
-  while (n > 0n) {
-    if (n & 1n) {
+  while (n > 0) {
+    if (n & 1) {
       count++;
     }
-    n >>= 1n;
+    n >>= 1;
   }
   return count;
 }

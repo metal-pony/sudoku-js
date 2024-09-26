@@ -2039,20 +2039,19 @@ export class Sudoku {
    * @return {number} Cell index, or `-1` if there are no empty cells.
    */
   _pickEmptyCell() {
-    let minCandidates = NUM_DIGITS + 1;
-    const _numCandidatesMap = this._board.reduce((map, _, ci) => {
-      const numCandidates = this.getCandidates(ci).length;
-      if (numCandidates > 1 && numCandidates < minCandidates) {
-        minCandidates = numCandidates;
+    // TODO Keep track of empty cells in state for instant lookup.
+    let min = NUM_DIGITS + 1;
+    let minimums = [];
+    this._board.forEach((candidates, ci) => {
+      const count = BIT_COUNT_MAP[candidates];
+      if (count > 1 && count < min) {
+        min = count;
+        minimums = [ci];
       }
-      map[numCandidates].push(ci);
-      return map;
-    }, range(NUM_DIGITS + 1).map(_=>[]));
+    });
 
-    // If there are no empty cells, then minCandidates would not have changed
-    if (minCandidates === (NUM_DIGITS + 1)) return -1;
-
-    return chooseRandom(_numCandidatesMap[minCandidates]);
+    // If min still === 10, then there are no empty cells.
+    return (min === (NUM_DIGITS + 1)) ? -1 : chooseRandom(minimums);
   }
 
   /**

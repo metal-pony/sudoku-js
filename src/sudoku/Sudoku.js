@@ -47,42 +47,39 @@ function cellMask(cellIndex) { return 1n << (BigInt(NUM_SPACES - cellIndex - 1))
 const CELL_MASKS = range(NUM_SPACES).map(cellMask);
 
 /** @type {number[]} */
-const EMPTY_BOARD = Object.freeze(Array(NUM_SPACES).fill(0));
+const EMPTY_BOARD = Array(NUM_SPACES).fill(0);
 
 /**
  * Maps digits (the indices) to their encoded board values.
  * @type {number[]}
  **/
-const ENCODER = Object.freeze([0, ...range(NUM_DIGITS).map((shift) => 1<<shift)]);
+const ENCODER = [0, ...range(NUM_DIGITS).map((shift) => 1<<shift)];
 /**
  * Maps encoded board values (the indices) to the digits they represent.
  * @type {number[]}
  **/
 const DECODER = range(1<<NUM_DIGITS).fill(0);
 range(NUM_DIGITS).map((shift) => DECODER[1<<shift] = shift + 1);
-Object.freeze(DECODER);
 
 /**
  * Maps the encoded board values (the indices) to the lists of candidate digits they represent.
  * @type {number[][]}
  **/
-const CANDIDATE_DECODINGS = Object.freeze(range(1<<NUM_DIGITS).map(encoded => {
+const CANDIDATE_DECODINGS = range(1<<NUM_DIGITS).map(encoded => {
   const candidates = [];
   for (let digit = 1; encoded > 0 && digit <= NUM_DIGITS; digit++, encoded >>= 1) {
     if (encoded & 1) {
       candidates.push(digit);
     }
   }
-  return Object.freeze(candidates);
-}));
+  return candidates;
+});
 
 /**
  * Maps the encoded board values (the indices) to the list of candidate digits (ENCODED) they represent.
  * @type {number[][]}
  **/
-const CANDIDATES = Object.freeze(CANDIDATE_DECODINGS.map(candidates =>
-  Object.freeze(candidates.map(digit => ENCODER[digit]))
-));
+const CANDIDATES = CANDIDATE_DECODINGS.map(c => c.map(digit => ENCODER[digit]));
 
 const BIT_COUNT_MAP = range(1<<NUM_DIGITS).map(countBits);
 

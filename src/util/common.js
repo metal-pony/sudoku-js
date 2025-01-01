@@ -1,4 +1,76 @@
 /**
+ * Returns a random integer between 0 and max, exclusive.
+ * @param {number} max
+ */
+export function randInt(max) {
+  return (Math.random() * max) | 0;
+}
+
+/**
+ * Returns a random element from the given array.
+ * If the array is empty, returns null.
+ * @param {any[]} arr
+ * @returns {any | null}
+ */
+export function chooseRandom(arr) {
+  return (arr.length > 0) ? arr[randInt(arr.length)] : null;
+}
+
+/**
+ * Removes and returns a random element from the given array.
+ * If the array is empty, returns null.
+ * @param {any[]} arr
+ * @returns {any | null}
+ */
+export function removeRandom(arr) {
+  return (arr.length > 0) ? arr.splice(randInt(arr.length), 1)[0] : null;
+}
+
+/**
+ * Returns the number of 1 bits in the given bigint.
+ *
+ * If negative, uses `(-n)`.
+ * @param {bigint} bigN
+ * @returns {number}
+ */
+export function countBigBits(bigN) {
+  if (bigN < 0n) {
+    bigN = -bigN;
+  }
+
+  let count = 0;
+  while (bigN > 0n) {
+    if (bigN & 1n) {
+      count++;
+    }
+    bigN >>= 1n;
+  }
+  return count;
+}
+
+/**
+ * Returns the number of 1 bits in the given number.
+ *
+ * If negative, uses `(-n)`.
+ * @param {number} n
+ * @returns {number}
+ */
+export function countBits(n) {
+  if (n < 0) {
+    n = -n;
+  }
+
+  let count = 0;
+  while (n > 0) {
+    if (n & 1) {
+      count++;
+    }
+    n >>= 1;
+  }
+  return count;
+}
+
+/**
  * Returns a random integer between min and max, inclusive.
  * @param {number} value The value to bind.
  * @param {number} min The minimum value, inclusive.

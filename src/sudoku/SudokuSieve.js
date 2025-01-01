@@ -1,85 +1,14 @@
 // import { shuffle } from '../util/arrays.js';
-import Sudoku from './Sudoku.js';
-
-/**
- * Returns a board mask for the single given cell.
- * @param {number} cellIndex
- * @returns {bigint}
- */
-export function cellMask(cellIndex) {
-  return 1n << (80n - BigInt(cellIndex));
-}
-
-/**
- * Encodes a digit positionally in a 9-bit mask.
- * @param {number} digit
- * @returns {number}
- */
-export function digitMask(digit) {
-  return 1 << (digit - 1);
-}
-
-/**
- * Returns an array of cell indices from the given mask.
- * @param {bigint} mask
- * @returns {number[]}
- */
-export function cellsFromMask(mask) {
-  const cells = [];
-  let ci = 80;
-  while (mask > 0n) {
-    if (mask & 1n) {
-      cells.push(ci);
-    }
-    mask >>= 1n;
-    ci--;
-  }
-  return cells;
-}
-
-/**
- * Returns the number of 1 bits in the given bigint.
- *
- * If negative, uses `(-n)`.
- * @param {bigint} bigN
- * @returns {number}
- */
-export function countBigBits(bigN) {
-  if (bigN < 0n) {
-    bigN = -bigN;
-  }
-
-  let count = 0;
-  while (bigN > 0n) {
-    if (bigN & 1n) {
-      count++;
-    }
-    bigN >>= 1n;
-  }
-  return count;
-}
-
-/**
- * Returns the number of 1 bits in the given number.
- *
- * If negative, uses `(-n)`.
- * @param {number} n
- * @returns {number}
- */
-export function countBits(n) {
-  if (n < 0) {
-    n = -n;
-  }
-
-  let count = 0;
-  while (n > 0) {
-    if (n & 1) {
-      count++;
-    }
-    n >>= 1;
-  }
-  return count;
-}
+import { bitCombo, nChooseK } from '../util/perms.js';
+import Sudoku, {
+  cellCol,
+  cellMask,
+  cellRegion,
+  cellRow,
+  digitMask,
+  DIGITS,
+  SPACES
+} from './Sudoku.js';
 
 /**
  * Validates the given items for the configuration.
@@ -122,7 +51,7 @@ export default class SudokuSieve {
      * number[0 to 81]bigint[]
      * @type {bigint[][]}
      */
-    this._items = Array(81).fill(0).map(_=>[]);
+    this._items = Array(SPACES).fill(0).map(_=>[]);
     this._length = 0;
 
     /**
@@ -132,7 +61,7 @@ export default class SudokuSieve {
      * @property {number} count
      */
     /** @type {Cell[]} */
-    this._redmat = Array(81).fill(0).map((_, i) => ({ ci: i, descIndex: i, count: 0 }));
+    this._redmat = Array(SPACES).fill(0).map((_, i) => ({ ci: i, descIndex: i, count: 0 }));
     /** @type {Cell[]} */
     this._cellsDescCount = [...this._redmat];
     this._cellSum = 0;
@@ -151,7 +80,7 @@ export default class SudokuSieve {
      * Keeps track of which items have been validated. Parallel to _items.
      * @type {bigint[][]}
      */
-    this._validated = Array(81).fill(0).map(_=>[]);
+    this._validated = Array(SPACES).fill(0).map(_=>[]);
   }
 
   /** The configuration of this sieve.*/
@@ -239,10 +168,8 @@ export default class SudokuSieve {
    * @returns {boolean} true if the mask satisfies all items in the sieve; otherwise false.
    */
   doesMaskSatisfy(mask) {
-    for (let i = 0; i < 81; i++) {
-      const itemsLen = this._items[i].length;
-      for (let j = 0; j < itemsLen; j++) {
-        const item = this._items[i][j];
+    for (let group of this._items) {
+      for (let item of group) {
         if ((item & mask) === 0n) {
           return false;
         }
@@ -256,7 +183,7 @@ export default class SudokuSieve {
    * @param {bigint} item
    */
   _addItemToMatrix(item) {
-    for (let ci = 0; ci < 81; ci++) {
+    for (let ci = 0; ci < SPACES; ci++) {
       if ((item & cellMask(ci)) > 0n) {
         this._redmat[ci].count++;
         this._cellSum++;
@@ -280,7 +207,7 @@ export default class SudokuSieve {
    * @param {bigint} item
    */
   _removeItemFromMatrix(item) {
-    for (let ci = 0; ci < 81; ci++) {
+    for (let ci = 0; ci < SPACES; ci++) {
       if ((item & cellMask(ci)) > 0n) {
         this._redmat[ci].count--;
         this._cellSum--;
@@ -328,7 +255,7 @@ export default class SudokuSieve {
   addFromMask(mask) {
     const initialCount = this._length;
     const puzzle = this._config.filter(mask);
-    puzzle.searchForSolutions3({
+    puzzle.searchForSolutions2({
       solutionFoundCallback: (solution) => {
         const diff = this._config.diff(solution);
         if (diff > 0n) {
@@ -361,7 +288,7 @@ export default class SudokuSieve {
     /** @type {bigint[]} */
     const removed = [];
 
-    for (let numCells = 0; numCells < 81; numCells++) {
+    for (let numCells = 0; numCells < SPACES; numCells++) {
       const subArr = this._items[numCells];
       if (subArr && subArr.length > 0) {
         this._items[numCells] = subArr.filter((item) => {
@@ -390,13 +317,8 @@ export default class SudokuSieve {
       return true;
     }
 
-    const len = this._items.length;
-    for (let m = 0; m < len; m++) {
-      const sub = this._items[m];
-      const subLen = sub.length;
-      let item = null;
-      for (let i = 0; i < subLen; i++) {
-        item = sub[i];
+    for (let group of this._items) {
+      for (let item of group) {
         if ((item & mask) === item) {
           return true;
         }
@@ -622,7 +544,7 @@ export default class SudokuSieve {
    * @param {number} options.maxDigits
    * @returns {SudokuSieve} A new SudokuSieve that's been pruned.
    */
-  prune({ maxLength, maxCells = 81, maxDigits = 9 }) {
+  prune({ maxLength, maxCells = SPACES, maxDigits = 9 }) {
     maxLength ??= this.length;
     // TODO maxLength not used
     return this.items.filter((item) => (
@@ -643,5 +565,130 @@ export default class SudokuSieve {
     validateOnAdd,
   }) {
 
+  }
+
+  /**
+   * @type {string}
+   */
+  toString() {
+    let strb = '{\n';
+
+    const itemsLen = this._items.length;
+    for (let m = 0; m < itemsLen; m++) {
+      const group = this._items[m];
+      if (group.length > 0) {
+        strb += `  [${m}]: [\n`;
+        for (let item of group) {
+          strb += `    ${this._config.filter(item).toString()}\n`;
+        }
+        strb += '  ],\n';
+      }
+    }
+
+    strb += '}';
+    return strb;
+  }
+
+  genSeedMasks() {
+    const masks = [];
+    for (let level = 1; level <= 9; level++) {
+      const nck = nChooseK(DIGITS, level);
+      const fullMask = (1n << BigInt(SPACES)) - 1n;
+      for (let r = 0n; r < nck; r++) {
+        const dCombo = Number(bitCombo(DIGITS, level, r));
+
+        let digMask = fullMask;
+        let rowMask = fullMask;
+        let colMask = fullMask;
+        let regionMask = fullMask;
+
+        for (let ci = 0; ci < SPACES; ci++) {
+          if ((dCombo & digitMask(_board[ci])) > 0) {
+            digMask &= ~cellMask(ci);
+          }
+          if ((dCombo & (1 << cellRow(ci))) > 0) {
+            rowMask &= ~cellMask(ci);
+          }
+          if ((dCombo & (1 << cellCol(ci))) > 0) {
+            colMask &= ~cellMask(ci);
+          }
+          if ((dCombo & (1 << cellRegion(ci))) > 0) {
+            regionMask &= ~cellMask(ci);
+          }
+        }
+
+        masks.push(digMask);
+        masks.push(rowMask);
+        masks.push(colMask);
+        masks.push(regionMask);
+      }
+    }
+
+    return masks;
+  }
+
+  /**
+   *
+   * @param {number} level
+   */
+  seed(level) {
+    const nck = nChooseK(DIGITS, level);
+    const _board = this._config.board;
+    const fullMask = (1n << BigInt(SPACES)) - 1n;
+    for (let r = 0n; r < nck; r++) {
+      const dCombo = Number(bitCombo(DIGITS, level, r));
+
+      let digMask = fullMask;
+      let rowMask = fullMask;
+      let colMask = fullMask;
+      let regionMask = fullMask;
+
+      for (let ci = 0; ci < SPACES; ci++) {
+        if ((dCombo & digitMask(_board[ci])) > 0) {
+          digMask &= ~cellMask(ci);
+        }
+        if ((dCombo & (1 << cellRow(ci))) > 0) {
+          rowMask &= ~cellMask(ci);
+        }
+        if ((dCombo & (1 << cellCol(ci))) > 0) {
+          colMask &= ~cellMask(ci);
+        }
+        if ((dCombo & (1 << cellRegion(ci))) > 0) {
+          regionMask &= ~cellMask(ci);
+        }
+      }
+
+      this.addFromMask(digMask);
+      this.addFromMask(rowMask);
+      this.addFromMask(colMask);
+      this.addFromMask(regionMask);
+    }
+
+    this._sortInGroups();
+  }
+
+  _sortInGroups() {
+    for (let group of this._items) {
+      group.sort((a, b) => (a === b) ? 0 : (a > b) ? 1 : -1);
+    }
+  }
+
+  /** @returns {Set<bigint>} */
+  solveMasksForDiffs(masks) {
+    const results = new Set();
+    for (let mask of masks) {
+      const p = this._config.filter(mask);
+      p.searchForSolutions2({
+        solutionFoundCallback: (solution) => {
+          // results.push(solution);
+          const diff = this._config.diff(solution);
+          if (diff > 0n) {
+            this.add(diff);
+          }
+          return true;
+        }
+      });
+    }
+    return results;
   }
 }

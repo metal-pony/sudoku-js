@@ -2,12 +2,13 @@ import {
   bitCombo,
   cellMask,
   digitMask,
+  DIGITS,
   nChooseK,
   randomBigInt,
+  SPACES,
   Sudoku,
   SudokuSieve
 } from '../../index.js';
-import { NUM_DIGITS, NUM_SPACES } from '../../src/sudoku/Sudoku.js';
 
 // For config = '218574639573896124469123578721459386354681792986237415147962853695318247832745961'
 const expectedSieveItemsByK = [
@@ -261,11 +262,11 @@ describe('SudokuSieve', () => {
 
       let k = 2;
 
-      let nck = nChooseK(NUM_DIGITS, k);
+      let nck = nChooseK(DIGITS, k);
       for (let r = 0n; r < nck; r++) {
-        const dCombo = Number(bitCombo(NUM_DIGITS, k, r));
+        const dCombo = Number(bitCombo(DIGITS, k, r));
         let pMask = 0n;
-        for (let ci = 0; ci < NUM_SPACES; ci++) {
+        for (let ci = 0; ci < SPACES; ci++) {
           if (digitMask(configBoard[ci]) & dCombo) {
             pMask |= cellMask(ci);
           }
@@ -279,11 +280,11 @@ describe('SudokuSieve', () => {
 
       const sieve2 = new SudokuSieve({ config });
       k = 3;
-      nck = nChooseK(NUM_DIGITS, k);
+      nck = nChooseK(DIGITS, k);
       for (let r = 0n; r < nck; r++) {
-        const dCombo = Number(bitCombo(NUM_DIGITS, k, r));
+        const dCombo = Number(bitCombo(DIGITS, k, r));
         let pMask = 0n;
-        for (let ci = 0; ci < NUM_SPACES; ci++) {
+        for (let ci = 0; ci < SPACES; ci++) {
           if (digitMask(configBoard[ci]) & dCombo) {
             pMask |= cellMask(ci);
           }

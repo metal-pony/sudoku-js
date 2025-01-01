@@ -89,6 +89,7 @@ import Sudoku, {
   DIGITS,
   SPACES,
   MIN_CLUES,
+  encode, decode, isDigit,
   cellMask,
   digitMask,
   cellsFromMask,
@@ -194,6 +195,7 @@ export {
   ZMod,
 
   // sudoku
+  encode, decode, isDigit,
   RANK,
   DIGITS,
   SPACES,

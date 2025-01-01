@@ -44,10 +44,10 @@ Add the GitHub package registry to your `.npmrc` file like below, replacing `GH_
 
 ```
 //npm.pkg.github.com/:_authToken=GH_PAT
-@sparklicorn:registry=https://npm.pkg.github.com
+@metal-pony:registry=https://npm.pkg.github.com
 ```
 
 Then install the package as normal.
 ```
-npm install @sparklicorn/bucket-js
+npm install @metal-pony/bucket-js
 ```

@@ -1,6 +1,6 @@
 {
-  "name": "@sparklicorn/bucket-js",
-  "version": "1.2.1",
+  "name": "@metal-pony/bucket-js",
+  "version": "1.3.0",
   "description": "Bucket of js utilities",
   "type": "module",
   "license": "MIT",
@@ -19,10 +19,10 @@
     "jest-expect-message": "^1.1.3"
   },
   "publishConfig": {
-    "@sparklicorn:registry": "https://npm.pkg.github.com"
+    "@metal-pony:registry": "https://npm.pkg.github.com"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sparklicorn/bucket-js.git"
+    "url": "git+https://github.com/metal-pony/bucket-js.git"
   }
 }

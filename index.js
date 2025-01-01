@@ -66,6 +66,11 @@ import {
   randomBitCombo
 } from './src/util/perms.js';
 import {
+  randInt,
+  chooseRandom,
+  removeRandom,
+  countBigBits,
+  countBits,
   bounded,
   validateNonNegative,
   validatePositive,
@@ -80,6 +85,13 @@ import ZMod from './src/util/ZMod.js';
 
 // sudoku
 import Sudoku, {
+  RANK,
+  DIGITS,
+  SPACES,
+  MIN_CLUES,
+  cellMask,
+  digitMask,
+  cellsFromMask,
   indicesFor,
   masksFor,
   cellRow,
@@ -87,12 +99,7 @@ import Sudoku, {
   cellRegion,
   cellRegion2D
 } from './src/sudoku/Sudoku.js';
-import SudokuSieve, {
-  cellMask,
-  cellsFromMask,
-  countBits,
-  digitMask
-} from './src/sudoku/SudokuSieve.js';
+import SudokuSieve from './src/sudoku/SudokuSieve.js';
 import {
   sieveCombos4,
   createSolutionsFlagCache
@@ -169,6 +176,11 @@ export {
   randomBitCombo,
 
   // common
+  randInt,
+  chooseRandom,
+  removeRandom,
+  countBigBits,
+  countBits,
   bounded,
   validateNonNegative,
   validatePositive,
@@ -182,19 +194,22 @@ export {
   ZMod,
 
   // sudoku
-  Sudoku,
+  RANK,
+  DIGITS,
+  SPACES,
+  MIN_CLUES,
+  cellMask,
+  digitMask,
+  cellsFromMask,
   indicesFor,
   masksFor,
   cellRow,
   cellCol,
   cellRegion,
   cellRegion2D,
+  Sudoku,
 
   SudokuSieve,
-  cellMask,
-  cellsFromMask,
-  countBits,
-  digitMask,
 
   // exp2
   sieveCombos4,

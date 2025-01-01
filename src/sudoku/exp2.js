@@ -1,7 +1,7 @@
 import { range, shuffle } from '../util/arrays.js';
 // import Debugger from '../util/debug.js';
-import Sudoku from './Sudoku.js';
-import SudokuSieve, { cellMask, cellsFromMask } from './SudokuSieve.js';
+import Sudoku, { cellMask, cellsFromMask } from './Sudoku.js';
+import SudokuSieve from './SudokuSieve.js';
 
 // const isDebugging = true;
 // const whenDebugging = new Debugger(isDebugging);

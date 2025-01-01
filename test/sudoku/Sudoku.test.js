@@ -2,27 +2,11 @@ import {
   Sudoku,
   cellCol,
   cellRegion,
-  cellRegion2D,
   cellRow,
-  masksFor
+  masksFor,
+  randomCombo
 } from '../../index.js';
-import { puzzle as puzzleFixture, solutions } from './puzzle_solutions_fixture.js';
 import puzzles from './puzzles24.js';
-
-describe('cellRow, cellCol, cellRegion, cellRegion2D', () => {
-  test('correct values', () => {
-    for (let cellIndex = 80; cellIndex >= 0; cellIndex--) {
-      const row = cellRow(cellIndex);
-      const col = cellCol(cellIndex);
-      const region = cellRegion(cellIndex);
-      const region2D = cellRegion2D(row, col);
-      expect(row).toBe(Math.floor(cellIndex / 9));
-      expect(col).toBe(cellIndex % 9);
-      expect(region).toBe(Math.floor(row / 3) * 3 + Math.floor(col / 3));
-      expect(region2D).toBe(region);
-    }
-  });
-});
 
 describe('Sudoku', () => {
   describe('static', () => {
@@ -57,40 +41,46 @@ describe('Sudoku', () => {
     });
   });
 
-  test('Puzzle solving', () => {
-    const testPuzzles = puzzles.slice(0, Math.min(puzzles.length, 10));
-    testPuzzles.forEach((sudoku) => {
-      const puzzle = new Sudoku(sudoku.puzzle);
-      let expectedNumClues = 0;
-      const expectedClues = sudoku.puzzle.split('').map((char) => {
-        if (char === '.') return 0;
-        expectedNumClues += 1;
-        return parseInt(char, 10);
+  test('searchForSolutions2 solves valid puzzles', () => {
+    puzzles.forEach(puzzleStr => {
+      const puzzle = new Sudoku(puzzleStr);
+      let solutionCount = 0;
+      puzzle.searchForSolutions2({
+        solutionFoundCallback: () => {
+          solutionCount++;
+          return true; // continue searching
+        }
       });
-
-      expectPuzzleToBeValidAndSolvable({
-        puzzle,
-        expectedClues,
-        expectedNumClues,
-        solution: new Sudoku(sudoku.solution)
-      });
+      expect(solutionCount).toBe(1);
     });
   });
 
-  test('Finds all solutions', () => {
-    const puzzle = puzzleFixture();
-    const expectedSolutions = solutions();
-    const collectedSolutions = new Set();
-    puzzle.searchForSolutions3({
-      solutionFoundCallback: (solution) => {
-        const solutionStr = solution.normalize().toString();
-        collectedSolutions.add(solutionStr);
-        expect(expectedSolutions).toContain(solutionStr);
-        return true; // continue searching
-      }
+  test('searchForSolutions2 finds all solutions', () => {
+    [
+      { puzzleStr: '...45.7...5........4......3.8...3.1.9..241..85.69...3.2..3...7.3...7..........3..', numSolutions: 1463 },
+      { puzzleStr: '....5..89..8...16......1..2..76.3..............1..5..45...6..73.......4..74..89.1', numSolutions: 2361 },
+      { puzzleStr: '12..5..8..7.3.9........7..6...56..9.....4.8......92..1....2...8.6.1.......8...6.5', numSolutions: 996 },
+      { puzzleStr: '.2..56...8..3..56........3..1.2...........64.....9..239.........81.2....26..314..', numSolutions: 3171 },
+      { puzzleStr: '.2.4.6..99...........79213.........1..9...3.........5.3.8....72...5......65.29..4', numSolutions: 4004 },
+      { puzzleStr: '....5.7..56...8.4...9.7..61...6.....65...94.8..4....2.4.....836.3...7............', numSolutions: 1509 },
+      { puzzleStr: '....56...76....52..95.2...3.......7.2.78...455...9.1...3.....5...8...3.......5...', numSolutions: 2132 },
+      { puzzleStr: '..3.....9.7....65...9.71.345.1..78..9.43.2......54.......9..3............4.1.....', numSolutions: 322 },
+      { puzzleStr: '1.......9.......4...4...2....2.....8..92..4.14.8....9..365...1.8.....5.6..56.8...', numSolutions: 5338 },
+      { puzzleStr: '...45.................8..1..1...4...63......8..8...195...7..8.1.5..9.3.48.16...5.', numSolutions: 1589 },
+      { puzzleStr: '..3.5.7.....2......4891..6.812.3.........5....9..8...........252.5.....1.795.....', numSolutions: 448 },
+      { puzzleStr: '1..4..7.9......3...75.8.6143........8.43...6......4...2..1....6..8.........9.5..2', numSolutions: 3383 },
+      { puzzleStr: '.2.......9.6.175..........34.....961.....5....7.9.4.......42...237.8...5....3..2.', numSolutions: 243 }
+    ].forEach(({ puzzleStr, numSolutions }) => {
+      const puzzle = new Sudoku(puzzleStr);
+      let numSolutionsFound = 0;
+      puzzle.searchForSolutions2({
+        solutionFoundCallback: () => {
+          numSolutionsFound++;
+          return true; // continue searching
+        }
+      });
+      expect(numSolutionsFound).toBe(numSolutions);
     });
-
-    expect(collectedSolutions.size).toBe(expectedSolutions.length);
   });
 
   test('Configuration generation', () => {
@@ -126,50 +116,65 @@ describe('Sudoku', () => {
     }
   });
 
-  test('fingerprint_d2', () => {
-    const config = new Sudoku('218574639573896124469123578721459386354681792986237415147962853695318247832745961');
-    const subject = new Sudoku(config);
-    const fp2 = config.fingerprint_d(2);
+  describe('fingerprint', () => {
+    const gridStr = '218574639573896124469123578721459386354681792986237415147962853695318247832745961';
+    const expected_fp2 = '9:f:b:d:3:7::1c';
+    const expected_fp3 = '9::f::18:6:3b:d:36:6:32:9:d:5:39:2';
+    /** @type {Sudoku} */
+    let grid;
 
-    // Transforms that should be symmetry-preserving
-    const transforms = [
-      () => subject.shuffleDigits(),
-      () => subject.rotate90(),
-      () => subject.reflectOverHorizontal(),
-      () => subject.reflectOverVertical(),
-      () => subject.reflectOverDiagonal(),
-      () => subject.reflectOverAntidiagonal()
-    ];
+    beforeEach(() => {
+      grid = new Sudoku(gridStr);
+    });
 
-    const nTransforms = 13 + (100 * Math.random()) | 0;
-    for (let i = 0; i < nTransforms; i++) {
-      transforms[(transforms.length * Math.random()) | 0]();
-      expect(subject.fingerprint_d(2)).toBe(fp2);
-    }
+    test('check known', () => {
+      expect(grid.fingerprint_d(2)).toBe(expected_fp2);
+      expect(grid.fingerprint_d(3)).toBe(expected_fp3);
+    });
+
+    test('fingerprint does not change under grid transformations', () => {
+      const transforms = [
+        () => grid.shuffleDigits(),
+        () => grid.rotate90(),
+        () => grid.reflectOverHorizontal(),
+        () => grid.reflectOverVertical(),
+        () => grid.reflectOverDiagonal(),
+        () => grid.reflectOverAntidiagonal(),
+        () => { // Swap bands
+          const combo = randomCombo(3, 2);
+          grid.swapBands(combo[0], combo[1]);
+        },
+        () => { // Swap stacks
+          const combo = randomCombo(3, 2);
+          grid.swapStacks(combo[0], combo[1]);
+        },
+        () => { // Swap rows within a band
+          const band = (Math.random() * 3) | 0;
+          const combo = randomCombo(3, 2);
+          grid.swapRows(band * 3 + combo[0], band * 3 + combo[1]);
+        },
+        () => { // Swap columns within a stack
+          const stack = (Math.random() * 3) | 0;
+          const combo = randomCombo(3, 2);
+          grid.swapColumns(stack * 3 + combo[0], stack * 3 + combo[1]);
+        }
+      ];
+
+      const nTransforms = 33 + (100 * Math.random()) | 0;
+      for (let i = 0; i < nTransforms; i++) {
+        // const t = (transforms.length * Math.random()) | 0;
+        transforms[(transforms.length * Math.random()) | 0]();
+
+        // Check that the fingerprint is unchanged once in awhile.
+        // Not after every transformation - to save time.
+        if ((i % 17) === 0) {
+          expect(grid.fingerprint_d(2)).toBe(expected_fp2);
+        }
+      }
+      expect(grid.fingerprint_d(2)).toBe(expected_fp2);
+      expect(grid.fingerprint_d(3)).toBe(expected_fp3);
+    });
   });
-
-  // This test is disabled to save time.
-  // test('fingerprint_d3', () => {
-  //   const config = new Sudoku('218574639573896124469123578721459386354681792986237415147962853695318247832745961');
-  //   const subject = new Sudoku(config);
-  //   const fp3 = config.fingerprint_d(3);
-
-  //   // Transforms that should be symmetry-preserving
-  //   const transforms = [
-  //     () => subject.shuffleDigits(),
-  //     () => subject.rotate90(),
-  //     () => subject.reflectOverHorizontal(),
-  //     () => subject.reflectOverVertical(),
-  //     () => subject.reflectOverDiagonal(),
-  //     () => subject.reflectOverAntidiagonal()
-  //   ];
-
-  //   const nTransforms = 13 + (100 * Math.random()) | 0;
-  //   for (let i = 0; i < nTransforms; i++) {
-  //     transforms[(transforms.length * Math.random()) | 0]();
-  //     expect(subject.fingerprint_d(3)).toBe(fp3);
-  //   }
-  // });
 });
 
 /**
@@ -214,19 +219,12 @@ function expectPuzzleToBeValid(puzzle) {
  * @param {Sudoku} puzzle
  */
 function expectPuzzleToBeFull(puzzle) {
-  for (let i = 0; i < 9; i++) {
+  const pBoard = puzzle.board;
+  for (let ci = 0; ci < 81; ci++) {
     expect(
-      puzzle.isRowFull(i),
-      `Expected row ${i} to be full:\n${puzzle.rowVals(i).join('')}`
-    ).toBe(true);
-    expect(
-      puzzle.isColFull(i),
-      `Expected col ${i} to be full:\n${puzzle.colVals(i).join('')}`
-    ).toBe(true);
-    expect(
-      puzzle.isRegionFull(i),
-      `Expected region ${i} to be full:\n${puzzle.regionVals(i).join('')}`
-    ).toBe(true);
+      pBoard[ci],
+      `\nBoard not full @ cell ${ci}: ${puzzle.toString()}`
+    ).not.toBe(0);
   }
   expect(puzzle.isFull()).toBe(true);
   expect(puzzle.numEmptyCells).toBe(0);

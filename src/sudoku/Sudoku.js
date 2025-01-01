@@ -6,17 +6,15 @@ import {
   reflectOverDiagonal,
   reflectOverAntiDiagonal,
   shuffle,
-  swapAllInArr
+  swapAllInArr,
+  swap
 } from '../util/arrays.js';
 import { bitCombo, nChooseK, randomCombo } from '../util/perms.js';
 import Debugger from '../util/debug.js';
-import SudokuSieve, { countBits, digitMask } from './SudokuSieve.js';
+import SudokuSieve from './SudokuSieve.js';
+import { chooseRandom, countBigBits, countBits, removeRandom } from '../util/common.js';
 
 const debug = new Debugger(false);
-
-const randInt = (max => ((Math.random() * max) | 0));
-const chooseRandom = (arr => (arr.length > 0) ? arr[randInt(arr.length)] : null);
-const removeRandom = (arr => (arr.length > 0) ? arr.splice(randInt(arr.length), 1)[0] : null);
 
 /**
  * @callback SolutionFoundCallback
@@ -24,55 +22,113 @@ const removeRandom = (arr => (arr.length > 0) ? arr.splice(randInt(arr.length), 
  * @returns {boolean} If `true`, the search will continue for more solutions.
  */
 
-/** The number of digits used in Sudoku.*/
-export const NUM_DIGITS = 9;
-/** `0x1ff`; Represents the combination of all candidates for a given cell on a Sudoku board.*/
-const ALL = 511;
-/** The number of spaces on a Sudoku board.*/
-export const NUM_SPACES = 81;
-/** The minimum number of clues required for a Sudoku puzzle.*/
-export const MIN_CLUES = 17;
+export const RANK = 3;
+/** The number of digits used in sudoku.*/
+export const DIGITS = RANK * RANK;
+/** `0x1ff`; Represents the combination of all candidates for a given cell on a sudoku board.*/
+const ALL = (1 << DIGITS) - 1;
+/** The number of spaces on a sudoku board.*/
+export const SPACES = DIGITS * DIGITS;
+/** The minimum number of clues required for a sudoku puzzle.*/
+export const MIN_CLUES = DIGITS * 2 - 1;
 
-function cellMask(cellIndex) { return 1n << (BigInt(NUM_SPACES - cellIndex - 1)); }
-const CELL_MASKS = range(NUM_SPACES).map(cellMask);
+/**
+ * Contains the digits 1-9.
+ * This can be shuffled and reused for various purposes,
+ * but do not add or remove elements, else shit will break.
+ */
+const DIGIT_BAG = range(DIGITS + 1, 1);
+
+/** Used to pull out row constraints. */
+const ROW_MASK = ALL << (DIGITS * 2);
+/** Used to pull out column constraints. */
+const COLUMN_MASK = ALL << DIGITS;
+/** Used to pull out region constraints. */
+const REGION_MASK = ALL;
+const FULL_CONSTRAINTS = ROW_MASK | COLUMN_MASK | REGION_MASK;
+
+/**
+ * Encodes a cell index as an 81-bit mask.
+ *
+ * Note: The leftmost mask bits correspond with the top-left sudoku board cell.
+ *
+ * Example: `cellmask(0) => 0b1000000...000`
+ *
+ * Example: `cellmask(80) => 0b1000000...000`
+ * @param {number} cellIndex `[0, 80]`; ⚠️ not checked.
+ */
+export const cellMask = (cellIndex) => (1n << (BigInt(SPACES - cellIndex - 1)));
+
+/**
+ * Encodes a digit as a 9-bit mask.
+ *
+ * Note: The higher order bits correspond with higher digit values.
+ *
+ * Example:
+ *
+ * `digitMask(2) => 0b000000010`
+ *
+ * `digitMask(9) => 0b100000000`
+ * @param {number} digit `[1, 9]`; ⚠️ not checked.
+ */
+export const digitMask = (digit) => (1 << (digit - 1));
+
+/**
+ * Returns an array of cell indices from the given mask.
+ * @param {bigint} mask
+ * @returns {number[]}
+ */
+export function cellsFromMask(mask) {
+  const cells = [];
+  let ci = SPACES - 1;
+  while (mask > 0n) {
+    if (mask & 1n) {
+      cells.push(ci);
+    }
+    mask >>= 1n;
+    ci--;
+  }
+  return cells;
+}
+
+const CELL_MASKS = range(SPACES).map(cellMask);
 
 /** @type {number[]} */
-const EMPTY_BOARD = Object.freeze(Array(NUM_SPACES).fill(0));
+const EMPTY_BOARD = Array(SPACES).fill(0);
 
 /**
  * Maps digits (the indices) to their encoded board values.
  * @type {number[]}
  **/
-const ENCODER = Object.freeze([0, ...range(NUM_DIGITS).map((shift) => 1<<shift)]);
+const ENCODER = [0, ...range(DIGITS).map((shift) => 1<<shift)];
 /**
  * Maps encoded board values (the indices) to the digits they represent.
  * @type {number[]}
  **/
-const DECODER = range(1<<NUM_DIGITS).fill(0);
-range(NUM_DIGITS).map((shift) => DECODER[1<<shift] = shift + 1);
-Object.freeze(DECODER);
+const DECODER = range(1<<DIGITS).fill(0);
+range(DIGITS).map((shift) => DECODER[1<<shift] = shift + 1);
 
 /**
  * Maps the encoded board values (the indices) to the lists of candidate digits they represent.
  * @type {number[][]}
  **/
-const CANDIDATE_DECODINGS = Object.freeze(range(1<<NUM_DIGITS).map(encoded => {
+const CANDIDATE_DECODINGS = range(1<<DIGITS).map(encoded => {
   const candidates = [];
-  for (let digit = 1; encoded > 0 && digit <= NUM_DIGITS; digit++, encoded >>= 1) {
+  for (let digit = 1; encoded > 0 && digit <= DIGITS; digit++, encoded >>= 1) {
     if (encoded & 1) {
       candidates.push(digit);
     }
   }
-  return Object.freeze(candidates);
-}));
+  return candidates;
+});
 
 /**
  * Maps the encoded board values (the indices) to the list of candidate digits (ENCODED) they represent.
  * @type {number[][]}
  **/
-const CANDIDATES = Object.freeze(CANDIDATE_DECODINGS.map(candidates =>
-  Object.freeze(candidates.map(digit => ENCODER[digit]))
-));
+const CANDIDATES = CANDIDATE_DECODINGS.map(c => c.map(digit => ENCODER[digit]));
+
+const BIT_COUNT_MAP = range(1<<DIGITS).map(countBits);
 
 /**
  * Cache of Sudoku board indices for each row, column, and region.
@@ -83,13 +139,13 @@ const CANDIDATES = Object.freeze(CANDIDATE_DECODINGS.map(candidates =>
  * indicesFor.regions[0] // [0, 1, 2, 9, 10, 11, 18, 19, 20]
  */
 export const indicesFor = Object.freeze({
-  row: range(NUM_DIGITS).map((row) => range((row+1)*NUM_DIGITS, row*NUM_DIGITS)),
-  col: range(NUM_DIGITS).map((col) => range(NUM_DIGITS).map((row) => col + row*NUM_DIGITS)),
-  region: range(NUM_DIGITS).map((reg) => range(NUM_DIGITS).map((i) => {
-    const n = Math.sqrt(NUM_DIGITS);
-    const rRow = Math.floor(reg/n);
-    const rCol = reg%n;
-    return (rRow*(n**3) + rCol*n + Math.floor(i/n)*NUM_DIGITS + (i%n));
+  row: range(DIGITS).map((row) => range((row+1)*DIGITS, row*DIGITS)),
+  col: range(DIGITS).map((col) => range(DIGITS).map((row) => col + row*DIGITS)),
+  region: range(DIGITS).map((region) => range(DIGITS).map((i) => {
+    // const n = Math.sqrt(NUM_DIGITS);
+    const rRow = (region/RANK) | 0;
+    const rCol = region%RANK;
+    return (rRow*(RANK**3) + rCol*RANK + ((i/RANK)|0)*DIGITS + (i%RANK));
   }))
 });
 
@@ -100,9 +156,9 @@ export const indicesFor = Object.freeze({
 export const masksFor = {
   none: 0n,
   all: (1n << 81n) - 1n,
-  row: indicesFor.row.map(row => row.reduce((mask, ci) => (mask | (1n << BigInt(NUM_SPACES - 1 - ci))), 0n)),
-  col: indicesFor.col.map(col => col.reduce((mask, ci) => (mask | (1n << BigInt(NUM_SPACES - 1 - ci))), 0n)),
-  region: indicesFor.region.map((reg) => reg.reduce((mask, ci) => (mask | (1n << BigInt(NUM_SPACES - 1 - ci))), 0n)),
+  row: indicesFor.row.map(row => row.reduce((mask, ci) => (mask | cellMask(ci)), 0n)),
+  col: indicesFor.col.map(col => col.reduce((mask, ci) => (mask | cellMask(ci)), 0n)),
+  region: indicesFor.region.map((reg) => reg.reduce((mask, ci) => (mask | cellMask(ci)), 0n)),
 };
 
 /**
@@ -131,14 +187,14 @@ const isDigit = (encoded) => DECODER[encoded] > 0;
  * @param {number} cellIndex
  * @returns {number}
  */
-export const cellRow = (cellIndex) => (cellIndex / NUM_DIGITS) | 0;
+export const cellRow = (cellIndex) => (cellIndex / DIGITS) | 0;
 
 /**
  * Returns the column index of the given cell.
  * @param {number} cellIndex
  * @returns {number}
  */
-export const cellCol = (cellIndex) => cellIndex % NUM_DIGITS;
+export const cellCol = (cellIndex) => cellIndex % DIGITS;
 
 /**
  * Returns the region index of the given cell.
@@ -154,6 +210,27 @@ export const cellRegion = (cellIndex) => ((cellIndex / 27) | 0) * 3 + (((cellInd
  * @returns {number}
  */
 export const cellRegion2D = (row, col) => ((row / 3) | 0) * 3 + ((col / 3) | 0);
+
+/** Maps cell indices to rows. */
+const CELL_ROWS = range(SPACES).map(cellRow);
+/** Maps cell indices to columns. */
+const CELL_COLS = range(SPACES).map(cellCol);
+/** Maps cell indices to regions. */
+const CELL_REGIONS = range(SPACES).map(cellRegion);
+/** Maps cell indices to cell indices of row neighbors. Excludes itself. */
+const ROW_NEIGHBORS = range(SPACES).map((ci) => indicesFor.row[CELL_ROWS[ci]].filter(i => i !== ci));
+/** Maps cell indices to cell indices of column neighbors. Excludes itself. */
+const COL_NEIGHBORS = range(SPACES).map((ci) => indicesFor.col[CELL_COLS[ci]].filter(i => i !== ci));
+/** Maps cell indices to cell indices of region neighbors. Excludes itself. */
+const REGION_NEIGHBORS = range(SPACES).map((ci) => indicesFor.region[CELL_REGIONS[ci]].filter(i => i !== ci));
+/** Maps cell indices to cell indices of row, column, and region neighbors. Excludes itself. */
+const CELL_NEIGHBORS = range(SPACES).map((ci) => {
+  const neighbors = new Set();
+  ROW_NEIGHBORS[ci].forEach(n => neighbors.add(n));
+  COL_NEIGHBORS[ci].forEach(n => neighbors.add(n));
+  REGION_NEIGHBORS[ci].forEach(n => neighbors.add(n));
+  return [...neighbors];
+});
 
 /**
  * Returns whether an area on a Sudoku board (row, column, or region)
@@ -239,32 +316,6 @@ export class SudokuNode {
  * Represents a Sudoku board.
  */
 export class Sudoku {
-  /** 9; The number of digits that appear on a Sudoku board.*/
-  static get NUM_DIGITS() { return NUM_DIGITS; }
-  /** 81; The number of spaces on a Sudoku board. */
-  static get NUM_SPACES() { return NUM_SPACES; }
-  /** 17; The minimum number of clues required for a proper Sudoku puzzle.*/
-  static get MIN_CLUES() { return MIN_CLUES; }
-
-  /**
-   * Returns the row index of the given cell.
-   * @param {number} cellIndex
-   * @returns {number}
-   */
-  static cellRow(cellIndex) { return cellRow(cellIndex); }
-  /**
-   * Returns the column index of the given cell.
-   * @param {number} cellIndex
-   * @returns {number}
-   */
-  static cellCol(cellIndex) { return cellCol(cellIndex); }
-  /**
-   * Returns the region index of the given cell.
-   * @param {number} cellIndex
-   * @returns {number}
-   */
-  static cellRegion(cellIndex) { return cellRegion(cellIndex);}
-
   /**
    * Builds a Sudoku board from a string, where:
    * - `.` represents an empty cell.
@@ -279,9 +330,9 @@ export class Sudoku {
    */
   static fromString(str) {
     // Replace '-' and '.' with '0's
-    let _str = str.replace(/-/g, '0'.repeat(NUM_DIGITS)).replace(/\./g, '0');
+    let _str = str.replace(/-/g, '0'.repeat(DIGITS)).replace(/\./g, '0');
 
-    if (_str.length !== NUM_SPACES) {
+    if (_str.length !== SPACES) {
       throw new Error(`str is invalid (length): ${_str.length}. (Extrapolated: ${_str})`);
     }
 
@@ -300,10 +351,6 @@ export class Sudoku {
 
     return board;
   }
-
-  static ROW_MASK = ALL << (NUM_DIGITS * 2);
-  static COLUMN_MASK = ALL << NUM_DIGITS;
-  static REGION_MASK = ALL;
 
   /**
    *
@@ -348,7 +395,7 @@ export class Sudoku {
   }
 
   static _defaultGenerationOptions = Object.freeze({
-    numClues: NUM_SPACES,
+    numClues: SPACES,
     timeOutMs: 0,
     config: null,
     amount: 1,
@@ -371,7 +418,7 @@ export class Sudoku {
    * @returns {object[]} The generated Sudoku boards along with some metrics.
    */
   static generate({
-    numClues = NUM_SPACES,
+    numClues = SPACES,
     timeOutMs = 0,
     config = null,
     amount = 1,
@@ -392,7 +439,7 @@ export class Sudoku {
     );
 
     // Validate options
-    if (typeof numClues !== 'number' || numClues < MIN_CLUES || numClues > NUM_SPACES) {
+    if (typeof numClues !== 'number' || numClues < MIN_CLUES || numClues > SPACES) {
       throw new Error(`Invalid number of clues: ${numClues}`);
     }
     if (typeof amount !== 'number' || amount < 1 || amount > 1000) {
@@ -413,7 +460,7 @@ export class Sudoku {
 
     const isTrackingTime = timeOutMs > 0;
     const startTime = Date.now();
-    const isGeneratingConfigs = numClues === NUM_SPACES;
+    const isGeneratingConfigs = numClues === SPACES;
 
     const results = [];
 
@@ -552,7 +599,7 @@ export class Sudoku {
             continue;
           }
 
-          if (puzzle.numEmptyCells >= (NUM_SPACES - numClues)) {
+          if (puzzle.numEmptyCells >= (SPACES - numClues)) {
             // debug.log(`generate> found puzzle with ${puzzle.numEmptyCells} empty cells`);
 
             // Just this one time debugging, print the puzzle and the time elapsed
@@ -649,7 +696,7 @@ export class Sudoku {
         continue;
       }
 
-      if (puzzle.numEmptyCells >= (NUM_SPACES - numClues)) {
+      if (puzzle.numEmptyCells >= (SPACES - numClues)) {
         debug.log(`generatePuzzle> found puzzle with ${puzzle.numEmptyCells} empty cells`);
         break;
       }
@@ -683,7 +730,7 @@ export class Sudoku {
    * @returns {Sudoku}
    */
   static _randomCombo(numClues, config = Sudoku.generateConfig()) {
-    const keep = randomCombo(NUM_SPACES, numClues);
+    const keep = randomCombo(SPACES, numClues);
     let keepIndex = 0;
     return new Sudoku(config.board.map((digit, i) => {
       if (keep[keepIndex] === i) {
@@ -705,21 +752,21 @@ export class Sudoku {
    */
   static mask(config, mask) {
     const board = new Sudoku(config).board;
-    for (let ci = 0; ci < NUM_SPACES; ci++) {
-      board[ci] = (mask & (1n << BigInt(NUM_SPACES - ci - 1))) > 0n ? board[ci] : 0;
+    for (let ci = 0; ci < SPACES; ci++) {
+      board[ci] = (mask & (1n << BigInt(SPACES - ci - 1))) > 0n ? board[ci] : 0;
     }
     return new Sudoku(board);
   }
 
   get mask() {
     return this.board.reduce((acc, digit, ci) => (
-      (digit > 0) ? (acc | (1n << BigInt(NUM_SPACES - 1 - ci))) : acc
+      (digit > 0) ? (acc | (1n << BigInt(SPACES - 1 - ci))) : acc
     ), 0n);
   }
 
   get emptyCellMask() {
     return this.board.reduce((acc, digit, ci) => (
-      (digit === 0) ? (acc | (1n << BigInt(NUM_SPACES - 1 - ci))) : acc
+      (digit === 0) ? (acc | (1n << BigInt(SPACES - 1 - ci))) : acc
     ), 0n);
   }
 
@@ -730,7 +777,7 @@ export class Sudoku {
    */
   filter(mask) {
     return new Sudoku(this.board.map((d, i) => (
-      (mask & (1n << BigInt(NUM_SPACES - i - 1))) === 0n ? 0 : d)
+      (mask & (1n << BigInt(SPACES - i - 1))) === 0n ? 0 : d)
     ));
   }
 
@@ -760,7 +807,7 @@ export class Sudoku {
    * @returns {BigInt}
    */
   static getCombo(puzzle) {
-    const numClues = NUM_SPACES - puzzle.numEmptyCells;
+    const numClues = SPACES - puzzle.numEmptyCells;
     const keep = puzzle.board.reduce((keep, val, i) => {
       if (val > 0) {
         keep.push(i);
@@ -813,10 +860,10 @@ export class Sudoku {
       if (stack.length === 0 || popsUntilReset === 0) {
         // Clear the stack and start over
         stack = [{
-          sudoku: Sudoku._randomComboPuzzle(numClues + Math.ceil((NUM_SPACES - numClues) / 4)),
+          sudoku: Sudoku._randomComboPuzzle(numClues + Math.ceil((SPACES - numClues) / 4)),
           nexts: null,
         }];
-        popsUntilReset = (NUM_SPACES - numClues)**2;
+        popsUntilReset = (SPACES - numClues)**2;
         debug.log(`RESET    ${stack[0].sudoku.toString()}`);
       }
 
@@ -824,7 +871,7 @@ export class Sudoku {
       const sudoku = top.sudoku;
       // sudoku._reduce();
 
-      const filledCells = NUM_SPACES - sudoku.numEmptyCells;
+      const filledCells = SPACES - sudoku.numEmptyCells;
       debug.log(`${filledCells}${(filledCells < 10) ? ' ' : ''}       ${sudoku.toString()}`);
 
       if (!sudoku.hasUniqueSolution()) {
@@ -834,7 +881,7 @@ export class Sudoku {
         continue;
       }
 
-      if (sudoku.numEmptyCells >= (NUM_SPACES - numClues)) {
+      if (sudoku.numEmptyCells >= (SPACES - numClues)) {
         debug.log(`SOLUTION ${sudoku.toString()}`);
         return sudoku;
       }
@@ -926,7 +973,7 @@ export class Sudoku {
     }
 
     const boardCopy = this.board;
-    for (let digit = 1; digit <= NUM_DIGITS; digit++) {
+    for (let digit = 1; digit <= DIGITS; digit++) {
       const currentDigit = boardCopy[digit - 1];
       if (currentDigit !== digit) {
         swapAllInArr(boardCopy, currentDigit, digit);
@@ -952,7 +999,7 @@ export class Sudoku {
    */
   _getNextsAdditive(emptyCellIndex = -1) {
     emptyCellIndex = Number(emptyCellIndex) || -1;
-    if (emptyCellIndex < 0 || emptyCellIndex >= NUM_SPACES) {
+    if (emptyCellIndex < 0 || emptyCellIndex >= SPACES) {
       emptyCellIndex = this._pickEmptyCell();
     }
 
@@ -1018,8 +1065,8 @@ export class Sudoku {
    * and whether to fill it with random digits.
    */
   _fillSections(regionMask) {
-    for (let regIndex = 0; regIndex < NUM_DIGITS; regIndex++) {
-      if ((regionMask & (1<<(NUM_DIGITS - 1 - regIndex))) > 0) {
+    for (let regIndex = 0; regIndex < DIGITS; regIndex++) {
+      if ((regionMask & (1<<(DIGITS - 1 - regIndex))) > 0) {
         this.fillRegion(regIndex);
       }
     }
@@ -1031,7 +1078,7 @@ export class Sudoku {
    * @param {number} regionIndex
    */
   fillRegion(regionIndex) {
-    shuffle(range(NUM_DIGITS+1, 1)).forEach((digit, i) => this.setDigit(digit, indicesFor.region[regionIndex][i]));
+    shuffle(DIGIT_BAG).forEach((digit, i) => this.setDigit(digit, indicesFor.region[regionIndex][i]));
   }
 
   /**
@@ -1040,28 +1087,6 @@ export class Sudoku {
    */
   equals(other) {
     return this.board.every((val, i) => val === other.board[i]);
-  }
-
-  /**
-   *
-   * @returns {Sudoku[]}
-   */
-  getAllSolutions() {
-    /** @type {Sudoku[]} */
-    const results = [];
-    // const board = puzzle.board.map(encode);
-    this.searchForSolutions3({
-      solutionFoundCallback: (solution) => {
-        debug.log(`SOLUTION FOUND >> ${solution.toString()}`);
-        if (!results.some((s) => s.equals(solution))) {
-          results.push(solution);
-        } else {
-          debug.log('DUPLICATE SOLUTION IGNORED');
-        }
-      }
-    });
-
-    return results;
   }
 
   /**
@@ -1157,15 +1182,47 @@ export class Sudoku {
 
     const root = new Sudoku(this);
     root._resetEmptyCells();
+    root._resetConstraints();
 
     /**
-     * @typedef {Object} SudokuNode
+     * @typedef {Object} Nodey
      * @property {Sudoku} sudoku
-     * @property {Sudoku[] | null} nexts
+     * @property {number} emptyCellIndex
+     * @property {() => Nodey | null} next
      */
 
-    /** @type {SudokuNode[]} */
-    let stack = [{ sudoku: root, nexts: null }];
+    /**
+     *
+     * @param {Sudoku} sudoku
+     * @return {Nodey}
+     */
+    const Nodey = (sudoku) => {
+      sudoku._reduce();
+      const emptyCellIndex = sudoku._pickEmptyCell();
+
+      return ({
+        /** @type {Sudoku} */
+        sudoku,
+        emptyCellIndex,
+        emptyCellCandidatesEncoded: (emptyCellIndex >= 0) ? sudoku._board[emptyCellIndex] : 0,
+
+        /** @return {Nodey | null} */
+        next() {
+          if (this.emptyCellCandidatesEncoded === 0) {
+            return null;
+          }
+
+          const s = new Sudoku(this.sudoku);
+          const randomCandidateDigit = chooseRandom(CANDIDATE_DECODINGS[this.emptyCellCandidatesEncoded]);
+          s.setDigit(randomCandidateDigit, this.emptyCellIndex);
+          this.emptyCellCandidatesEncoded &= ~(ENCODER[randomCandidateDigit])
+          return Nodey(s);
+        }
+      });
+    };
+
+    /** @type {Nodey[]} */
+    let stack = [Nodey(root)];
 
     const result = {
       /** @type {Sudoku[]} */
@@ -1192,8 +1249,8 @@ export class Sudoku {
       const top = stack[stack.length - 1];
       const sudoku = top.sudoku;
       result.iterations++;
+      // debug.log(`searchForSolutions2> ?${' '.repeat(stack.length)}${sudoku.toString()}`);
       // Reduce obvious candidates first. This may just solve the puzzle.
-      sudoku._reduce();
 
       if (sudoku.isSolved()) {
         result.solutions.push(new Sudoku(sudoku));
@@ -1206,23 +1263,13 @@ export class Sudoku {
         }
       }
 
-      // Finds an empty cell to fill (with least candidates), then generates a collection
-      // of Sudokus with each of the possible candidates filled in.
-      // We'll need to check each of these for solutions.
-      if (top.nexts === null) {
-        top.nexts = sudoku._getNextsAdditive();
-      }
-
-      if (top.nexts.length > 0) {
-        result.branches++;
-        // Pick randomly from the list of nexts, and push it onto the stack.
-        const next = removeRandom(top.nexts);
-        stack.push({ sudoku: next, nexts: null });
-      } else {
+      const next = top.next();
+      if (next === null) {
         stack.pop();
+      } else {
+        stack.push(next);
       }
     }
-    stack = null;
 
     result.complete = (!result.timedOut && !result.terminatedByCallback);
     result.timeElapsedMs = Date.now() - startTime;
@@ -1263,9 +1310,9 @@ export class Sudoku {
    */
   searchForSolutions3({
     timeOutMs = 0,
-    solutionFoundCallback = (solution) => true,
+    solutionFoundCallback = () => true,
     concurrentBranches = 9,
-  }) {
+  } = {}) {
     timeOutMs = Number(timeOutMs) || 0;
 
     const isTimeConstraint = timeOutMs > 0;
@@ -1273,6 +1320,7 @@ export class Sudoku {
 
     const root = new Sudoku(this);
     root._resetEmptyCells();
+    root._resetConstraints();
 
     /**
      * @typedef {Object} SudokuNode
@@ -1411,75 +1459,37 @@ export class Sudoku {
   }
 
   /**
-   * Gets the constraints for the given row.
-   * @param {number} rowIndex
-   * @returns {number} A bit mask of the constraints, where `1`
-   * represents the presence of a digit in the row.
-   */
-  _rowConstraints(rowIndex) {
-    return (this._constraints[rowIndex] & Sudoku.ROW_MASK) >> (NUM_DIGITS * 2);
-  }
-
-  /**
-   * Gets the constraints for the given column.
-   * @param {number} columnIndex
-   * @returns {number} A bit mask of the constraints, where `1`
-   * represents the presence of a digit in the column.
-   */
-  _colConstraints(columnIndex) {
-    return (this._constraints[columnIndex] & Sudoku.COLUMN_MASK) >> NUM_DIGITS;
-  }
-
-  /**
-   * Gets the constraints for the given region.
-   * @param {number} regionIndex
-   * @returns {number} A bit mask of the constraints, where `1`
-   * represents the presence of a digit in the region.
-   */
-  _regionConstraints(regionIndex) {
-    return this._constraints[regionIndex] & Sudoku.REGION_MASK;
-  }
-
-  /**
    * Gets the constraints for the given cell.
-   * @param {number} cellIndex
+   * @param {number} ci
    * @returns {number} A bit mask of the constraints, where `1`
    * represents the presence of a digit in the cell's row, column, or region.
    */
-  _cellConstraints(cellIndex) {
-    return (
-      this._rowConstraints(cellRow(cellIndex)) |
-      this._colConstraints(cellCol(cellIndex)) |
-      this._regionConstraints(cellRegion(cellIndex))
+  _cellConstraints(ci) {
+    return Number(
+      ((this._constraints[CELL_ROWS[ci]] >> (DIGITS*2)) |
+      (this._constraints[CELL_COLS[ci]] >> (DIGITS)) |
+      this._constraints[CELL_REGIONS[ci]]) & ALL
     );
   }
 
   /**
    * Adds a constraint for the given cell.
-   * @param {number} cellIndex
+   * @param {number} ci
    * @param {number} digit
    * @returns {void}
    */
-  _addConstraint(cellIndex, digit) {
-    const rowIndex = cellRow(cellIndex);
-    const columnIndex = cellCol(cellIndex);
-    const regionIndex = cellRegion(cellIndex);
-    // System.out.printf("Adding constraint on %d (%d,%d) -> %d\n", cellIndex, rowIndex + 1, columnIndex + 1, digit);
-
-    this._constraints[rowIndex] |= 1 << (digit - 1 + (NUM_DIGITS * 2));
-    this._constraints[columnIndex] |= 1 << (digit - 1 + NUM_DIGITS);
-    this._constraints[regionIndex] |= 1 << (digit - 1);
+  _addConstraint(ci, digit) {
+    const dMask = ENCODER[digit];
+    this._constraints[CELL_ROWS[ci]] |= (dMask << (DIGITS*2));
+    this._constraints[CELL_COLS[ci]] |= (dMask << DIGITS);
+    this._constraints[CELL_REGIONS[ci]] |= dMask;
   }
 
-  _removeConstraint(cellIndex, prevDigit) {
-    const rowIndex = cellRow(cellIndex);
-    const columnIndex = cellCol(cellIndex);
-    const regionIndex = cellRegion(cellIndex);
-    // System.out.printf("Removing constraint on %d (%d,%d) -> %d\n", cellIndex, rowIndex + 1, columnIndex + 1, prevDigit);
-
-    this._constraints[rowIndex] &= ~(1 << (prevDigit - 1 + (NUM_DIGITS * 2)));
-    this._constraints[columnIndex] &= ~(1 << (prevDigit - 1 + NUM_DIGITS));
-    this._constraints[regionIndex] &= ~(1 << (prevDigit - 1));
+  _removeConstraint(ci, digit) {
+    const dMask = ENCODER[digit];
+    this._constraints[CELL_ROWS[ci]] &= ~(dMask << (DIGITS*2));
+    this._constraints[CELL_COLS[ci]] &= ~(dMask << DIGITS);
+    this._constraints[CELL_REGIONS[ci]] &= ~dMask;
   }
 
   /**
@@ -1500,15 +1510,14 @@ export class Sudoku {
     this._board;
 
     /**
-     * Contains puzzle constraints in the form
+     * Contains puzzle constraints in the form of 27-bit blocks,
      *
-     * `[... other bits][9 row bits][9 column bits][9 region bits]`,
+     * `[9 row bits][9 column bits][9 region bits]`,
      *
      * where each bit represents a digit, and is set to 1 if the digit
      * is present in the row, column, or region.
      *
-     * Use `Constraints.ROW_MASK`, `Constraints.COL_MASK`, and
-     * `Constraints.REGION_MASK` to filter constraint values.
+     * Use `ROW_MASK`, `COL_MASK`, and `REGION_MASK` to filter constraint values.
      * @type {number[]}
      */
     this._constraints;
@@ -1519,11 +1528,16 @@ export class Sudoku {
      */
     this._clues;
 
+    /** Keeps track of the number of empty cells on the board.*/
+    this._numEmptyCells = SPACES;
+
     /**
-     * Keeps track of the number of empty cells on the board.
-     * @type {number}
+     * @typedef {object} Area
+     * @property {number} index
+     * @property {number} constraints
+     * @property {number[]} candidateCount
+     * @property {Cell[]} cells
      */
-    this._numEmptyCells = NUM_SPACES;
 
     if (data instanceof Sudoku) {
       this._board = [...data._board];
@@ -1538,9 +1552,9 @@ export class Sudoku {
       this._numEmptyCells = parsed._numEmptyCells;
     } else if (Array.isArray(data)) {
       this._board = [...EMPTY_BOARD];
-      this._constraints = Array(NUM_DIGITS).fill(0);
       this._clues = [...EMPTY_BOARD];
-      if (data.length === NUM_SPACES) {
+      this._constraints = Array(DIGITS).fill(0);
+      if (data.length === SPACES) {
         this.setBoard(data);
         this._clues = this.board;
       }
@@ -1563,9 +1577,9 @@ export class Sudoku {
    */
   get board2D() {
     const boardRows = [];
-    for (let r = 0; r < NUM_DIGITS; r++) {
-      const start = r * NUM_DIGITS;
-      const end = start + NUM_DIGITS;
+    for (let r = 0; r < DIGITS; r++) {
+      const start = r * DIGITS;
+      const end = start + DIGITS;
       const rowValues = this.board.slice(start, end);
       boardRows.push(rowValues);
     }
@@ -1647,7 +1661,7 @@ export class Sudoku {
    * or if any of the numbers provided are not digits.
    */
   setBoard(digits) {
-    if (digits.length !== NUM_SPACES) {
+    if (digits.length !== SPACES) {
       throw new Error(`board is invalid (length): ${digits.length}.`);
     }
 
@@ -1656,7 +1670,7 @@ export class Sudoku {
         throw new Error(`board is invalid (type): ${typeof digit} at index ${i}.`);
       }
 
-      if (digit < 0 || digit > NUM_DIGITS) {
+      if (digit < 0 || digit > DIGITS) {
         throw new Error(`board is invalid (value): ${digit} at index ${i}.`);
       }
 
@@ -1679,21 +1693,7 @@ export class Sudoku {
    * @returns {number[]}
    */
   getCandidates(cellIndex) {
-    // return ENCODER.slice(1).filter((encoded) => (this._board[cellIndex] & encoded) > 0).map(decode);
-
-    // TODO Use CANDIDATE_DECODINGS map once implemented
     return CANDIDATE_DECODINGS[this._board[cellIndex]];
-    // let encodedCellValue = this._board[cellIndex];
-    // if (encodedCellValue === 0) {
-
-    // }
-
-    // let results = [];
-    // let digit = 1;
-    // while (encodedCellValue > 0) {
-
-    // }
-    // return results;
   }
 
   _getCandidatesEncoded(cellIndex) {
@@ -1716,7 +1716,7 @@ export class Sudoku {
     this._board.fill(ALL);
     this._constraints.fill(0);
     this._clues.fill(0);
-    this._numEmptyCells = NUM_SPACES;
+    this._numEmptyCells = SPACES;
   }
 
   /**
@@ -1725,7 +1725,7 @@ export class Sudoku {
   reset() {
     this._board.fill(ALL);
     this._constraints.fill(0);
-    this._numEmptyCells = NUM_SPACES;
+    this._numEmptyCells = SPACES;
     this._clues.forEach((digit, index) => this.setDigit(digit, index));
   }
 
@@ -1766,30 +1766,12 @@ export class Sudoku {
   }
 
   /**
-   * Returns true if the given row is full.
-   * @param {number} row
-   * @returns {boolean}
-   */
-  isRowFull(row) {
-    return isAreaFull(this.rowVals(row));
-  }
-
-  /**
    * Returns true if the given column is valid.
    * @param {number} col
    * @returns {boolean}
    */
   isColValid(col) {
     return isAreaValid(this.colVals(col));
-  }
-
-  /**
-   * Returns true if the given column is full.
-   * @param {number} col
-   * @returns {boolean}
-   */
-  isColFull(col) {
-    return isAreaFull(this.colVals(col));
   }
 
   /**
@@ -1802,46 +1784,27 @@ export class Sudoku {
   }
 
   /**
-   * Returns true if the given region is full.
-   * @param {number} reg
-   * @returns {boolean}
-   */
-  isRegionFull(reg) {
-    return isAreaFull(this.regionVals(reg));
-  }
-
-  /**
    * Returns true if the board is valid.
    * @returns {boolean}
    */
   isValid() {
     // TODO Check constraints instead
-    return range(NUM_DIGITS).every((i) => (
+    return range(DIGITS).every((i) => (
       this.isRowValid(i) &&
       this.isColValid(i) &&
       this.isRegionValid(i)
     ));
   }
 
-  /**
-   * Returns true if the board is full.
-   * @returns {boolean}
-   */
-  isFull() {
-    // TODO return this._numEmptyCells === 0;
-    return range(NUM_DIGITS).every((i) => (
-      this.isRowFull(i) &&
-      this.isColFull(i) &&
-      this.isRegionFull(i)
-    ));
-  }
+  /** Returns true if the board is full. */
+  isFull() { return this._numEmptyCells === 0; }
 
   /**
    * Returns true if the board is full and valid.
    * @returns {boolean}
    */
   isSolved() {
-    return this.isFull() && this.isValid();
+    return this._numEmptyCells === 0 && this._constraints.every((c) => c === FULL_CONSTRAINTS);
   }
 
   /**
@@ -1892,7 +1855,7 @@ export class Sudoku {
    */
   get normalizedBoard() {
     const copy = [...this.board];
-    for (let i = 1; i <= NUM_DIGITS; i++) {
+    for (let i = 1; i <= DIGITS; i++) {
       const digit = copy[i - 1];
       if (digit != i) {
         swapAllInArr(copy, digit, i);
@@ -1905,25 +1868,21 @@ export class Sudoku {
    *
    */
   shuffleDigits() {
-    const digits = range(NUM_DIGITS + 1, 1);
+    const digits = range(DIGITS + 1, 1);
     shuffle(digits).forEach((digit, i) => {
       swapAllInArr(this._board, encode(digit), encode(i + 1));
       swapAllInArr(this._clues, digit, i + 1);
     });
-    this._resetEmptyCells();
-    this._resetConstraints();
   }
 
   reflectOverHorizontal() {
-    reflectOverHorizontal(this._board, NUM_DIGITS);
-    reflectOverHorizontal(this._clues, NUM_DIGITS);
-    this._resetConstraints();
+    reflectOverHorizontal(this._board, DIGITS);
+    reflectOverHorizontal(this._clues, DIGITS);
   }
 
   reflectOverVertical() {
-    reflectOverVertical(this._board, NUM_DIGITS);
-    reflectOverVertical(this._clues, NUM_DIGITS);
-    this._resetConstraints();
+    reflectOverVertical(this._board, DIGITS);
+    reflectOverVertical(this._clues, DIGITS);
   }
 
   /**
@@ -1932,24 +1891,92 @@ export class Sudoku {
   reflectOverDiagonal() {
     reflectOverDiagonal(this._board);
     reflectOverDiagonal(this._clues);
-    this._resetConstraints();
   }
 
   reflectOverAntidiagonal() {
     reflectOverAntiDiagonal(this._board);
     reflectOverAntiDiagonal(this._clues);
-    this._resetConstraints();
   }
 
   rotate90() {
     rotateArr90(this._board);
     rotateArr90(this._clues);
-    this._resetEmptyCells();
-    this._resetConstraints();
+  }
+
+  swapBands(band1, band2) {
+    const b1 = band1 % 3;
+    const b2 = band2 % 3;
+    if (b1 === b2) {
+      return;
+    }
+
+    const N = DIGITS * 3;
+    const bands = [
+      this._board.slice(0, N),
+      this._board.slice(N, N*2),
+      this._board.slice(N*2, N*3)
+    ];
+    const clues = [
+      this._clues.slice(0, N),
+      this._clues.slice(N, N*2),
+      this._clues.slice(N*2, N*3),
+    ];
+
+    swap(bands, b1, b2);
+    swap(clues, b1, b2);
+    this._board = bands.flat();
+    this._clues = clues.flat();
+  }
+
+  swapRows(row1, row2) {
+    const r1 = row1 % DIGITS;
+    const r2 = row2 % DIGITS;
+    if (r1 === r2) {
+      return;
+    }
+
+    const N = DIGITS;
+    const rows = range(DIGITS).map(i => this._board.slice(N*i, N*(i+1)));
+    const clueRows = range(DIGITS).map(i => this._clues.slice(N*i, N*(i+1)));
+    swap(rows, r1, r2);
+    swap(clueRows, r1, r2);
+    this._board = rows.flat();
+    this._clues = clueRows.flat();
+  }
+
+  swapColumns(col1, col2) {
+    const c1 = col1 % DIGITS;
+    const c2 = col2 % DIGITS;
+    if (c1 === c2) {
+      return;
+    }
+
+    let temp;
+    for (let r = 0; r < DIGITS; r++) {
+      temp = this._board[r * DIGITS + c1];
+      this._board[r * DIGITS + c1] = this._board[r * DIGITS + c2];
+      this._board[r * DIGITS + c2] = temp;
+
+      temp = this._clues[r * DIGITS + c1];
+      this._clues[r * DIGITS + c1] = this._clues[r * DIGITS + c2];
+      this._clues[r * DIGITS + c2] = temp;
+    }
+  }
+
+  swapStacks(stack1, stack2) {
+    const s1 = stack1 % 3;
+    const s2 = stack2 % 3;
+    if (s1 === s2) {
+      return;
+    }
+
+    this.swapColumns(s1*3, s2*3);
+    this.swapColumns(s1*3 + 1, s2*3 + 1);
+    this.swapColumns(s1*3 + 2, s2*3 + 2);
   }
 
   _resetConstraints() {
-    this._constraints = Array(NUM_DIGITS).fill(0);
+    this._constraints.fill(0);
     this.board.forEach((digit, i) => {
       if (digit > 0) {
         this._addConstraint(i, digit);
@@ -1976,7 +2003,7 @@ export class Sudoku {
 
     do {
       hadReduction = false;
-      for (let i = 0; i < NUM_SPACES; i++) {
+      for (let i = 0; i < SPACES; i++) {
         hadReduction ||= this._reduce2(i);
         if (hadReduction) {
           // console.log(`reduced> ${boardSolution.board.map(decode).join('').replace(/0/g, '.')}`);
@@ -1994,7 +2021,6 @@ export class Sudoku {
    * @returns {boolean}
    */
   _reduce2(cellIndex) {
-    // let _board = boardSolution.board;
     const candidates = this._board[cellIndex];
 
     if (isDigit(candidates) || candidates <= 0) {
@@ -2013,17 +2039,10 @@ export class Sudoku {
     // If by applying the constraints, the number of candidates is reduced to 1,
     // then the cell is solved.
     if (isDigit(reducedCandidates)) {
-      // postDigit(boardSolution, cellIndex, decode(reducedCandidates));
       this.setDigit(decode(reducedCandidates), cellIndex);
-      // this._board[cellIndex] = reducedCandidates;
-      // constraints.add(cellIndex, decode(reducedCandidates));
-
     } else {
-      const uniqueCandidate = this._hasUniqueCandidate(cellIndex);
+      const uniqueCandidate = this._getUniqueCandidate(cellIndex);
       if (uniqueCandidate > 0) {
-        // postDigit(boardSolution, cellIndex, decode(uniqueCandidate));
-        // this._board[cellIndex] = uniqueCandidate;
-        // constraints.add(cellIndex, decode(uniqueCandidate));
         this.setDigit(decode(uniqueCandidate), cellIndex);
 
         reducedCandidates = uniqueCandidate;
@@ -2042,77 +2061,57 @@ export class Sudoku {
 
   /**
    *
-   * @param {number} cellIndex
+   * @param {number} ci
    * @returns {number}
    */
-  _hasUniqueCandidate(cellIndex) {
-    const row = cellRow(cellIndex);
-    const col = cellCol(cellIndex);
-    const region = cellRegion(cellIndex);
+  _getUniqueCandidate(ci) {
+    const candidates = CANDIDATES[this._board[ci]];
+    for (let candidate of candidates) {
+      let unique = true;
+      for (let ni of ROW_NEIGHBORS[ci]) {
+        if ((this._board[ni] & candidate) > 0) {
+          unique = false;
+          break;
+        }
+      }
+      if (unique) {
+        return candidate;
+      }
 
-    // // Delete later. This was for easier debugging.
-    // for (let candidateMask = 1; candidateMask < (1<<NUM_DIGITS); candidateMask <<= 1) {
-    //   if ((this._board[cellIndex] & candidateMask) > 0) {
-    //     if (
-    //       this.isCandidateUniqueInArea(indicesFor.row[row], cellIndex, candidateMask) ||
-    //       this.isCandidateUniqueInArea(indicesFor.col[col], cellIndex, candidateMask) ||
-    //       this.isCandidateUniqueInArea(indicesFor.region[region], cellIndex, candidateMask)
-    //     ) {
-    //       return candidateMask;
-    //     }
-    //   }
-    // }
-    //
-    // return 0;
+      unique = true;
+      for (let ni of COL_NEIGHBORS[ci]) {
+        if ((this._board[ni] & candidate) > 0) {
+          unique = false;
+          break;
+        }
+      }
+      if (unique) {
+        return candidate;
+      }
 
-    return this._getCandidatesEncoded(cellIndex).find((candidateMask) => (
-      this._isCandidateUniqueInArea(indicesFor.row[row], cellIndex, candidateMask) ||
-      this._isCandidateUniqueInArea(indicesFor.col[col], cellIndex, candidateMask) ||
-      this._isCandidateUniqueInArea(indicesFor.region[region], cellIndex, candidateMask)
-    )) || 0;
+      unique = true;
+      for (let ni of REGION_NEIGHBORS[ci]) {
+        if ((this._board[ni] & candidate) > 0) {
+          unique = false;
+          break;
+        }
+      }
+      if (unique) {
+        return candidate;
+      }
+    }
+
+    return 0;
   }
 
   /**
    *
-   * @param {number[]} areaIndices
    * @param {number} cellIndex
-   * @param {number} candidateMask
-   * @returns {boolean}
-   */
-  _isCandidateUniqueInArea(areaIndices, cellIndex, candidateMask) {
-    const indices = areaIndices.filter((neighborIndex) => neighborIndex != cellIndex);
-    return indices.every((neighborIndex) => (
-      (this._board[neighborIndex] & candidateMask) === 0
-    ));
-  }
-
-  /**
-   *
-   * @param {number} cellIndex
-   * @returns {void}
    */
   _reduceNeighbors(cellIndex) {
-    // System.out.printf("Relaxing neighbors of cell %d ...\n", cellIndex);
-    [
-      ...indicesFor.row[cellRow(cellIndex)],
-      ...indicesFor.col[cellCol(cellIndex)],
-      ...indicesFor.region[cellRegion(cellIndex)]
-    ].filter((neighborIndex) => neighborIndex != cellIndex).forEach((neighborIndex) => this._reduce2(neighborIndex));
-
-    // forEach((neighborIndex) => {
-    //   if (neighborIndex != cellIndex) {
-    //     this.reduce2(neighborIndex);
-    //   }
-    // });
-    // System.out.printf("Done relaxing neighbors of cell %d ...\n", cellIndex);
-  }
-
-  /**
-   *
-   * @returns {number}
-   */
-  _findFirstEmptyCell() {
-    return this._board.findIndex((val) => !isDigit(val));
+    for (let ni of CELL_NEIGHBORS[cellIndex]) {
+      this._reduce2(ni);
+    }
   }
 
   /**
@@ -2120,20 +2119,27 @@ export class Sudoku {
    * @return {number} Cell index, or `-1` if there are no empty cells.
    */
   _pickEmptyCell() {
-    let minCandidates = NUM_DIGITS + 1;
-    const _numCandidatesMap = this._board.reduce((map, _, ci) => {
-      const numCandidates = this.getCandidates(ci).length;
-      if (numCandidates > 1 && numCandidates < minCandidates) {
-        minCandidates = numCandidates;
+    if (this._numEmptyCells === 0) {
+      return -1;
+    }
+
+    // TODO Keep track of empty cells in state for instant lookup.
+    let minNumCandidates = DIGITS + 1;
+    let minCandidatesBucket = [];
+    this._board.forEach((candidates, ci) => {
+      const numCandidates = BIT_COUNT_MAP[candidates];
+      if (numCandidates > 1) {
+        if (numCandidates < minNumCandidates) {
+          minNumCandidates = numCandidates;
+          minCandidatesBucket = [ci];
+        } else if (numCandidates === minNumCandidates) {
+          minCandidatesBucket.push(ci);
+        }
       }
-      map[numCandidates].push(ci);
-      return map;
-    }, range(NUM_DIGITS + 1).map(_=>[]));
+    });
 
-    // If there are no empty cells, then minCandidates would not have changed
-    if (minCandidates === (NUM_DIGITS + 1)) return -1;
-
-    return chooseRandom(_numCandidatesMap[minCandidates]);
+    // If min still === 10, then there are no empty cells.
+    return (minNumCandidates === (DIGITS + 1)) ? -1 : chooseRandom(minCandidatesBucket);
   }
 
   /**
@@ -2157,15 +2163,12 @@ export class Sudoku {
    * - `2 or higher` - Multiple solutions.
    */
   solutionsFlag() {
-    if (this.numEmptyCells > NUM_SPACES - MIN_CLUES) {
+    if (this.numEmptyCells > SPACES - MIN_CLUES) {
       return 2;
     }
 
     let solutionCount = 0;
-    const searchResults = this.searchForSolutions3({
-      solutionFoundCallback: (_) => (++solutionCount < 2)
-    });
-    // console.log(`searchForSolutions3 (${(searchResults.timeElapsedMs > 2000) ? '🚨' : ''}${searchResults.timeElapsedMs}ms): ${this.toString()} ${JSON.stringify(searchResults)}`);
+    this.searchForSolutions2({ solutionFoundCallback: (_) => (++solutionCount < 2) });
     return solutionCount;
   }
 
@@ -2177,7 +2180,7 @@ export class Sudoku {
    */
   solve() {
     let solution = null;
-    const result = this.searchForSolutions3({
+    const result = this.searchForSolutions2({
       solutionFoundCallback: (_solution) => {
         const keepGoing = (solution === null);
         solution = _solution;
@@ -2223,9 +2226,9 @@ export class Sudoku {
     const a = this.board;
     const b = config.board;
     let mask = 0n;
-    for (let ci = 0; ci < NUM_SPACES; ci++) {
+    for (let ci = 0; ci < SPACES; ci++) {
       if (a[ci] !== b[ci]) {
-        mask |= cellMask(ci);
+        mask |= CELL_MASKS[ci];
       }
     }
     return mask;
@@ -2237,7 +2240,7 @@ export class Sudoku {
    * @returns {bigint[]} An array of masks representing the UAs found.
    */
   findUAs(mask) {
-    return this.filter(mask).searchForSolutions3().solutions.reduce((acc, solution) => {
+    return this.filter(mask).searchForSolutions2().solutions.reduce((acc, solution) => {
       if (this.diff(solution) > 0n) {
         acc.push(this.diff(solution));
       }
@@ -2252,42 +2255,57 @@ export class Sudoku {
     }
 
     if (level < 2 || level > 4) {
-      throw new Error('Invalid level. [2 <= level <= 4]');
+      throw new Error('Unsupported level. [2 <= level <= 4]');
     }
 
     const _board = this.board;
     const ss = new SudokuSieve({ config: this });
 
-    const nck = nChooseK(NUM_DIGITS, level);
+    const nck = nChooseK(DIGITS, level);
     for (let r = 0n; r < nck; r++) {
-      const dCombo = Number(bitCombo(NUM_DIGITS, level, r));
+      const dCombo = Number(bitCombo(DIGITS, level, r));
       const mask = _board.reduce((pMask, d, ci) => (
         (digitMask(d) & dCombo) ? (pMask |= cellMask(ci)) : pMask
       ), 0n);
       ss.addFromMask(~mask);
+
+      // Build masks with rows, cols, regions encoded in dCombo removed
+      let rowMask = (1n << BigInt(SPACES)) - 1n;
+      let colMask = (1n << BigInt(SPACES)) - 1n;
+      let regionMask = (1n << BigInt(SPACES)) - 1n;
+      for (let ci = 0; ci < SPACES; ci++) {
+        if ((dCombo & (1 << CELL_ROWS[ci])) > 0) {
+          rowMask &= ~cellMask(ci);
+        }
+        if ((dCombo & (1 << CELL_COLS[ci])) > 0) {
+          colMask &= ~cellMask(ci);
+        }
+        if ((dCombo & (1 << CELL_REGIONS[ci])) > 0) {
+          regionMask &= ~cellMask(ci);
+        }
+      }
+      ss.addFromMask(rowMask);
+      ss.addFromMask(colMask);
+      ss.addFromMask(regionMask);
     }
 
-    let _sum = 0;
-    let minM = NUM_SPACES;
+    let minM = SPACES;
     let maxM = 0;
     /** @type {number[]} */
-    const itemsByM = Array(NUM_SPACES).fill(0);
+    const itemsByM = Array(SPACES).fill(0);
     ss.items.forEach(item => {
-      const count = countBits(item);
+      const count = countBigBits(item);
       itemsByM[count]++;
       if (count < minM) minM = count;
       if (count > maxM) maxM = count;
-      _sum += count;
     });
 
     let items = itemsByM.slice(minM, maxM + 1).map(count => (count > 0) ? `${count.toString(16)}` : '');
     if (level === 2) {
       items = items.filter((_, i) => (i % 2) === 0);
     }
-    // const includeSum = level > 2;
-    const includeSum = false;
 
-    return `${(includeSum) ? `${_sum.toString(16)}_` : ''}${items.join(':')}`;
+    return items.join(':');
   }
 }
 

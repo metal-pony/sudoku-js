@@ -166,21 +166,21 @@ export const masksFor = {
  * @param {number} digit From 0 - 9
  * @returns {number}
  */
-const encode = (digit) => ENCODER[digit];
+export const encode = (digit) => ENCODER[digit];
 
 /**
  * Decodes an encoded value.
  * @param {number} encoded
  * @returns {number}
  */
-const decode = (encoded) => DECODER[encoded];
+export const decode = (encoded) => DECODER[encoded];
 
 /**
  * Returns whether the given encoded value represents a digit.
  * @param {number} encoded
  * @returns {boolean}
  */
-const isDigit = (encoded) => DECODER[encoded] > 0;
+export const isDigit = (encoded) => DECODER[encoded] > 0;
 
 /**
  * Returns the row index of the given cell.

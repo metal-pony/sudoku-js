@@ -8,6 +8,14 @@ import {
 } from '../../index.js';
 import puzzles from './puzzles24.js';
 
+const invalidPuzzles = [
+  // Invalid because of digit clashing (col 7: 3...5.3.1)
+  '1.2....3..9..1.........3..1.15...4...2.1...5.8.....1.6..1....3......1...2......1.',
+
+  // Invalid because cell 0 has no candidates
+  '.123456789...1...........1.1...........1...........1....1...........1...........1'
+];
+
 describe('Sudoku', () => {
   describe('static', () => {
     test('mask', () => {
@@ -82,6 +90,39 @@ describe('Sudoku', () => {
       expect(numSolutionsFound).toBe(numSolutions);
     });
   });
+
+  describe('when sudoku is invalid', () => {
+    test('searchForSolutions2 finds no solution in under 1 second or pizza is free', () => {
+      invalidPuzzles.forEach(puzzleStr => {
+        let count = 0;
+        let solutions = [];
+        const startTime = Date.now();
+        new Sudoku(puzzleStr).searchForSolutions2({
+          solutionFoundCallback: (s) => {
+            count++;
+            solutions.push(s);
+            return count <= 1;
+          }
+        });
+        const timeSpent = Date.now() - startTime;
+        expect(count).toBe(0);
+        expect(timeSpent).toBeLessThan(1000);
+      });
+    });
+
+    test('firstSolution returns null', () => {
+      invalidPuzzles.forEach(p => { expect(new Sudoku(p).firstSolution()).toBeNull(); });
+    });
+
+    test('solve returns false', () => {
+      invalidPuzzles.forEach(p => { expect(new Sudoku(p).solve()).toBe(false); });
+    });
+
+    test('solutionsFlag returns 0', () => {
+      invalidPuzzles.forEach(p => { expect(new Sudoku(p).solutionsFlag()).toBe(0); });
+    });
+  });
+
 
   test('Configuration generation', () => {
     for (let n = 0; n < 10; n++) {

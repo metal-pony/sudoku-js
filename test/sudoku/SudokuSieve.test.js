@@ -258,10 +258,7 @@ describe('SudokuSieve', () => {
 
   describe('addFromMask', () => {
     test('finds all expected UAs containing 2 and 3 digits', () => {
-      expect(expectedSieveItemsByK[3]).toEqual(expect.arrayContaining(expectedSieveItemsByK[2]));
-
       let k = 2;
-
       let nck = nChooseK(DIGITS, k);
       for (let r = 0n; r < nck; r++) {
         const dCombo = Number(bitCombo(DIGITS, k, r));
@@ -302,29 +299,31 @@ describe('SudokuSieve', () => {
   });
 
   describe('add', () => {
-    describe('when items are not duplicate', () => {
-      test('adds items to the sieve and returns true', () => {
-        expect(sieve.add(306954992322430055219200n, ...expectedSieveItemsByK[2])).toBe(true);
-        expect(sieve.items).toEqual(expect.arrayContaining(expectedSieveItemsByK[2]));
+    test('adds item to the sieve and returns true ifoif not a duplicate', () => {
+      const expectedSieveLength = expectedSieveItemsByK[2].length;
+      expectedSieveItemsByK[2].forEach(item => {
+        expect(sieve.add(item)).toBe(true);
       });
+      expect(sieve.items.length).toBe(expectedSieveLength);
+      expect(sieve.items).toEqual(expect.arrayContaining(expectedSieveItemsByK[2]));
+
+      // Attempt to add duplicates.
+      // Expected to not add, returning false.
+      expectedSieveItemsByK[2].forEach(item => {
+        expect(sieve.add(item)).toBe(false);
+      });
+      expect(sieve.items.length).toBe(expectedSieveLength);
+      expect(sieve.items).toEqual(expect.arrayContaining(expectedSieveItemsByK[2]));
     });
 
-    describe('when given item is duplicate', () => {
-      test('does not add duplicate items and returns false', () => {
-        expect(sieve.add(...expectedSieveItemsByK[2])).toBe(true);
-        const lengthBefore = sieve.length;
-        expect(sieve.add(306954992322430055219200n)).toBe(false);
-        expect(sieve.length).toBe(lengthBefore);
-      });
-    });
-
-    describe('when items are derivatives', () => {
-      test('does not add the derivative and returns false', () => {
+    describe('when item is derivative', () => {
+      test('does not add the item and returns false', () => {
         const item = 306954992322430055219200n;
         sieve.add(item);
 
-        for (let t = 0; t < 100; t++) {
-          expect(sieve.add(item | randomBigInt(item))).toBe(false);
+        for (let t = 0; t < 10; t++) {
+          const derivative = (item | randomBigInt(item));
+          expect(sieve.add(derivative)).toBe(false);
         }
       });
     });

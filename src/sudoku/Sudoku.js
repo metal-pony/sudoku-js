@@ -94,7 +94,7 @@ export function cellsFromMask(mask) {
 const CELL_MASKS = range(SPACES).map(cellMask);
 
 /** @type {number[]} */
-const EMPTY_BOARD = Array(SPACES).fill(0);
+const EMPTY_BOARD = Array(SPACES).fill(ALL);
 
 /**
  * Maps digits (the indices) to their encoded board values.
@@ -345,8 +345,8 @@ export class Sudoku {
       const digit = parseInt(char);
       if (digit > 0) {
         board.setDigit(digit, index);
-        board._clues[index] = digit;
       }
+      board._clues[index] = digit;
     });
 
     return board;
@@ -930,15 +930,10 @@ export class Sudoku {
    * Generates a random Sudoku configuration.
    * @param {object} options
    * @param {boolean} [options.normalize=false] (default: `false`) Whether to normalize the generated board.
-   * @param {number} [options.timeOutMs=0] (default: `0` (no limit)) The maximum time to spend generating.
-   * @returns {Sudoku | null} A valid configuration, or `null` if none was found.
+   * @returns {Sudoku} A valid configuration
    */
-  static generateConfig({ normalize, timeOutMs } = {
-    normalize: false,
-    // TODO I don't think we need a timeout for generating configs
-    timeOutMs: 0
-  }) {
-    const config = Sudoku.configSeed().firstSolution(timeOutMs);
+  static generateConfig({ normalize } = { normalize: false }) {
+    const config = Sudoku.configSeed().firstSolution();
     config._clues = config.board;
     return (normalize) ? config.normalize() : config;
   }
@@ -946,15 +941,17 @@ export class Sudoku {
   /**
    * Performs a solutions search for the board and returns the first found.
    * @param {object} options
-   * @param {number} [options.timeOutMs=0] (default: `0` (no limit)) The maximum time to spend generating.
    * @returns {Sudoku | null} The first solution found, or `null` if none was found.
    */
-  firstSolution(timeOutMs = 0) {
-    const results = this.searchForSolutions2({
-      timeOutMs,
-      solutionFoundCallback: (solution) => false
+  firstSolution() {
+    let result = null;
+    this.searchForSolutions2({
+      solutionFoundCallback: (solution) => {
+        result = solution;
+        return false;
+      }
     });
-    return results.solutions.length > 0 ? results.solutions[0] : null;
+    return result;
   }
 
   /**
@@ -1151,38 +1148,27 @@ export class Sudoku {
    * otherwise it will continue searching for solutions.
    *
    * @param {object} options
-   * @param {number} [options.timeOutMs=0] (default: `0` (no limit)) The maximum time to spend searching.
    * @param {(solution: Sudoku) => boolean} [options.solutionFoundCallback] Called with a solution when one is found.
    * If the callback returns truthy, the search will continue.
-   * @return {{
-   *  solutions: Sudoku[],
-   *  iterations: number,
-   *  branches: number,
-   *  timeElapsedMs: number,
-   *  complete: boolean,
-   *  timedOut: boolean,
-   *  terminatedByCallback: boolean
-   * }} An object with the search results and metrics:
-   * - `solutions` - The found solutions.
-   * - `iterations` - The number of iterations performed, i.e., how many boards were checked.
-   * - `branches` - The number of branches explored, i.e., how many times the algorithm picked an empty cell and tried solving it for each candidate.
-   * - `timeElapsedMs` - The time elapsed.
-   * - `complete` - Whether the entire search space was checked.
-   * - `timedOut` - Whether the search timed out before completing.
-   * - `terminatedByCallback` - Whether the search was terminated by the callback instead of checking the entire search space.
    */
   searchForSolutions2({
-    timeOutMs = 0,
     solutionFoundCallback = (solution) => true
   }) {
-    timeOutMs = Number(timeOutMs) || 0;
-
-    const isTimeConstraint = timeOutMs > 0;
-    const startTime = Date.now();
-
     const root = new Sudoku(this);
+    if (root.isSolved()) {
+      if (solutionFoundCallback) {
+        solutionFoundCallback(root);
+        return;
+      }
+    }
+
+    // TODO ? Can these can be combined to eliminate looping over board twice?
     root._resetEmptyCells();
     root._resetConstraints();
+
+    if (!root._isValid) {
+      return;
+    }
 
     /**
      * @typedef {Object} Nodey
@@ -1208,7 +1194,7 @@ export class Sudoku {
 
         /** @return {Nodey | null} */
         next() {
-          if (this.emptyCellCandidatesEncoded === 0) {
+          if (this.emptyCellCandidatesEncoded === 0 || !this.sudoku._isValid) {
             return null;
           }
 
@@ -1224,41 +1210,15 @@ export class Sudoku {
     /** @type {Nodey[]} */
     let stack = [Nodey(root)];
 
-    const result = {
-      /** @type {Sudoku[]} */
-      solutions: [],
-      iterations: 0,
-      branches: 0,
-      timeElapsedMs: 0,
-      complete: false,
-      timedOut: false,
-      terminatedByCallback: false
-    };
-
     while (stack.length > 0) {
-      // Time check
-      if (isTimeConstraint) {
-        const elapsedTime = Date.now() - startTime;
-        if (elapsedTime >= timeOutMs) {
-          debug.log(`searchForSolutions2> Time out after ${elapsedTime}ms.`);
-          result.timedOut = true;
-          break;
-        }
-      }
-
       const top = stack[stack.length - 1];
       const sudoku = top.sudoku;
-      result.iterations++;
-      // debug.log(`searchForSolutions2> ?${' '.repeat(stack.length)}${sudoku.toString()}`);
-      // Reduce obvious candidates first. This may just solve the puzzle.
 
       if (sudoku.isSolved()) {
-        result.solutions.push(new Sudoku(sudoku));
         stack.pop();
         if (Boolean(solutionFoundCallback(sudoku))) {
           continue;
         } else {
-          result.terminatedByCallback = true;
           break;
         }
       }
@@ -1271,9 +1231,7 @@ export class Sudoku {
       }
     }
 
-    result.complete = (!result.timedOut && !result.terminatedByCallback);
-    result.timeElapsedMs = Date.now() - startTime;
-    return result;
+    return;
   }
 
   /**
@@ -1532,18 +1490,22 @@ export class Sudoku {
     this._numEmptyCells = SPACES;
 
     /**
-     * @typedef {object} Area
-     * @property {number} index
-     * @property {number} constraints
-     * @property {number[]} candidateCount
-     * @property {Cell[]} cells
+     * Tracks whether this sudoku is currently valid.
+     *
+     * NOTE: `true` does not mean that the puzzle is a valid sudoku; only that the puzzle
+     * does not have any clashing digits. I.e., `true` does not guarantee a solution.
+     *
+     * However, when this is `false`, the puzzle is ***NOT*** a valid sudoku and there is no solution.
+     * @type {boolean}
      */
+    this._isValid = true;
 
     if (data instanceof Sudoku) {
       this._board = [...data._board];
       this._constraints = [...data._constraints];
       this._clues = data.board;
       this._numEmptyCells = data._numEmptyCells;
+      this._isValid = data._isValid;
     } else if (typeof data === 'string') {
       const parsed = Sudoku.fromString(data);
       this._board = [...parsed._board];
@@ -1552,12 +1514,11 @@ export class Sudoku {
       this._numEmptyCells = parsed._numEmptyCells;
     } else if (Array.isArray(data)) {
       this._board = [...EMPTY_BOARD];
-      this._clues = [...EMPTY_BOARD];
       this._constraints = Array(DIGITS).fill(0);
       if (data.length === SPACES) {
         this.setBoard(data);
-        this._clues = this.board;
       }
+      this._clues = this.board;
     } else {
       throw new Error(`Invalid data type: ${typeof data}`);
     }
@@ -1665,6 +1626,12 @@ export class Sudoku {
       throw new Error(`board is invalid (length): ${digits.length}.`);
     }
 
+    // TODO Maybe we don't need to do this
+    // The constructor(data == Array) handles this
+    this._numEmptyCells = SPACES;
+    this._board.fill(ALL);
+    this._constraints.fill(0);
+
     digits.forEach((digit, i) => {
       if (typeof digit !== 'number') {
         throw new Error(`board is invalid (type): ${typeof digit} at index ${i}.`);
@@ -1674,7 +1641,9 @@ export class Sudoku {
         throw new Error(`board is invalid (value): ${digit} at index ${i}.`);
       }
 
-      this.setDigit(digit, i);
+      if (digit > 0) {
+        this.setDigit(digit, i);
+      }
     });
   }
 
@@ -1977,8 +1946,12 @@ export class Sudoku {
 
   _resetConstraints() {
     this._constraints.fill(0);
+    this._isValid = true;
     this.board.forEach((digit, i) => {
       if (digit > 0) {
+        if (this._cellConstraints(i) & encode(digit)) {
+          this._isValid = false;
+        }
         this._addConstraint(i, digit);
       }
     });
@@ -2023,15 +1996,23 @@ export class Sudoku {
   _reduce2(cellIndex) {
     const candidates = this._board[cellIndex];
 
-    if (isDigit(candidates) || candidates <= 0) {
+    if (isDigit(candidates)) {
       return false;
     }
 
-    // ? If candidate constraints reduces to 0, then the board is likely invalid.
-    // TODO Reason out and test what happens when the board is invalid.
+    if (candidates <= 0) {
+      this._isValid = false;
+      return false;
+    }
+
+    // If candidate constraints reduces to 0, then the board is likely invalid.
     let reducedCandidates = (candidates & ~this._cellConstraints(cellIndex));
     if (reducedCandidates <= 0) {
-      // console.log(`reduce ${cellIndex} (${cellRow(cellIndex) + 1},${cellCol(cellIndex) + 1}): [${decode(candidates)}].  constraints reduced to 0... ERROR ERROR ERROR`);
+      this._isValid = false;
+
+      // TODO this._board[cellIndex] = 0
+      // TODO i.e., we don't need to jump, push stack, etc, since all
+      // this.setDigit would do is set 0 for cell in this._board ...
       this.setDigit(0, cellIndex);
       return false;
     }
@@ -2163,7 +2144,11 @@ export class Sudoku {
    * - `2 or higher` - Multiple solutions.
    */
   solutionsFlag() {
-    if (this.numEmptyCells > SPACES - MIN_CLUES) {
+    if (!this._isValid) {
+      return 0;
+    }
+
+    if (this.numEmptyCells > (SPACES - MIN_CLUES)) {
       return 2;
     }
 
@@ -2180,25 +2165,21 @@ export class Sudoku {
    */
   solve() {
     let solution = null;
-    const result = this.searchForSolutions2({
+    let count = 0;
+    this.searchForSolutions2({
       solutionFoundCallback: (_solution) => {
-        const keepGoing = (solution === null);
         solution = _solution;
-        return keepGoing;
+        count++;
+        return count < 2;
       }
     });
 
-    if (result.complete && solution !== null) {
+    if (count === 1) {
       this.setBoard(solution.board);
-      // TODO Remove below once verified.
-      // this._board = [...results[0]._board];
-      // this._constraints = [...results[0]._constraints];
-      // this._clues = results[0].clues;
-      // this._numEmptyCells = results[0]._numEmptyCells;
-      // return true;
+      return true;
     }
 
-    return (result.complete && solution !== null);
+    return false;
   }
 
   /**

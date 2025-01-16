@@ -18,9 +18,12 @@ import Sudoku, {
  */
 function _validate(config, item) {
   const p = config.filter(~item);
+  const pEmptyCells = p._numEmptyCells;
+  p._reduce();
+
   return (
-    // Must not be reducible
-    !p._reduce() &&
+    // Must not reduce further
+    (p.numEmptyCells === pEmptyCells) &&
     // Must have multiple solutions
     (p.solutionsFlag() === 2) &&
     // Every antiderivative must have a single solution
@@ -67,7 +70,7 @@ export default class SudokuSieve {
     this._cellSum = 0;
 
     if (items.length > 0) {
-      this.add(...items);
+      items.forEach(item => this.add(item));
     }
 
     /**
@@ -227,39 +230,52 @@ export default class SudokuSieve {
   }
 
   /**
-   * Adds each item to the sieve. If the sieve was changed as a result, returns true.
-   * @param {bigint[]} items Variable abount of items to add.
-   * @returns {boolean} True if any items were added.
+   * Adds an item to the sieve without validation.
+   * @param {bigint} item
    */
-  add(...items) {
-    let added = false;
-    for (const item of items) {
-      if (this.isDerivative(item) || !_validate(this._config, item)) {
-        continue;
-      }
-
-      added = true;
+  rawAdd(item) {
+    if (!this._itemsFor(item).includes(item)) {
       this._itemsFor(item).push(item);
-      // this._addItemToMatrix(item);
       this._length++;
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Adds an item to the sieve.
+   * @param {bigint} item Items to add.
+   * @returns {boolean} True if the item was added.
+   */
+  add(item) {
+    if (this.isDerivative(item) || !_validate(this._config, item)) {
+      return false;
     }
 
-    return added;
+    this._itemsFor(item).push(item);
+    // this._addItemToMatrix(item);
+    this._length++;
+    return true;
   }
 
   /**
    * Generates sieve items from the given board mask and adds them if not yet acquired.
    * @param {bigint} mask
+   * @param {(item: bigint)=>void} itemFoundCallback
    * @returns {number} The number of items added.
    */
-  addFromMask(mask) {
+  addFromMask(mask, itemFoundCallback = null) {
     const initialCount = this._length;
     const puzzle = this._config.filter(mask);
     puzzle.searchForSolutions2({
       solutionFoundCallback: (solution) => {
         const diff = this._config.diff(solution);
         if (diff > 0n) {
-          this.add(diff);
+          if (this.add(diff)) {
+            if (itemFoundCallback) {
+              itemFoundCallback(diff);
+            }
+          }
         }
         return true;
       }
@@ -630,8 +646,9 @@ export default class SudokuSieve {
   /**
    *
    * @param {number} level
+   * @param {(item: bigint)=>void} itemFoundCallback
    */
-  seed(level) {
+  seed(level, itemFoundCallback = null) {
     const nck = nChooseK(DIGITS, level);
     const _board = this._config.board;
     const fullMask = (1n << BigInt(SPACES)) - 1n;
@@ -658,10 +675,10 @@ export default class SudokuSieve {
         }
       }
 
-      this.addFromMask(digMask);
-      this.addFromMask(rowMask);
-      this.addFromMask(colMask);
-      this.addFromMask(regionMask);
+      this.addFromMask(digMask, itemFoundCallback);
+      this.addFromMask(rowMask, itemFoundCallback);
+      this.addFromMask(colMask, itemFoundCallback);
+      this.addFromMask(regionMask, itemFoundCallback);
     }
 
     this._sortInGroups();

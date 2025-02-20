@@ -100,7 +100,10 @@ import Sudoku, {
   cellRegion,
   cellRegion2D
 } from './src/sudoku/Sudoku.js';
-import SudokuSieve from './src/sudoku/SudokuSieve.js';
+import SudokuSieve, {
+  searchForItemsFromMask,
+  seedSieve
+} from './src/sudoku/SudokuSieve.js';
 import {
   sieveCombos4,
   createSolutionsFlagCache
@@ -212,6 +215,8 @@ export {
   Sudoku,
 
   SudokuSieve,
+  searchForItemsFromMask,
+  seedSieve,
 
   // exp2
   sieveCombos4,

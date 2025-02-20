@@ -9,7 +9,7 @@ import {
   swapAllInArr,
   swap
 } from '../util/arrays.js';
-import { bitCombo, nChooseK, randomCombo } from '../util/perms.js';
+import { randomBitCombo } from '../util/perms.js';
 import Debugger from '../util/debug.js';
 import SudokuSieve from './SudokuSieve.js';
 import { chooseRandom, countBigBits, countBits, removeRandom } from '../util/common.js';
@@ -689,6 +689,7 @@ export class Sudoku {
    * Checks whether all board values (including candidates of empty cells)
    * are the same as the given boar.d
    * @param {Sudoku} other
+   * @returns {boolean}
    */
   equals(other) {
     return this.board.every((val, i) => val === other.board[i]);
@@ -1190,7 +1191,10 @@ export class Sudoku {
   }
 
   /**
+   * Swaps all digits with another digit at random.
+   * Akin to colors on a rubix cube.
    *
+   * Note: board constraints and empty cell values will be out of sync.
    */
   shuffleDigits() {
     const digits = range(DIGITS + 1, 1);
@@ -1200,11 +1204,21 @@ export class Sudoku {
     });
   }
 
+  /**
+   * Reflects the board values over the horizontal axis.
+   *
+   * Note: board constraints will be out of sync.
+   */
   reflectOverHorizontal() {
     reflectOverHorizontal(this._board, DIGITS);
     reflectOverHorizontal(this._clues, DIGITS);
   }
 
+  /**
+   * Reflects the board values over the vertical axis.
+   *
+   * Note: board constraints will be out of sync.
+   */
   reflectOverVertical() {
     reflectOverVertical(this._board, DIGITS);
     reflectOverVertical(this._clues, DIGITS);
@@ -1212,22 +1226,41 @@ export class Sudoku {
 
   /**
    * Reflects the board values over the diagonal axis (line from bottomleft to topright).
+   *
+   * Note: board constraints will be out of sync.
    */
   reflectOverDiagonal() {
     reflectOverDiagonal(this._board);
     reflectOverDiagonal(this._clues);
   }
 
+  /**
+   * Reflects the board values over the anti-diagonal (line from topleft to bottomright).
+   *
+   * Note: board constraints will be out of sync.
+   */
   reflectOverAntidiagonal() {
     reflectOverAntiDiagonal(this._board);
     reflectOverAntiDiagonal(this._clues);
   }
 
+  /**
+   * Swaps the board values such that they rotate clockwise.
+   *
+   * Note: board constraints will be out of sync.
+   */
   rotate90() {
     rotateArr90(this._board);
     rotateArr90(this._clues);
   }
 
+  /**
+   * Swaps the given bands by index (0, 1, or 2).
+   *
+   * Note: board constraints will be out of sync.
+   * @param {number} band1
+   * @param {number} band2
+   */
   swapBands(band1, band2) {
     const b1 = band1 % 3;
     const b2 = band2 % 3;
@@ -1253,6 +1286,15 @@ export class Sudoku {
     this._clues = clues.flat();
   }
 
+  /**
+   * Swaps the given rows by index (0 through 8).
+   *
+   * Note: This may yield an invalid board unless the rows are of the same band.
+   *
+   * Note: board constraints will be out of sync.
+   * @param {number} row1
+   * @param {number} row2
+   */
   swapRows(row1, row2) {
     const r1 = row1 % DIGITS;
     const r2 = row2 % DIGITS;
@@ -1269,6 +1311,15 @@ export class Sudoku {
     this._clues = clueRows.flat();
   }
 
+  /**
+   * Swaps the given columns by index (0 through 8).
+   *
+   * Note: This may yield an invalid board unless the columns are of the same stack.
+   *
+   * Note: board constraints will be out of sync.
+   * @param {number} col1
+   * @param {number} col2
+   */
   swapColumns(col1, col2) {
     const c1 = col1 % DIGITS;
     const c2 = col2 % DIGITS;
@@ -1288,6 +1339,13 @@ export class Sudoku {
     }
   }
 
+  /**
+   * Swaps the given stacks by index (0, 1, or 2).
+   *
+   * Note: board constraints will be out of sync.
+   * @param {number} stack1
+   * @param {number} stack2
+   */
   swapStacks(stack1, stack2) {
     const s1 = stack1 % 3;
     const s2 = stack2 % 3;
@@ -1300,6 +1358,12 @@ export class Sudoku {
     this.swapColumns(s1*3 + 2, s2*3 + 2);
   }
 
+  /**
+   * Resets the board constraints to reflec the current board values.
+   *
+   * This is necessary to perform before running the search algorithm to
+   * ensure constraint propagation will work properly.
+   */
   _resetConstraints() {
     this._constraints.fill(0);
     this._isValid = true;
@@ -1314,86 +1378,66 @@ export class Sudoku {
   }
 
   /**
-   * Resets empty cells to all candidates.
-   * @param {number[]} board Encoded board values.
+   * Resets empty cells to include all candidates.
    */
   _resetEmptyCells() {
     this._board = this._board.map((val) => (isDigit(val) ? val : ALL));
-    // TODO Does anything need to be done with the constraints?
   };
 
   /**
+   * Walks the board, trying to solve for empty cells through constraint propagation.
    *
-   * @returns {boolean}
+   * When finished, all cell values should have reduced to valid candidates.
    */
   _reduce() {
-    let boardSolutionChanged = false;
-    let hadReduction = false;
-
-    do {
-      hadReduction = false;
-      for (let i = 0; i < SPACES; i++) {
-        hadReduction ||= this._reduce2(i);
-        if (hadReduction) {
-          // console.log(`reduced> ${boardSolution.board.map(decode).join('').replace(/0/g, '.')}`);
-        }
-        boardSolutionChanged ||= hadReduction;
-      }
-    } while (hadReduction);
-
-    return boardSolutionChanged;
+    for (let i = 0; i < 81; i++) this._reduce2(i);
   }
 
   /**
+   * Attempts to solve a given cell or reduce its candidates.
    *
+   * If successful reduced, this is recursively called for all the cell's neighbors.
    * @param {number} cellIndex
-   * @returns {boolean}
    */
   _reduce2(cellIndex) {
+    // Original candidates before potentially modifying.
     const candidates = this._board[cellIndex];
 
-    if (isDigit(candidates)) {
-      return false;
-    }
-
+    // Cell is already resolved to a digit.
+    if (isDigit(candidates)) return false;
+    // Cell has no candidate digits.
     if (candidates <= 0) {
       this._isValid = false;
       return false;
     }
 
-    // If candidate constraints reduces to 0, then the board is likely invalid.
+    // Apply constraints bitmask.
     let reducedCandidates = (candidates & ~this._cellConstraints(cellIndex));
+    // If there are no more candidates for the cell, the board is invalid.
     if (reducedCandidates <= 0) {
       this._isValid = false;
-
-      // TODO this._board[cellIndex] = 0
-      // TODO i.e., we don't need to jump, push stack, etc, since all
-      // this.setDigit would do is set 0 for cell in this._board ...
       this.setDigit(0, cellIndex);
       return false;
     }
 
-    // If by applying the constraints, the number of candidates is reduced to 1,
-    // then the cell is solved.
+    // If the cell has resolved to a digit, relax constraints.
     if (isDigit(reducedCandidates)) {
       this.setDigit(decode(reducedCandidates), cellIndex);
     } else {
+      // Checks if there's a unique candidate in any area
       const uniqueCandidate = this._getUniqueCandidate(cellIndex);
       if (uniqueCandidate > 0) {
         this.setDigit(decode(uniqueCandidate), cellIndex);
-
         reducedCandidates = uniqueCandidate;
       } else {
         this._board[cellIndex] = reducedCandidates;
       }
     }
 
+    // Propagate to neighboring cells if there was any reduction to the cell.
     if (reducedCandidates < candidates) {
-      this._reduceNeighbors(cellIndex);
+      for (let ni of CELL_NEIGHBORS[cellIndex]) this._reduce2(ni);
     }
-
-    // Whether candidates for the given cell have changed.
-    return candidates != this._board[cellIndex];
   };
 
   /**
@@ -1442,23 +1486,11 @@ export class Sudoku {
   }
 
   /**
-   *
-   * @param {number} cellIndex
-   */
-  _reduceNeighbors(cellIndex) {
-    for (let ni of CELL_NEIGHBORS[cellIndex]) {
-      this._reduce2(ni);
-    }
-  }
-
-  /**
    * Finds the index of an empty cell which contains the fewest candidates.
    * @return {number} Cell index, or `-1` if there are no empty cells.
    */
   _pickEmptyCell() {
-    if (this._numEmptyCells === 0) {
-      return -1;
-    }
+    if (this._numEmptyCells === 0) return -1;
 
     // TODO Keep track of empty cells in state for instant lookup.
     let minNumCandidates = DIGITS + 1;
@@ -1557,44 +1589,11 @@ export class Sudoku {
 
   // TODO Cache fingerprints until board changes. Maybe make these getters.
   fingerprint_d(level) {
-    if (!this.isConfig()) {
-      throw new Error('Invalid configuration.');
-    }
+    if (!this.isConfig()) throw new Error('Invalid configuration.');
+    if (level < 2 || level > 4) throw new Error('Unsupported level. [2 <= level <= 4]');
 
-    if (level < 2 || level > 4) {
-      throw new Error('Unsupported level. [2 <= level <= 4]');
-    }
-
-    const _board = this.board;
     const ss = new SudokuSieve({ config: this });
-
-    const nck = nChooseK(DIGITS, level);
-    for (let r = 0n; r < nck; r++) {
-      const dCombo = Number(bitCombo(DIGITS, level, r));
-      const mask = _board.reduce((pMask, d, ci) => (
-        (digitMask(d) & dCombo) ? (pMask |= cellMask(ci)) : pMask
-      ), 0n);
-      ss.addFromMask(~mask);
-
-      // Build masks with rows, cols, regions encoded in dCombo removed
-      let rowMask = (1n << BigInt(SPACES)) - 1n;
-      let colMask = (1n << BigInt(SPACES)) - 1n;
-      let regionMask = (1n << BigInt(SPACES)) - 1n;
-      for (let ci = 0; ci < SPACES; ci++) {
-        if ((dCombo & (1 << CELL_ROWS[ci])) > 0) {
-          rowMask &= ~cellMask(ci);
-        }
-        if ((dCombo & (1 << CELL_COLS[ci])) > 0) {
-          colMask &= ~cellMask(ci);
-        }
-        if ((dCombo & (1 << CELL_REGIONS[ci])) > 0) {
-          regionMask &= ~cellMask(ci);
-        }
-      }
-      ss.addFromMask(rowMask);
-      ss.addFromMask(colMask);
-      ss.addFromMask(regionMask);
-    }
+    ss.seed(level);
 
     let minM = SPACES;
     let maxM = 0;

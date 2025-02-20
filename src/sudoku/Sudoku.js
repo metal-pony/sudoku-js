@@ -1128,6 +1128,20 @@ export class Sudoku {
   }
 
   /**
+   * Returns whether the top row of digits is full and sequential.
+   * @returns {boolean}
+   */
+  isNormal() {
+    for (let ci = 0; ci < DIGITS; ci++) {
+      const digit = decode(this._board[ci]);
+      if (digit !== (ci + 1)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
    * Returns a string representation of the board.
    * @returns {string}
    */

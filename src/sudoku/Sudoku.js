@@ -672,29 +672,22 @@ export class Sudoku {
   }
 
   /**
-   *
-   * @param {number} regionMask A 9-bit mask where each bit represents a region
-   * and whether to fill it with random digits.
+   * Fills the given regions randomly with digits.
+   * @param {number} regionMask A 9-bit mask representing which regions to fill.
    */
   _fillSections(regionMask) {
     for (let regIndex = 0; regIndex < DIGITS; regIndex++) {
       if ((regionMask & (1<<(DIGITS - 1 - regIndex))) > 0) {
-        this.fillRegion(regIndex);
+        shuffle(DIGIT_BAG).forEach((digit, i) => {
+          this.setDigit(digit, indicesFor.region[regIndex][i])
+        });
       }
     }
   }
 
   /**
-   * Fills the given region with the random digits 1-9 with no regard for board validity.
-   *
-   * @param {number} regionIndex
-   */
-  fillRegion(regionIndex) {
-    shuffle(DIGIT_BAG).forEach((digit, i) => this.setDigit(digit, indicesFor.region[regionIndex][i]));
-  }
-
-  /**
-   *
+   * Checks whether all board values (including candidates of empty cells)
+   * are the same as the given boar.d
    * @param {Sudoku} other
    */
   equals(other) {

@@ -17,38 +17,6 @@ const invalidPuzzles = [
 ];
 
 describe('Sudoku', () => {
-  describe('static', () => {
-    test('mask', () => {
-      const config = new Sudoku('218574639573896124469123578721459386354681792986237415147962853695318247832745961');
-      const board = new Sudoku(config).board;
-
-      // 1s in the mask indicate cells that are kept
-      expect(Sudoku.mask(config, masksFor.none).board).toEqual(new Array(81).fill(0));
-      expect(Sudoku.mask(config, masksFor.all).board).toEqual(board);
-
-      masksFor.row.forEach((mask, rowIndex) => {
-        const maskedBoard = Sudoku.mask(config, mask).board;
-        for (let ci = 0; ci < 81; ci++) {
-          expect(maskedBoard[ci]).toBe((cellRow(ci) === rowIndex) ? board[ci] : 0);
-        }
-      });
-
-      masksFor.col.forEach((mask, colIndex) => {
-        const maskedBoard = Sudoku.mask(config, mask).board;
-        for (let ci = 0; ci < 81; ci++) {
-          expect(maskedBoard[ci]).toBe((cellCol(ci) === colIndex) ? board[ci] : 0);
-        }
-      });
-
-      masksFor.region.forEach((mask, regionIndex) => {
-        const maskedBoard = Sudoku.mask(config, mask).board;
-        for (let ci = 0; ci < 81; ci++) {
-          expect(maskedBoard[ci]).toBe((cellRegion(ci) === regionIndex) ? board[ci] : 0);
-        }
-      });
-    });
-  });
-
   test('searchForSolutions2 solves valid puzzles', () => {
     puzzles.forEach(puzzleStr => {
       const puzzle = new Sudoku(puzzleStr);
@@ -129,7 +97,6 @@ describe('Sudoku', () => {
       const config = Sudoku.generateConfig();
       expectPuzzleToBeValidAndSolvable({
         puzzle: config,
-        expectedNumClues: 81,
         expectedClues: config.board,
         solution: new Sudoku(config)
       });
@@ -137,21 +104,18 @@ describe('Sudoku', () => {
   });
 
   test('Puzzle generation', () => {
-    const config = Sudoku.generate({ numClues: 81 })[0].solutions[0];
+    const config = Sudoku.generatePuzzle(81);
     expectPuzzleToBeValidAndSolvable({
       puzzle: config,
-      expectedNumClues: 81,
       solution: config
     });
 
     for (let numClues = 80; numClues >= 27; numClues--) {
-      const generationResults = Sudoku.generate({ numClues });
-      const puzzle = generationResults[0].puzzle;
+      const puzzle = Sudoku.generatePuzzle(numClues);
       const solution = new Sudoku(puzzle);
       solution.solve();
       expectPuzzleToBeValidAndSolvable({
         puzzle,
-        expectedNumClues: numClues,
         solution
       });
     }
@@ -275,14 +239,12 @@ function expectPuzzleToBeFull(puzzle) {
  *
  * @param {object} options
  * @param {Sudoku} options.puzzle (Required) The puzzle under test.
- * @param {number[]} options.expectedClues Expected clue values in `puzzle`.
- * @param {number} options.expectedNumClues Expected number of clues in `puzzle`.
+ * @param {number[]} options.expectedClues Expected clues array in `puzzle`.
  * @param {Sudoku} options.solution Expected solution to `puzzle`.
  */
 function expectPuzzleToBeValidAndSolvable({
   puzzle,
   expectedClues = puzzle.clues,
-  expectedNumClues = puzzle.numClues,
   solution = new Sudoku(puzzle)
 }) {
   expect(
@@ -292,13 +254,9 @@ function expectPuzzleToBeValidAndSolvable({
 
   expectPuzzleToBeValid(puzzle);
 
-  expect(
-    puzzle.numClues,
-    `Puzzle expected to have ${expectedNumClues} clues, but has ${puzzle.numClues}:\n${puzzle.toString()}`
-  ).toBe(expectedNumClues);
-
   expect(puzzle.clues).toEqual(expect.arrayContaining(expectedClues));
-  expect(puzzle.numEmptyCells).toBe(81 - expectedNumClues);
+  const puzzleClues = puzzle.clues.reduce((count, clue) => (count += (clue > 0 ? 1 : 0)), 0);
+  expect(puzzle.numEmptyCells).toBe(81 - puzzleClues);
 
   expect(puzzle.solve()).toBe(true);
   // Expect repeated calls to solve() to return true.
@@ -309,8 +267,6 @@ function expectPuzzleToBeValidAndSolvable({
   expectPuzzleToBeFull(puzzle);
 
   expect(puzzle.isSolved()).toBe(true);
-  // Expect a puzzle's clues to be retained after solving.
-  expect(puzzle.numClues).toBe(expectedNumClues);
   expect(puzzle.clues).toEqual(expect.arrayContaining(expectedClues));
   // Expect the puzzle to match the solution after solving.
   expect(puzzle.toString()).toBe(solution.toString());

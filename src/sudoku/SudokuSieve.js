@@ -27,7 +27,7 @@ function _validate(config, item) {
     // Must have multiple solutions
     (p.solutionsFlag() === 2) &&
     // Every antiderivative must have a single solution
-    p.getAntiderivatives().every(a => a.solutionsFlag() === 1)
+    p.allAntiesSolve()
   );
 }
 

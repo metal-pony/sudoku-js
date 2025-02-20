@@ -634,33 +634,41 @@ export class Sudoku {
   }
 
   /**
-   * Returns a set of antiderivative puzzles for the given puzzle.
+   * Determines if all antiderivatives solve uniquely.
    *
-   * An antiderivative of a puzzle is the set of all puzzles extrapolated from
-   * the given puzzle for each empty cell and for each empty cell's different
-   * candidates.
+   * The 'derivatives' of a puzzle is the set of puzzles that can be created
+   * by removing clues.
    *
-   * Note this means that the antiderivative set may contain invalid puzzles
-   * or puzzles with multiple solutions, as 'cell's candidates' is not well defined here.
-   * TODO check this last statement
-   *
-   * @returns {Sudoku[]}
+   * The 'antiderivatives' of a puzzle is the set of puzzles that can be created
+   * by adding candidates to empty cells.
+   * @returns {boolean} True if all antiderivative puzzles have a unique solution;
+   * i.e., For every candidate of every empty cell, sets the cell to the candidate and
+   * checks that the board solves uniquely.
    */
-  getAntiderivatives() {
-    const _puzzle = new Sudoku(this);
-    _puzzle._resetEmptyCells();
-    _puzzle._reduce();
-    return _puzzle.board.reduce((acc, digit, ci) => {
-      if (digit === 0) {
-        _puzzle.getCandidates(ci).forEach((candidate) => {
-          const newPuzzle = new Sudoku(_puzzle);
-          newPuzzle.setDigit(candidate, ci);
-          acc.push(newPuzzle);
-        });
+  allAntiesSolve() {
+    let digit = 0;
+    for (let ci = 0; ci < SPACES; ci++) {
+      const originalVal = this._board[ci];
+      if (originalVal === 0) {
+        return false;
       }
 
-      return acc;
-    }, []);
+      digit = decode(originalVal);
+      if (digit === 0) {
+        for (const candidateDigit of CANDIDATE_DECODINGS[originalVal]) {
+          const originalVal = this._board[ci];
+          this.setDigit(candidateDigit, ci); // mutates constraints
+          const flag = this.solutionsFlag();
+          this.setDigit(0, ci); // undo the constraints mutation
+          this._board[ci] = originalVal;
+          if (flag !== 1) {
+            return false;
+          }
+        }
+      }
+    }
+
+    return true;
   }
 
   /**

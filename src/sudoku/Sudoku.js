@@ -11,7 +11,7 @@ import {
 } from '../util/arrays.js';
 import { randomBitCombo } from '../util/perms.js';
 import Debugger from '../util/debug.js';
-import SudokuSieve from './SudokuSieve.js';
+import SudokuSieve, { searchForItemsFromMask, seedSieve } from './SudokuSieve.js';
 import { chooseRandom, countBigBits, countBits, removeRandom } from '../util/common.js';
 
 const debug = new Debugger(false);
@@ -434,32 +434,98 @@ export class Sudoku {
     ));
   }
 
-
   /**
+   * Attempts to generate a puzzle from choosing values randomly from a given solution.
    *
-   * @param {number} numClues
-   * @param {Sudoku} config
-   * @returns
+   * NOTE: Not ideal for generating puzzles below 24 clues.
+   * @param {object} options
+   * @param {Sudoku} options.solution (! REQUIRED !) A full sudoku grid.
+   * @param {number} options.numClues (Default `32`) Number of clues the
+   * puzzle should have. Every number lower than 27 may take exponentially longer
+   * to generate.
+   * @param {bigint[]} options.sieve (Default empty) An array of unavoidable sets
+   * to aid generation. It's recommended to generate this when `numClues < 32`.
+   * @param {boolean} options.addFailuresToSieve (Default `false`) Whether puzzle
+   * generation failures should be added to the sieve. This may impact performance.
+   * @param {number} options.timeoutMs (Default no time limit) Time to limit generating.
+   * @returns {Sudoku | null} The generated sudoku puzzle or null if time limit is hit
+   * or parameters are botched.
    */
-  static _randomComboPuzzle(numClues, config = Sudoku.generateConfig()) {
-    let puzzle;
-    while (!(puzzle = Sudoku._randomCombo(numClues, config)).hasUniqueSolution());
+  static randomComboPuzzle({
+    solution,
+    numClues = 32,
+    sieve = [],
+    addFailuresToSieve = false,
+    timeoutMs = 0,
+  }) {
+    if (numClues < MIN_CLUES) return null;
+    if (numClues > SPACES) return null;
+    if (numClues === SPACES) return new Sudoku(solution.board);
+    if (!solution) throw new new Error('Must provide solution');
+    if (!(solution instanceof Sudoku) || !solution.isSolved())
+      throw new Error('Solutions is invalid');
+
+    let start = Date.now();
+    let maskAttempts = 0;
+    let puzzle; do {
+      let mask; do {
+        mask = randomBitCombo(SPACES, numClues);
+
+        // Check time occasionally
+        maskAttempts++;
+        if (
+          (timeoutMs > 0) &&
+          ((maskAttempts % 1000) === 0) &&
+          ((Date.now() - start) > timeoutMs)
+        ) {
+          console.log(`Time limit exceeded (${Date.now() - start}ms). Returning null.`);
+          return null;
+        }
+
+        // Reset mask if it's derivative of some sieve item
+        for (const item of sieve) {
+          if ((item & ~mask) === item) {
+            mask = 0n;
+            break;
+          }
+        }
+      } while (mask === 0n);
+
+      puzzle = solution.filter(mask);
+      if (!puzzle.hasUniqueSolution()) {
+        if (addFailuresToSieve) searchForItemsFromMask(solution, sieve, mask);
+        puzzle = null;
+      }
+    } while (!puzzle);
+
     return puzzle;
   }
 
   // Uses DFS to locate valid sudoku puzzle.
   /**
    *
-   * @param {number} numClues
-   * @param {number} maxTests
+   * @param {object} options
+   * @param {Sudoku} options.grid
+   * @param {number} options.numClues
+   * @param {number} options.maxTests
+   * @param {number} options.timeoutMs
    * @returns {Sudoku | null}
    */
-  static generatePuzzle2(numClues = 27, maxTests = 1<<24) {
-    debug.log('generatePuzzle2');
-
-    // TODO This is kinda dumb, yeah?
-    if (numClues >= 36) {
-      return this._randomComboPuzzle(numClues);
+  static generatePuzzle2({
+    grid = Sudoku.generateConfig(),
+    numClues = 32,
+    maxTests = 1<<24,
+    timeoutMs = 0
+  }) {
+    // It's faster sometimes to generate a puzzle by picking randomly.
+    // We'll use a sieve to filter out many of the wrong random puzzles.
+    if (numClues >= 27) {
+      return Sudoku.randomComboPuzzle({
+        solution: grid,
+        numClues,
+        sieve: seedSieve({ grid, level: 2 }),
+        timeoutMs
+      });
     }
 
     /**
@@ -478,7 +544,10 @@ export class Sudoku {
       if (stack.length === 0 || popsUntilReset === 0) {
         // Clear the stack and start over
         stack = [{
-          sudoku: Sudoku._randomComboPuzzle(numClues + Math.ceil((SPACES - numClues) / 4)),
+          sudoku: Sudoku.randomComboPuzzle({
+            solution: grid,
+            numClues: (numClues + ((SPACES - numClues) / 4)) | 0,
+          }),
           nexts: null,
         }];
         popsUntilReset = (SPACES - numClues)**2;

@@ -69,6 +69,7 @@ export function searchForItemsFromMask(grid, sieve, mask, announce = false) {
  * @returns {bigint[]} The sieve populated with items.
  */
 export function seedSieve({ grid, sieve = [], level = 2 }) {
+  if (level < 2) return sieve;
   const nck = nChooseK(DIGITS, level);
   const _board = grid.board;
   const fullMask = (1n << BigInt(SPACES)) - 1n;

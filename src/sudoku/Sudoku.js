@@ -460,7 +460,7 @@ export class Sudoku {
   }) {
     if (numClues < MIN_CLUES) return null;
     if (numClues > SPACES) return null;
-    if (numClues === SPACES) return new Sudoku(solution.board);
+    if (numClues === SPACES) return new Sudoku(solution);
     if (!solution) throw new new Error('Must provide solution');
     if (!(solution instanceof Sudoku) || !solution.isSolved())
       throw new Error('Solutions is invalid');
@@ -478,7 +478,6 @@ export class Sudoku {
           ((maskAttempts % 1000) === 0) &&
           ((Date.now() - start) > timeoutMs)
         ) {
-          console.log(`Time limit exceeded (${Date.now() - start}ms). Returning null.`);
           return null;
         }
 
@@ -507,89 +506,98 @@ export class Sudoku {
    * @param {object} options
    * @param {Sudoku} options.grid
    * @param {number} options.numClues
-   * @param {number} options.maxTests
+   * @param {bigint[]} options.sieve
    * @param {number} options.timeoutMs
    * @returns {Sudoku | null}
    */
   static generatePuzzle2({
     grid = Sudoku.generateConfig(),
     numClues = 32,
-    maxTests = 1<<24,
+    sieve = [],
     timeoutMs = 0
   }) {
-    // It's faster sometimes to generate a puzzle by picking randomly.
-    // We'll use a sieve to filter out many of the wrong random puzzles.
-    if (numClues >= 27) {
-      return Sudoku.randomComboPuzzle({
-        solution: grid,
-        numClues,
-        sieve: seedSieve({ grid, level: 2 }),
-        timeoutMs
-      });
+    if (numClues < MIN_CLUES || numClues > SPACES) return null;
+    if (numClues === SPACES) return new Sudoku(grid);
+    if (!grid) throw new new Error('Must provide solution grid');
+    if (!(grid instanceof Sudoku) || !grid.isSolved())
+      throw new Error('Solution grid is invalid');
+
+    const start = Date.now();
+    const FULLMASK = (1n << BigInt(SPACES)) - 1n;
+    let maskFails = 0;
+    let puzzleCheckFails = 0;
+    let putBacks = 0;
+    let mask = FULLMASK;
+    let remaining = range(SPACES);
+    let removed = [];
+
+    while (remaining.length > numClues) {
+      const startChoices = remaining.length;
+      shuffle(remaining);
+      for (let i = 0; i < remaining.length && remaining.length > numClues; i++) {
+        const choice = remaining[i];
+        mask &= ~cellMask(choice);
+
+        // Check if mask still satisfies sieve
+        let satisfies = true;
+        for (const item of sieve) {
+          if ((item & ~mask) === item) {
+            satisfies = false;
+            break;
+          }
+        }
+
+        // If not, or if there are multiple solutions,
+        // put the cell back and try the next
+        if (!satisfies) {
+          maskFails++;
+          mask |= cellMask(choice);
+
+          // Once in awhile, check the time
+          if (timeoutMs > 0 && (maskFails % 100) === 0) {
+            if ((Date.now() - start) > timeoutMs) {
+              return null;
+            }
+          }
+
+          continue;
+        }
+
+        if (grid.filter(mask).solutionsFlag() !== 1) {
+          puzzleCheckFails++;
+          if (puzzleCheckFails === 1000 && sieve.length < 36) {
+            seedSieve({ grid, sieve, level: 2 });
+          } else if (puzzleCheckFails === 2500 && sieve.length < 200) {
+            seedSieve({ grid, sieve, level: 3 });
+          } else if (puzzleCheckFails > 10000 && sieve.length < 1000) {
+            searchForItemsFromMask(grid, sieve, mask, true);
+          }
+
+          mask |= cellMask(choice);
+          continue;
+        }
+
+        removed.push(choice);
+        remaining.splice(i, 1);
+        i--;
+      }
+
+      // If no cells were chosen
+      // - Put some cells back and try again
+      if (remaining.length === startChoices) {
+        const numToPutBack = 1 + (putBacks % 4) + (((putBacks % 8)*Math.random())|0);
+        shuffle(removed);
+        for (let i = 0; i < numToPutBack; i++) {
+          const cell = removed.pop();
+          remaining.push(cell);
+          mask |= cellMask(cell);
+          if (removed.length === 0) break;
+        }
+        putBacks++;
+      }
     }
 
-    /**
-     * @typedef {Object} SudokuNode
-     * @property {Sudoku} sudoku
-     * @property {Sudoku[] | null} nexts
-     */
-
-    /** @type {SudokuNode[]} */
-    let stack = [];
-    let testCounter = 0;
-    let popsUntilReset = 0;
-
-    while (++testCounter <= maxTests) {
-      // Reset if necessary
-      if (stack.length === 0 || popsUntilReset === 0) {
-        // Clear the stack and start over
-        stack = [{
-          sudoku: Sudoku.randomComboPuzzle({
-            solution: grid,
-            numClues: (numClues + ((SPACES - numClues) / 4)) | 0,
-          }),
-          nexts: null,
-        }];
-        popsUntilReset = (SPACES - numClues)**2;
-        debug.log(`RESET    ${stack[0].sudoku.toString()}`);
-      }
-
-      const top = stack[stack.length - 1];
-      const sudoku = top.sudoku;
-      // sudoku._reduce();
-
-      const filledCells = SPACES - sudoku.numEmptyCells;
-      debug.log(`${filledCells}${(filledCells < 10) ? ' ' : ''}       ${sudoku.toString()}`);
-
-      if (!sudoku.hasUniqueSolution()) {
-        debug.log(`POP -NU-`);
-        stack.pop();
-        popsUntilReset--;
-        continue;
-      }
-
-      if (sudoku.numEmptyCells >= (SPACES - numClues)) {
-        debug.log(`SOLUTION ${sudoku.toString()}`);
-        return sudoku;
-      }
-
-      if (top.nexts === null) {
-        top.nexts = sudoku._getNextsSubtractive();
-      }
-
-      if (top.nexts.length > 0) {
-        // Get a random next
-        const next = removeRandom(top.nexts);
-        stack.push({ sudoku: next, nexts: null });
-        // debug.log(`    ++++ ${next.toString()}`);
-      } else {
-        debug.log(`POP -NN-`);
-        stack.pop();
-        popsUntilReset--;
-      }
-    }
-
-    return null;
+    return grid.filter(mask);
   }
 
   /**
@@ -778,16 +786,16 @@ export class Sudoku {
     solutionFoundCallback = (solution) => true
   }) {
     const root = new Sudoku(this);
+    root._resetEmptyCells();
+    root._resetConstraints();
+    root._reduce();
+
     if (root.isSolved()) {
       if (solutionFoundCallback) {
         solutionFoundCallback(root);
         return;
       }
     }
-
-    // TODO ? Can these can be combined to eliminate looping over board twice?
-    root._resetEmptyCells();
-    root._resetConstraints();
 
     if (!root._isValid) {
       return;
@@ -806,7 +814,7 @@ export class Sudoku {
      * @return {Nodey}
      */
     const Nodey = (sudoku) => {
-      sudoku._reduce();
+      // sudoku._reduce();
       const emptyCellIndex = sudoku._pickEmptyCell();
 
       return ({
@@ -824,6 +832,7 @@ export class Sudoku {
           const s = new Sudoku(this.sudoku);
           const randomCandidateDigit = chooseRandom(CANDIDATE_DECODINGS[this.emptyCellCandidatesEncoded]);
           s.setDigit(randomCandidateDigit, this.emptyCellIndex);
+          for (let ni of CELL_NEIGHBORS[this.emptyCellIndex]) s._reduce2(ni);
           this.emptyCellCandidatesEncoded &= ~(ENCODER[randomCandidateDigit])
           return Nodey(s);
         }
@@ -1474,6 +1483,7 @@ export class Sudoku {
 
     // Cell is already resolved to a digit.
     if (isDigit(candidates)) return false;
+
     // Cell has no candidate digits.
     if (candidates <= 0) {
       this._isValid = false;
@@ -1482,6 +1492,7 @@ export class Sudoku {
 
     // Apply constraints bitmask.
     let reducedCandidates = (candidates & ~this._cellConstraints(cellIndex));
+
     // If there are no more candidates for the cell, the board is invalid.
     if (reducedCandidates <= 0) {
       this._isValid = false;
@@ -1489,11 +1500,9 @@ export class Sudoku {
       return false;
     }
 
-    // If the cell has resolved to a digit, relax constraints.
     if (isDigit(reducedCandidates)) {
       this.setDigit(decode(reducedCandidates), cellIndex);
     } else {
-      // Checks if there's a unique candidate in any area
       const uniqueCandidate = this._getUniqueCandidate(cellIndex);
       if (uniqueCandidate > 0) {
         this.setDigit(decode(uniqueCandidate), cellIndex);

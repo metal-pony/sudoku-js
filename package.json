@@ -11,7 +11,12 @@
   ],
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
-    "prepublishOnly": "npm i && npm run test"
+    "prepublishOnly": "npm i && npm run test",
+    "generateConfigs": "node scripts/sudoku/generateConfigs.js",
+    "generatePuzzles": "node scripts/sudoku/generatePuzzles.js",
+    "solve": "node scripts/sudoku/solve.js",
+    "generateSieve": "node scripts/sudoku/generateSieve.js",
+    "fingerprint": "node scripts/sudoku/fingerprint.js"
   },
   "devDependencies": {
     "jest": "^29.7.0",
@@ -24,5 +29,8 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/metal-pony/bucket-js.git"
+  },
+  "dependencies": {
+    "arg": "^5.0.2"
   }
 }

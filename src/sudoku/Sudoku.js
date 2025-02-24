@@ -1028,6 +1028,21 @@ export class Sudoku {
   }
 
   /**
+   * @returns {number[]}
+   */
+  get cellValidityMap() {
+    const v = { row: [], col: [], region: [] };
+    for (let i = 0; i < DIGITS; i++) {
+      v.row.push(this.isRowValid(i) ? 0 : 1);
+      v.col.push(this.isColValid(i) ? 0 : 1);
+      v.region.push(this.isRegionValid(i) ? 0 : 1);
+    }
+    return range(SPACES).map(ci => (
+      v.row[CELL_ROWS[ci]] + v.col[CELL_COLS[ci]] + v.region[CELL_REGIONS[ci]]
+    ));
+  }
+
+  /**
    * Returns whether the cell at the given index was given as a clue.
    * @param {number} cellIndex
    * @returns {boolean}

@@ -507,6 +507,7 @@ export class Sudoku {
    * @param {Sudoku} options.grid
    * @param {number} options.numClues
    * @param {bigint[]} options.sieve
+   * @param {number} options.difficulty
    * @param {number} options.timeoutMs
    * @returns {Sudoku | null}
    */
@@ -514,13 +515,16 @@ export class Sudoku {
     grid = Sudoku.generateConfig(),
     numClues = 32,
     sieve = [],
+    difficulty = 0,
     timeoutMs = 0
   }) {
     if (numClues < MIN_CLUES || numClues > SPACES) return null;
     if (numClues === SPACES) return new Sudoku(grid);
-    if (!grid) throw new new Error('Must provide solution grid');
+    if (!grid) throw new Error('Must provide solution grid');
     if (!(grid instanceof Sudoku) || !grid.isSolved())
       throw new Error('Solution grid is invalid');
+    if (difficulty < 0 || difficulty > 10)
+      throw new Error(`Invalid difficulty (${difficulty}); expected 0 <= difficulty <= 10`);
 
     const start = Date.now();
     const FULLMASK = (1n << BigInt(SPACES)) - 1n;
@@ -538,7 +542,7 @@ export class Sudoku {
         const choice = remaining[i];
         mask &= ~cellMask(choice);
 
-        // Check if mask still satisfies sieve
+        // Check if mask satisfies sieve
         let satisfies = true;
         for (const item of sieve) {
           if ((item & ~mask) === item) {
@@ -570,7 +574,9 @@ export class Sudoku {
           } else if (puzzleCheckFails === 2500 && sieve.length < 200) {
             seedSieve({ grid, sieve, level: 3 });
           } else if (puzzleCheckFails > 10000 && sieve.length < 1000) {
-            searchForItemsFromMask(grid, sieve, mask, true);
+            searchForItemsFromMask(grid, sieve, mask);
+          } else if (puzzleCheckFails > 25000) {
+            searchForItemsFromMask(grid, sieve, mask);
           }
 
           mask |= cellMask(choice);
@@ -584,7 +590,15 @@ export class Sudoku {
 
       // If no cells were chosen
       // - Put some cells back and try again
-      if (remaining.length === startChoices) {
+      if (
+        (
+          remaining.length === numClues &&
+          difficulty > 0 &&
+          grid.filter(mask).solutionsFlag() === 1 &&
+          grid.filter(mask).difficulty() !== difficulty
+        ) ||
+        remaining.length === startChoices
+      ) {
         const numToPutBack = 1 + (putBacks % 4) + (((putBacks % 8)*Math.random())|0);
         shuffle(removed);
         for (let i = 0; i < numToPutBack; i++) {

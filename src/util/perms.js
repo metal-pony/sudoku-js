@@ -153,7 +153,7 @@ export function combo(n, k, r) {
 
   const nck = nChooseK(n, k);
   if (r >= nck) {
-    throw new Error(`r must be in interval [0, n choose k (${nck.toString()})`);
+    throw new Error(`r (${r.toString()}) must be in interval [0, n choose k (${nck.toString()})`);
   }
 
   // Anything choose 0 is 1. There's only one way to choose nothing, i.e. the empty set.
@@ -268,7 +268,7 @@ export function bitCombo(n, k, r) {
 
   const nck = nChooseK(n, k);
   if (r >= nck) {
-    throw new Error(`r must be in interval [0, n choose k (${nck.toString()})`);
+    throw new Error(`r (${r.toString()}) must be in interval [0, n choose k (${nck.toString()})]`);
   }
 
   // Anything choose 0 is 1. There's only one way to choose nothing, i.e. the empty set.
@@ -323,13 +323,9 @@ export function bitComboToR(n, k, bc) {
   return -1n;
 }
 
-// Where bitLengthCache[i] = 2^(i-1)
-const bitLengthCache = [
-  0n, 1n, 2n, 4n, 8n, 16n, 32n, 64n, 128n, 256n,
-  512n, 1024n, 2048n, 4096n, 8192n, 16384n, 32768n, 65536n, 131072n, 262144n,
-  524288n, 1048576n, 2097152n, 4194304n, 8388608n, 16777216n, 33554432n,
-  67108864n, 134217728n, 268435456n, 536870912n, 1073741824n,
-];
+const _BIG_LENGTH_MAP_SIZE = 65;
+// Maps some bigint powers of 2 to their bit lengths.
+const bitLengthMap = [0n, ...range(_BIG_LENGTH_MAP_SIZE).map(n => (1n<<BigInt(n)))];
 /**
  * Computes the bit length of a BigInt.
  * @param {BigInt} bn
@@ -342,12 +338,12 @@ export function bitLength(bn) {
   }
 
   let bits = 0;
-  let i = bitLengthCache.length - 1;
+  let i = bitLengthMap.length - 1;
   while (i > 0) {
     if (bn === 0n) {
       return bits;
     }
-    while (bn >= bitLengthCache[i]) {
+    while (bn >= bitLengthMap[i]) {
       bits += i;
       bn >>= BigInt(i);
     }

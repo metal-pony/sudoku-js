@@ -95,6 +95,14 @@ export function seedSieve({ grid, sieve = [], level = 2 }) {
     searchForItemsFromMask(grid, sieve, regionMask);
   }
 
+  sieve.sort((a, b) => {
+    const aBits = _countBits(a);
+    const bBits = _countBits(b);
+    if (aBits > bBits) return 1;
+    if (bBits > aBits) return -1;
+    if (aBits === bBits) return (a === b) ? 0 : (a > b) ? 1 : -1;
+  });
+
   return sieve;
 }
 

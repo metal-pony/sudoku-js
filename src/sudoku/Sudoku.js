@@ -1691,6 +1691,65 @@ export class Sudoku {
 
     return items.join(':');
   }
+
+  /**
+   *
+   * @returns {number}
+   */
+  difficulty() {
+    const root = new Sudoku(this);
+    root._resetEmptyCells();
+    root._resetConstraints();
+    root._reduce();
+
+    if (root.isSolved()) return 1;
+    if (!root._isValid) return -1;
+
+    /**
+     * @typedef {Object} Nodey
+     * @property {Sudoku} sudoku
+     * @property {number} difficulty
+     */
+
+    /** @type {Nodey[]} */
+    let queue = [{ sudoku: root, difficulty: 1 }];
+
+    while (queue.length > 0) {
+      const node = queue.shift();
+      const sudoku = node.sudoku;
+      if (sudoku.isSolved()) return node.difficulty;
+
+      // Get all empty cells of minimum candidates
+      let minNumCandidates = DIGITS + 1;
+      let candyBucket = [];
+      sudoku._board.forEach((candidates, ci) => {
+        const numCandidates = BIT_COUNT_MAP[candidates];
+        if (numCandidates > 1) {
+          if (numCandidates < minNumCandidates) {
+            minNumCandidates = numCandidates;
+            candyBucket = [ci];
+          } else if (numCandidates === minNumCandidates) {
+            candyBucket.push(ci);
+          }
+        }
+      });
+
+      // For each empty cell collected, create nodes for each candidate
+      candyBucket.forEach(emptyCi => {
+        CANDIDATE_DECODINGS[sudoku._board[emptyCi]].forEach(digit => {
+          const nextSudoku = new Sudoku(sudoku);
+          nextSudoku.setDigit(digit, emptyCi);
+          for (let ni of CELL_NEIGHBORS[emptyCi]) nextSudoku._reduce2(ni);
+          queue.push({ sudoku: nextSudoku, difficulty: (node.difficulty + 1) });
+        });
+      });
+
+      // Priority queue hack
+      queue.sort((a, b) => (a.difficulty - b.difficulty));
+    }
+
+    return -1;
+  }
 }
 
 export default Sudoku;

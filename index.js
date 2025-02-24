@@ -108,6 +108,7 @@ import {
   sieveCombos4,
   createSolutionsFlagCache
 } from './src/sudoku/exp2.js';
+import { sudoku17 } from './src/sudoku/sudoku-17.js'
 
 export {
   // blocky
@@ -217,6 +218,8 @@ export {
   SudokuSieve,
   searchForItemsFromMask,
   seedSieve,
+
+  sudoku17,
 
   // exp2
   sieveCombos4,

@@ -516,7 +516,8 @@ export class Sudoku {
     numClues = 32,
     sieve = [],
     difficulty = 0,
-    timeoutMs = 0
+    timeoutMs = 0,
+    useSieve = true,
   }) {
     if (numClues < MIN_CLUES || numClues > SPACES) return null;
     if (numClues === SPACES) return new Sudoku(grid);
@@ -569,13 +570,13 @@ export class Sudoku {
 
         if (grid.filter(mask).solutionsFlag() !== 1) {
           puzzleCheckFails++;
-          if (puzzleCheckFails === 1000 && sieve.length < 36) {
+          if (useSieve && puzzleCheckFails === 100 && sieve.length < 36) {
             seedSieve({ grid, sieve, level: 2 });
-          } else if (puzzleCheckFails === 2500 && sieve.length < 200) {
+          } else if (useSieve && puzzleCheckFails === 2500 && sieve.length < 200) {
             seedSieve({ grid, sieve, level: 3 });
-          } else if (puzzleCheckFails > 10000 && sieve.length < 1000) {
+          } else if (useSieve && puzzleCheckFails > 10000 && sieve.length < 1000) {
             searchForItemsFromMask(grid, sieve, mask);
-          } else if (puzzleCheckFails > 25000) {
+          } else if (useSieve && puzzleCheckFails > 25000) {
             searchForItemsFromMask(grid, sieve, mask);
           }
 

@@ -438,6 +438,9 @@ export function randomBitCombo(n, k) {
  * @returns {bigint}
  */
 export function nextBitCombo(n, r) {
+  if (n <= 0) throw new Error('n must be positive');
+  if (r >= (1n << BigInt(n))) throw new Error('r too large');
+
   // Find first '01' scanning right-to-left
   // (If there isn't any, 'r' is already at the max)
   let i = 0;

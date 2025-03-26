@@ -427,6 +427,46 @@ export function randomBitCombo(n, k) {
   return bitCombo(n, k, randomBigInt(nChooseK(n, k)));
 }
 
+/**
+ * Generates the next bit combination (`n choose k`) given the current combo, `r`.
+ * `k` is the number of bits set in `r`.
+ * The result will be the next bit combination sequentilly after r.
+ * If `r` is already the last bit combination, this will 'wrap around'
+ * and return the first bit combination with the lowest-order bits.
+ * @param {number} n Number of bits
+ * @param {bigint} r
+ * @returns {bigint}
+ */
+export function nextBitCombo(n, r) {
+  // Find first '01' scanning right-to-left
+  // (If there isn't any, 'r' is already at the max)
+  let i = 0;
+  let m = 1n;
+  // First, fast-forward past any tailing zeros
+  while (i < n && (m & r) === 0n) {
+    i++;
+    m <<= 1n;
+  }
+  let tailZeros = i;
+
+  // Then past the string of 1s
+  while (i < n && (m & r) > 0n) {
+    i++;
+    m <<= 1n;
+  }
+
+  // At max? Then wrap around to beginning.
+  if (i >= n) {
+    return (1n << BigInt(n - tailZeros)) - 1n;
+  }
+
+  r |= m;
+  r &= (((1n << BigInt(n)) - 1n) - (m - 1n));
+  r += ((m >> BigInt(tailZeros + 1)) - 1n);
+
+  return r;
+}
+
 export default {
   factorial,
   permutation,
@@ -435,6 +475,7 @@ export default {
   nChooseK,
   combo,
   allCombos,
+  nextBitCombo,
   forEachCombo,
   bitCombo,
   bitComboToR,

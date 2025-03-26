@@ -1,13 +1,15 @@
 import Freezable from '../util/Freezable.js';
-import { EPSILON } from './Geo.js';
+import { dist, EPSILON } from './Geo.js';
 
 export default class Point extends Freezable {
   /**
+   * Creates a new Point with the given x and y coordinates,
+   * or (0,0) if the coordinates are omitted.
    * @param {object} point
    * @param {number} point.x
    * @param {number} point.y
    */
-  constructor({ x, y }) {
+  constructor({ x = 0, y = 0 } = { x: 0, y: 0 }) {
     super();
 
     this._x = x;
@@ -35,17 +37,13 @@ export default class Point extends Freezable {
   /**
    * Calculates the distance between this point and another.
    * @param {Point} other
-   * @returns {number}
    */
   dist(other) {
-    return Math.sqrt((other.x - this.x)**2 + (other.y - this.y)**2)
+    return dist(this, other);
   };
 
-  /**
-   * @returns {string}
-   */
   toString() {
-    return `${this.isFrozen() ? '!' : ''}(${this.x}, ${this.y})`;
+    return `${this.isFrozen() ? '!' : ''}(${this.x},${this.y})`;
   }
 
   /**

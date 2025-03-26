@@ -72,7 +72,7 @@ export default class Circle extends Shape {
     this.throwIfFrozen();
 
     const deltaX = x - this._center.x;
-    this._lines.forEach(line => line.move(deltaX, 0));
+    this._lines.forEach(line => line.shift(deltaX, 0));
     this._center.x = x;
   }
 
@@ -80,7 +80,7 @@ export default class Circle extends Shape {
     this.throwIfFrozen();
 
     const deltaY = y - this._center.y;
-    this._lines.forEach(line => line.move(0, deltaY));
+    this._lines.forEach(line => line.shift(0, deltaY));
     this._center.y = y;
   }
 
@@ -89,7 +89,7 @@ export default class Circle extends Shape {
 
     const deltaX = center.x - this._center.x;
     const deltaY = center.y - this._center.y;
-    this._lines.forEach(line => line.move(deltaX, deltaY));
+    this._lines.forEach(line => line.shift(deltaX, deltaY));
     this._center = center;
   }
 

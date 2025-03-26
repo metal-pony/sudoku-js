@@ -9,6 +9,7 @@ import ShapeQueue from './src/blocky/ShapeQueue.js'
 // engine
 import Engine from './src/engine/Engine.js';
 import Scene from './src/engine/Scene.js';
+import GridScene from './src/engine/GridScene.js';
 import GameObj from './src/engine/GameObj.js';
 import Point from './src/engine/Point.js';
 import { intersects } from './src/engine/IntersectionMap.js';
@@ -123,7 +124,7 @@ export {
 
   // engine
   Engine,
-  Scene,
+  Scene, GridScene,
   GameObj,
   Point,
   intersects,

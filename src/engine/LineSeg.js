@@ -74,7 +74,19 @@ export default class LineSeg extends Freezable {
     return this._angleDeg;
   }
 
-  move(x, y) {
+  /**
+   *
+   * @param {Point[]} points
+   */
+  setPts(points) {
+    this._points[0].x = points[0].x;
+    this._points[0].y = points[0].y;
+    this._points[1].x = points[1].x;
+    this._points[1].y = points[1].y;
+    this._memo();
+  }
+
+  shift(x, y) {
     this.throwIfFrozen();
 
     this.p1.x += x;

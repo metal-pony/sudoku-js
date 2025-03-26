@@ -484,3 +484,77 @@ describe('randomBigInt', () => {
     }
   });
 });
+
+describe('nextBitCombo', () => {
+  test('throws if n <= 0', () => {
+    for (let n = 0; n > -100; n--) {
+      expect(() => subject.nextBitCombo(n, 1n)).toThrow();
+    }
+  });
+
+  test('throws if #bits set in r > n', () => {
+    for (let n = 1; n < 100; n++) {
+      const r = (1n << BigInt(n+1)) - 1n;
+      expect(() => subject.nextBitCombo(n, r)).toThrow();
+    }
+  });
+
+  // When n = 1:
+  //  if r = 0: should return 0
+  //  if r = 1: should return 1
+  test('when n = 1, returns the input r', () => {
+    expect(subject.nextBitCombo(1, 0n)).toBe(0n);
+    expect(subject.nextBitCombo(1, 1n)).toBe(1n);
+  });
+
+  test('when r has n bits set, returns r', () => {
+    for (let n = 1; n < 100; n++) {
+      const r = (1n << BigInt(n)) - 1n;
+      expect(subject.nextBitCombo(n, r)).toBe(r);
+    }
+  });
+
+  test('calculates the next combo as expected', () => {
+    for (let n = 2; n < 10; n++) {
+      for (let k = 1; k < n; k++) {
+        // Starting from minimum r (lowest k bits set), nextBitCombo should cycle through
+        // nck combinations before returning to r.
+        // Each (nck - 1) return should be larger than the input r.
+        const nck = subject.nChooseK(n, k);
+        const minR = (1n << BigInt(k)) - 1n;
+        let r = minR;
+        let count = 0n;
+        while (count < nck) {
+          const nextR = subject.nextBitCombo(n, r);
+          if (count < nck - 1n) {
+            expect(nextR).toBeGreaterThan(r);
+          } else {
+            expect(nextR).toBe(minR);
+          }
+          r = nextR;
+          count++;
+        }
+      }
+    }
+
+    const rs = [
+      0b00011n,
+      0b00101n,
+      0b00110n,
+      0b01001n,
+      0b01010n,
+      0b01100n,
+      0b10001n,
+      0b10010n,
+      0b10100n,
+      0b11000n,
+      0b00011n
+    ];
+    const n = 5;
+    for (let i = 0; i < rs.length - 1; i++) {
+      const expected = rs[i + 1];
+      const actual = subject.nextBitCombo(n, rs[i]);
+      expect(actual).toBe(expected);
+    }
+  });
+});

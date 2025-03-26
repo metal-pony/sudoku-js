@@ -4,6 +4,20 @@ import Point from './Point.js';
 export const EPSILON = 1e-10;
 
 /**
+ * Calculates the magnitude of the given vector.
+ * @param {Point} vec Coordinates representing a vector (from origin (0,0)).
+ * @returns {number}
+ */
+export const mag = (vec) => Math.sqrt(vec.x**2 + vec.y**2);
+
+/**
+ * Calculates the direction (in radians) of the given vector (using `Math.atan2`).
+ * @param {Point} vec Coordinates representing a vector (from origin (0,0)).
+ * @returns {number}
+ */
+export const direction = (vec) => Math.atan2(vec.y, vec.x);
+
+/**
  * Calculates the distance between the given points.
  * @param {Point} p1
  * @param {Point} p2

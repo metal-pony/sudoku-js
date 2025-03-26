@@ -5,8 +5,21 @@ export default class Shape extends Freezable {
   constructor() {
     super();
 
-    /** @type {LineSeg[]} */
+    /**
+     * @type {Point[]}
+     */
+    this._points = [];
+
+    /**
+     * @type {number[]}
+     */
+    this._angles = [];
+
+    /**
+     * @type {LineSeg[]}
+     */
     this._lines = [];
+
     this._closed = false;
     this._left = 0;
     this._right = 0;
@@ -116,9 +129,6 @@ export default class Shape extends Freezable {
     return this._lines.some(l => l.intersects(line));
   }
 
-  /**
-   * @returns {string}
-   */
   toString() {
     const lines = this._lines.map(l => l.toString()).join(', ');
     return `${this.isFrozen() ? '!' : ''}Shape{${lines}}`;

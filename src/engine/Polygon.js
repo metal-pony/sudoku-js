@@ -1,6 +1,7 @@
 import Point from './Point.js';
 import LinearLineSeg from './LinearLineSeg.js';
 import Shape from './Shape.js';
+import { direction } from './Geo.js';
 
 const MIN_LINES = 3;
 const MIN_LINES_TO_CLOSE = 2;
@@ -12,51 +13,75 @@ export default class Polygon extends Shape {
   static get CANNOT_CLOSE_ERR_MSG() { return CANNOT_CLOSE_ERR_MSG; }
 
   /**
-   * Creates a new Polygon from the given points.
+   *
    * @param {Point[]} points
-   * @returns {Polygon}
    */
-  static fromPoints(points) {
-    const poly = new Polygon();
-    points.forEach((p, i) => (
-      poly._lines.push(new LinearLineSeg([p, points[(i + 1) % points.length]]))
-    ));
-    poly.onUpdate();
-    return poly;
-  }
-
-  constructor() {
+  constructor(points) {
     super();
 
     this._left = 0;
     this._right = 0;
     this._top = 0;
     this._bottom = 0;
+    this._points = points;
+    this._angles = points.map(direction);
   }
 
-  get left() {
-    return this._left;
+  /** Leftmost x coordinate.*/
+  get left() { return this._left; }
+  /** Rightmost x coordinate.*/
+  get right() { return this._right; }
+  /** Topmost y coordinate.*/
+  get top() { return this._top; }
+  /** Bottommost y coordinate.*/
+  get bottom() { return this._bottom; }
+  get width() { return this._right - this._left; }
+  get height() { return this._bottom - this._top; }
+
+  /**
+   *
+   * @param {Point} center
+   */
+  moveTo(center) {
+    const dx = center.x - this._center.x;
+    const dy = center.y - this._center.y;
+    this.shift(new Point({ x: dx, y: dy }));
   }
 
-  get right() {
-    return this._right;
+  /**
+   * @param {number} x
+   * @param {number} y
+   */
+  shift(x, y) {
+    this._lines.forEach(line => {
+      line.shift(x, y);
+    });
+    this.findBounds();
   }
 
-  get top() {
-    return this._top;
+  /**
+   * Rotates the polygon the given amount of radians.
+   * TODO NYI
+   * @param {number} rads
+   */
+  rotate(rads) {
+    console.log('(GameObj) rotate: NYI');
   }
 
-  get bottom() {
-    return this._bottom;
-  }
-
-  get width() {
-    return this._right - this._left;
-  }
-
-  get height() {
-    return this._bottom - this._top;
-  }
+  /**
+   *
+   * @param {CanvasRenderingContext2D} context
+   */
+  // renderingPath(context) {
+  //   context.beginPath();
+  //   this._lines.forEach((line, i) => {
+  //     if (i === 0) {
+  //       context.moveTo(line.p1.x, line.p1.y);
+  //     }
+  //     context.lineTo(line.p2.x, line.p2.y);
+  //   });
+  //   // The lines should be closed, so there is no need to close the path.
+  // }
 
   /**
    * Adds the given lines to the polygon, then calls onUpdate.
@@ -145,11 +170,7 @@ export default class Polygon extends Shape {
     );
   }
 
-  /**
-   * @returns {string}
-   */
   toString() {
-    const lines = this._lines.map(l => l.toString()).join(', ');
-    return `${this.isFrozen() ? '!' : ''}Poly{${lines}}`;
+    return this._points.map(p => p.toString()).join(', ');
   }
 }

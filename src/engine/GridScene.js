@@ -27,13 +27,7 @@ import Scene from './Scene.js';
  * @property {GridSceneGridProps?} gridProps
  * @property {GameObj[]?} objs
  * @property {string} bgColorCode
- */
-
-/**
- * @typedef {object} Cell
- * @property {number} x
- * @property {number} y
- * @property {object} data
+ * @property {object[][]} cellData
  */
 
 export default class GridScene extends Scene {
@@ -56,12 +50,18 @@ export default class GridScene extends Scene {
       Object.assign(this._gridProps, props.gridProps);
     }
 
-    /** @type {Cell[][]} */
-    this._cells = [];
-    for (let row = 0; row < this.rows; row++) {
+    if (props.cellData) {
+      /** @type {Cell[][]} */
+      this._cells = props.cellData;
+    } else {
+      /** @type {Cell[][]} */
+      this._cells = [];
       this._cells.push([]);
-      for (let col = 0; col < this.cols; col++) {
-        this._cells[row].push(this._newCell(row, col));
+      for (let row = 0; row < this.rows; row++) {
+        this._cells[row] = [];
+        for (let col = 0; col < this.cols; col++) {
+          this._cells[row].push(this._newCell());
+        }
       }
     }
 
@@ -79,18 +79,11 @@ export default class GridScene extends Scene {
   }
 
   /**
-   * Creates a new cell given row, col, with default data.
-   * @param {number} row
-   * @param {number} col
-   * @returns {Cell}
+   * Creates a new cell with default data.
    */
-  _newCell(row, col) {
+  _newCell() {
     return ({
-      x: col,
-      y: row,
-      data: {
-        color: '#00000000'
-      }
+      color: '#00000000'
     });
   }
 
@@ -124,7 +117,7 @@ export default class GridScene extends Scene {
       for (let row = 0; row < this.rows; row++) {
         const cellRow = this._cells[row];
         for (let d = 0; d < diff; d++) {
-          cellRow.push(this._newCell(row, cellRow.length));
+          cellRow.push(this._newCell());
         }
       }
     } else {
@@ -152,7 +145,7 @@ export default class GridScene extends Scene {
       for (let d = 0; d < diff; d++) {
         const cellRow = [];
         for (let col = 0; col < this.cols; col++) {
-          cellRow.push(this._newCell(this.rows + d, col));
+          cellRow.push(this._newCell());
         }
         this._cells.push(cellRow);
       }
@@ -174,7 +167,7 @@ export default class GridScene extends Scene {
     if (x < 0 || x >= this.cols || y < 0 || y >= this.rows) {
       return null;
     }
-    return this._cells[y][x].data;
+    return this._cells[y][x];
   }
 
   /**
@@ -196,16 +189,15 @@ export default class GridScene extends Scene {
   }
 
   renderBackground(ctx, elapsed) {
-    console.log('(Scene) Rendering background');
     ctx.fillStyle = this._bgColor;
     ctx.fillRect(0, 0, this.width, this.height);
 
     for (let row = 0; row < this.rows; row++) {
       for (let col = 0; col < this.cols; col++) {
         const cell = this._cells[row][col];
-        const x = cell.x * this.cellSize;
-        const y = cell.y * this.cellSize;
-        ctx.fillStyle = cell.data.color;
+        const x = col * this.cellSize;
+        const y = row * this.cellSize;
+        ctx.fillStyle = cell.color;
         ctx.fillRect(x, y, this.cellSize, this.cellSize);
       }
     }
@@ -219,7 +211,6 @@ export default class GridScene extends Scene {
   }
 
   renderGrid(ctx) {
-    console.log('(Scene) Drawing grid');
     ctx.strokeStyle = this._gridProps.colorCode;
     ctx.lineWidth = 1;
     ctx.beginPath();

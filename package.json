@@ -1,6 +1,6 @@
 {
   "name": "@metal-pony/bucket-js",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Bucket of js utilities",
   "type": "module",
   "license": "MIT",

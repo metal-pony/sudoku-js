@@ -1,7 +1,7 @@
 {
-  "name": "@metal-pony/bucket-js",
-  "version": "1.5.1",
-  "description": "Bucket of js utilities",
+  "name": "@metal-pony/sudoku-js",
+  "version": "1.0.0",
+  "description": "Sudoku solver and generator module",
   "type": "module",
   "license": "MIT",
   "main": "index.js",
@@ -28,9 +28,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/metal-pony/bucket-js.git"
+    "url": "git+https://github.com/metal-pony/sudoku-js.git"
   },
   "dependencies": {
+    "@metal-pony/counting-js": "^1.0.0",
     "arg": "^5.0.2"
   }
 }

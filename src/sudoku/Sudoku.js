@@ -7,14 +7,13 @@ import {
   reflectOverAntiDiagonal,
   shuffle,
   swapAllInArr,
-  swap
+  swap,
+  chooseRandom,
+  countBigBits,
+  countBits
 } from '../util/arrays.js';
-import { randomBitCombo } from '../util/perms.js';
-import Debugger from '../util/debug.js';
+import { randomBitCombo } from '@metal-pony/counting-js';
 import SudokuSieve, { searchForItemsFromMask, seedSieve } from './SudokuSieve.js';
-import { chooseRandom, countBigBits, countBits, removeRandom } from '../util/common.js';
-
-const debug = new Debugger(false);
 
 /**
  * @callback SolutionFoundCallback
@@ -373,11 +372,11 @@ export class Sudoku {
       const puzzleNode = puzzleStack[puzzleStack.length - 1]; // peek
       const puzzle = puzzleNode.sudoku;
       puzzleNode.visit();
-      debug.log(`generatePuzzle> (empty: ${puzzle.numEmptyCells}) ${puzzle.toString()}`);
+      // console.log(`generatePuzzle> (empty: ${puzzle.numEmptyCells}) ${puzzle.toString()}`);
 
       // _board = puzzle.encodedBoard;
       if (!puzzle.hasUniqueSolution()) {
-        debug.log(`generatePuzzle> no unique solution, popping...`);
+        // console.log(`generatePuzzle> no unique solution, popping...`);
         puzzleStack.pop();
         puzzleNode.dispose();
 
@@ -397,7 +396,7 @@ export class Sudoku {
       }
 
       if (puzzle.numEmptyCells >= (SPACES - numClues)) {
-        debug.log(`generatePuzzle> found puzzle with ${puzzle.numEmptyCells} empty cells`);
+        // console.log(`generatePuzzle> found puzzle with ${puzzle.numEmptyCells} empty cells`);
         break;
       }
 

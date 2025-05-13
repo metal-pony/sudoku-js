@@ -1,10 +1,13 @@
 import {
   bitCombo,
+  nChooseK,
+  randomBigInt
+} from '@metal-pony/counting-js';
+
+import {
   cellMask,
   digitMask,
   DIGITS,
-  nChooseK,
-  randomBigInt,
   SPACES,
   Sudoku,
   SudokuSieve

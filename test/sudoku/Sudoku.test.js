@@ -1,12 +1,8 @@
-import {
-  Sudoku,
-  cellCol,
-  cellRegion,
-  cellRow,
-  masksFor,
-  randomCombo
-} from '../../index.js';
+import { randomCombo } from '@metal-pony/counting-js';
+import { Sudoku } from '../../index.js';
 import puzzles from './puzzles24.js';
+import { range, shuffle } from '../../src/util/arrays.js';
+
 
 const invalidPuzzles = [
   // Invalid because of digit clashing (col 7: 3...5.3.1)

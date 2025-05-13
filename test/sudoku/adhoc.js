@@ -1,19 +1,15 @@
 import {
-  Debugger,
+  bitCombo,
+  nChooseK
+} from '@metal-pony/counting-js';
+import {
+  DIGITS,
   Sudoku,
   SudokuSieve,
-  bitCombo,
   cellMask,
   digitMask,
-  nChooseK,
   sieveCombos4
 } from '../../index.js';
-import {
-  NUM_DIGITS,
-  NUM_SPACES
-} from '../../src/sudoku/Sudoku.js';
-
-const debug = new Debugger(true);
 
 /**
  *
@@ -21,9 +17,9 @@ const debug = new Debugger(true);
  * @param {(digitCombo: number) => void} cb
  */
 function forEachDigitCombo(k, cb) {
-  const nck = nChooseK(NUM_DIGITS, k);
+  const nck = nChooseK(DIGITS, k);
   for (let r = 0n; r < nck; r++) {
-    cb(Number(bitCombo(NUM_DIGITS, k, r)));
+    cb(Number(bitCombo(DIGITS, k, r)));
   }
 }
 
@@ -45,11 +41,11 @@ forEachDigitCombo(k, (dCombo) => {
 // const sieve = ss.items;
 const maxComboLength = 17;
 const maxResultSet = 1_000_000;
-debug.log(`Generating combos sieveCombos4(maxLen: ${maxComboLength}) from sieve (length: ${ss.length})...`);
+console.log(`Generating combos sieveCombos4(maxLen: ${maxComboLength}) from sieve (length: ${ss.length})...`);
 const start = Date.now();
 const results = sieveCombos4(ss, maxComboLength, maxResultSet);
-debug.log(`Done in ${(Date.now() - start)}ms`);
-debug.log(`config: ${config.toString()}`);
+console.log(`Done in ${(Date.now() - start)}ms`);
+console.log(`config: ${config.toString()}`);
 
 // Verify results: All items should cover the sieve entirely.
 let allCovered = true;
@@ -58,18 +54,18 @@ results.forEach((masks, numClues) => {
     return;
   }
 
-  debug.log(`Verifying ${masks.size} results (numClues: ${numClues})...`);
+  console.log(`Verifying ${masks.size} results (numClues: ${numClues})...`);
   const _masks = Array.from(masks);
   _masks.forEach((mask) => {
     // if (sieve.some(item => (item & mask) === 0n)) {
     if (!ss.doesMaskSatisfy(mask)) {
       allCovered = false;
-      debug.log(`\n❌ ${mask.toString(2).padStart(81, '0').replace(/0/g, '.').replace(/1/g, '#')}  ${numClues}`);
+      console.log(`\n❌ ${mask.toString(2).padStart(81, '0').replace(/0/g, '.').replace(/1/g, '#')}  ${numClues}`);
     }
   });
 });
 if (allCovered) {
-  debug.log('✅ sieveCombos4() results verified.');
+  console.log('✅ sieveCombos4() results verified.');
 }
 
 // Reading sieve combos from maxLength to the min generated,
@@ -83,10 +79,10 @@ for (let numClues = results.length - 1; numClues > 0; numClues--) {
       let start = Date.now();
       const flag = p.solutionsFlag();
       const flagTime = Date.now() - start;
-      debug.log(`[${numClues}] ${p.toString()}  [flag: ${flag}] ${flagTime}ms`);
+      console.log(`[${numClues}] ${p.toString()}  [flag: ${flag}] ${flagTime}ms`);
 
       if (flag === 1) {
-        debug.log(`[${numClues}] ⭐️ ${p.toString()}`);
+        console.log(`[${numClues}] ⭐️ ${p.toString()}`);
       }
     });
   }

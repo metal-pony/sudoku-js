@@ -1,6 +1,6 @@
 // import { shuffle } from '../util/arrays.js';
+import { bitCombo, nChooseK } from '@metal-pony/counting-js';
 import { range } from '../util/arrays.js';
-import { bitCombo, nChooseK } from '../util/perms.js';
 import Sudoku, {
   cellCol,
   cellMask,

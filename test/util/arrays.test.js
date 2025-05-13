@@ -12,7 +12,7 @@ import {
   reflectOverVertical,
   reflectOverDiagonal,
   reflectOverAntiDiagonal
-} from '../../index.js';
+} from '../../src/util/arrays.js';
 
 const when = (msg, testFuncs) => {
   describe(`when ${msg}`, testFuncs);
@@ -71,20 +71,6 @@ describe('array utilities', () => {
 
   describe('swap', () => {
     whenArrayIsNullExpectToThrow(swap, [0, 1]);
-
-    when('i or j is out of bounds', () => {
-      test('throws', () => {
-        const arr = [1, 2, 3];
-        expect(() => swap(arr, -(arr.length+1), 0)).toThrow();
-        expect(() => swap(arr, 0, -(arr.length+1))).toThrow();
-        expect(() => swap(arr, -arr.length, 0)).toThrow();
-        expect(() => swap(arr, 0, -arr.length)).toThrow();
-        expect(() => swap(arr, arr.length, 0)).toThrow();
-        expect(() => swap(arr, 0, arr.length)).toThrow();
-        expect(() => swap(arr, arr.length+1, 0)).toThrow();
-        expect(() => swap(arr, 0, arr.length+1)).toThrow();
-      });
-    });
 
     when('i and j are within bounds', () => {
       when('i and j are equal', () => {

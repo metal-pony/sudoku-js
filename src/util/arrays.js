@@ -1,18 +1,3 @@
-function errIfIndicesOutOfBounds(arr, a, b) {
-  if (!arr || arr.length === 0) {
-    throw new Error('arr must be a non-empty array');
-  }
-
-  if (
-    !Number.isSafeInteger(a) ||
-    !Number.isSafeInteger(b) ||
-    a < 0 || a >= arr.length ||
-    b < 0 || b >= arr.length
-  ) {
-    throw new Error(`indices must be positive integers within [${0},${arr.length})`);
-  }
-}
-
 /**
  * Returns an array of numbers from `start` to `end` (exclusive).
  * If `start` is omitted, it defaults to 0.
@@ -51,7 +36,6 @@ export function shuffle(arr) {
  * @param {number} j
  */
 export function swap(arr, i, j) {
-  errIfIndicesOutOfBounds(arr, i, j);
   const tmp = arr[i];
   arr[i] = arr[j];
   arr[j] = tmp;
@@ -205,4 +189,66 @@ export function reflectOverAntiDiagonal(arr) {
   if (arr.length < 4) return;
   rotateArr90(arr);
   reflectOverVertical(arr, Math.sqrt(arr.length));
+}
+
+/**
+ * Returns a random element from the given array.
+ * If the array is empty, returns null.
+ * @param {any[]} arr
+ * @returns {any | null}
+ */
+export function chooseRandom(arr) {
+  return (arr.length > 0) ? arr[randInt(arr.length)] : null;
+}
+
+/**
+ * Returns the number of 1 bits in the given bigint.
+ *
+ * If negative, uses `(-n)`.
+ * @param {bigint} bigN
+ * @returns {number}
+ */
+export function countBigBits(bigN) {
+  if (bigN < 0n) {
+    bigN = -bigN;
+  }
+
+  let count = 0;
+  while (bigN > 0n) {
+    if (bigN & 1n) {
+      count++;
+    }
+    bigN >>= 1n;
+  }
+  return count;
+}
+
+/**
+ * Returns the number of 1 bits in the given number.
+ *
+ * If negative, uses `(-n)`.
+ * @param {number} n
+ * @returns {number}
+ */
+export function countBits(n) {
+  if (n < 0) {
+    n = -n;
+  }
+
+  let count = 0;
+  while (n > 0) {
+    if (n & 1) {
+      count++;
+    }
+    n >>= 1;
+  }
+  return count;
+}
+
+/**
+ * Returns a random integer between 0 and max, exclusive.
+ * @param {number} max
+ */
+export function randInt(max) {
+  return (Math.random() * max) | 0;
 }

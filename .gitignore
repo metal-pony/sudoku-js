@@ -1,13 +1,13 @@
 node_modules/
 .env
 .env.*
+.npmrc
 # Build files
 build/
 dist/
 # Log + random output files
 log/
 out/
-# Local scripts used for development
 adhoc/
 # Test coverage
 coverage/
@@ -15,5 +15,3 @@ coverage/
 .vscode/
 # DS_AnnoyingAsFuck_Store
 .DS_Store
-# Local scripts used for development
-adhoc/

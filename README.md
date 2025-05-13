@@ -1,53 +1,40 @@
-# Bucket
-> A bucket for my js utilities.
-
-```
-./src
-├── engine [WIP]    Basic 2D game engine.
-│   ├── Engine      Main game engine class. Scene management.
-│   ├── GameObj     Base class for all game objects.
-│   ├── Geo
-│   ├── LineSeg
-│   ├── Point
-│   ├── Polygon
-│   └── Scene       Updates and renders game objects.
-├── event           Simple event bussing.
-│   ├── Event
-│   └── EventBussy  Manages event listeners and dispatching.
-├── structs         Random data structures.
-│   ├── Coord       2D Coordinates.
-│   ├── Move        2D Coordinates plus rotation.
-│   ├── Position    2D Coordinates plus rotation and maxRotation.
-│   └── Vector      Represents a 2D vector.
-└── util
-    ├── Freezable   Base class for locking down object properties.
-    ├── Timer       Executes a callback after a given amount of time. Repeatable.
-    ├── Util        Shuffling, generating ranges, number validation, etc.
-    └── ZMod        Maintains an integer bounded to a given range (the mod).
-```
+# sudoku-js
+Sudoku solver and generator module for Nodejs or Browser.
 
 ## Scripts
 
-| Script | Description |
+| Command | Description |
 | ------ | ----------- |
-| `clean` | Deletes the output directory, `build/`. |
-| `build` | Compiles/transforms and places the output directory, `build/`. |
 | `test` | Yay tests. |
+| `generateConfigs` | Generate full sudoku grids. |
+| `generatePuzzles` | Generate sudoku puzzles. |
+| `solve` | Find all solutions for a given grid. |
+| `generateSieve` | Generate unavoidable sets for a given full grid. |
+| `fingerprint` | Generates a fingerprint* for a given full grid. |
+
+\* _**fingerprints**_ are a kind of hash for a full grid. They are designed to remain the same regardless of how the grid is manipulated per symmetry-preserving operations, i.e.:
+  - digit-swapping
+  - reflection
+  - rotation
+  - band swap
+  - stack swap
+  - row swap within a band
+  - column swap within a stack
 
 ## Installing
 
-Unfortunately, even public GitHub packages require authentication to install.
+Reference: [GitHub docs related to packages](https://docs.github.com/en/packages/learn-github-packages/installing-a-package)
 
-Create a personal access token with the `read:packages` scope.
+Packages installed via GitHub Packages require authentication to install.
 
-Add the GitHub package registry to your `.npmrc` file like below, replacing `GH_PAT` with your PAT:
-
+1. Create a personal access token with the `read:packages` scope.
+2. Add the GitHub package registry to a `.npmrc` file in your project like below, replacing `GH_PAT` with your PAT:
 ```
 //npm.pkg.github.com/:_authToken=GH_PAT
 @metal-pony:registry=https://npm.pkg.github.com
 ```
-
-Then install the package as normal.
+3. Then install in your project as normal:
 ```
-npm install @metal-pony/bucket-js
+npm install @metal-pony/sudoku-js
 ```
+Do not commit your `.npmrc` file. Keep your access token secret.

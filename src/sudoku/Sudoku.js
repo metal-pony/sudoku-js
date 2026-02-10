@@ -1618,7 +1618,7 @@ return this._numEmptyCells === 0;
       if (level >= 1) {
         for (let i = 0; i < SPACES; i++) {
           if (this._digits[i] > 0) continue;
-          let uniqueCandidate = this._getUniqueCandidate(i);
+          let uniqueCandidate = this._checkHiddenPairs(i);
           if (uniqueCandidate > 0) {
             this.setDigit(DECODER[uniqueCandidate], i);
             hadReduction = true;
@@ -1664,7 +1664,7 @@ return this._numEmptyCells === 0;
    * @param {number} ci Index of cell being checked.
    * @returns {number} The unique candidate digit; or 0 if none.
    */
-  _getUniqueCandidate(ci) {
+  _checkHiddenPairs(ci) {
     for (let candidate of CANDIDATES[this._board[ci]]) {
       let unique = true;
       for (let ni of ROW_NEIGHBORS[ci]) {

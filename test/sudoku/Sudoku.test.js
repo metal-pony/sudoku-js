@@ -61,7 +61,7 @@ describe('SearchState', () => {
 
     test('finds the correct number of solutions (many)', () => {
       MULTI_SOLUTION_PUZZLES.forEach(({ puzzleStr, numSolutions }) => {
-            const puzzle = new Sudoku(puzzleStr);
+        const puzzle = new Sudoku(puzzleStr);
         search.init(puzzle);
         while (search.advanceToSolution());
         expect(search.numSolutions).toBe(numSolutions);
@@ -75,16 +75,16 @@ describe('SearchState', () => {
       MULTI_SOLUTION_PUZZLES.forEach(({ puzzleStr, numSolutions }) => {
         const puzzle = new Sudoku(puzzleStr);
         search.init(puzzle);
-          /** @type {Set<string>} */
-          const solutionSet = new Set();
+        /** @type {Set<string>} */
+        const solutionSet = new Set();
         while (search.advanceToSolution()) {
           solutionSet.add(new Sudoku(search.solution));
         }
         expect(solutionSet.size).toBe(numSolutions);
       });
     });
-        });
-      });
+  });
+});
 
 describe('Sudoku', () => {
   describe('solutionCount', () => {
@@ -124,7 +124,7 @@ describe('Sudoku', () => {
           expect(new Sudoku(p).solutionsFlag()).toBe(0);
         });
       });
-          });
+    });
 
     describe('for puzzles with multiple solutions', () => {
       test('returns 2', () => {
@@ -137,12 +137,12 @@ describe('Sudoku', () => {
 
   describe('generateConfig', () => {
     test('is full and solved', () => {
-    for (let n = 0; n < 10; n++) {
+      for (let n = 0; n < 10; n++) {
         const config = Sudoku.generateConfig();
         expect(config.numEmptyCells).toBe(0);
         expect(config.isSolved()).toBe(true);
         expect(config.solutionsFlag()).toBe(1);
-    }
+      }
     });
   });
 
@@ -156,8 +156,8 @@ describe('Sudoku', () => {
 
   describe('fingerprint', () => {
     const gridStr = '218574639573896124469123578721459386354681792986237415147962853695318247832745961';
-    const expected_fp2 = '9:f:b:d:3:7::1c';
-    const expected_fp3 = '9::f::18:6:3b:d:36:6:32:9:d:5:39:2';
+    const expected_dc2 = '9:9:7:4:2:3::16';
+    const expected_dc3 = '9::f::f:1:11:5:f:5:f:c:f:9:3d:e:16:25:21:8:8';
     /** @type {Sudoku} */
     let grid;
 
@@ -166,8 +166,8 @@ describe('Sudoku', () => {
     });
 
     test('check known', () => {
-      expect(grid.fingerprint_d(2)).toBe(expected_fp2);
-      expect(grid.fingerprint_d(3)).toBe(expected_fp3);
+      expect(grid.dc2()).toBe(expected_dc2);
+      expect(grid.dc3()).toBe(expected_dc3);
     });
 
     test('fingerprint does not change under grid transformations', () => {
@@ -204,12 +204,12 @@ describe('Sudoku', () => {
         // Check that the fingerprint is unchanged once in awhile.
         // Not after every transformation - to save time.
         if ((i % 3) === 0) {
-          expect(grid.fingerprint_d(2)).toBe(expected_fp2);
+          expect(grid.dc2()).toBe(expected_dc2);
         }
       }
-      expect(grid.fingerprint_d(2)).toBe(expected_fp2);
+      expect(grid.dc2()).toBe(expected_dc2);
       // Disabled for performance.
-      // expect(grid.fingerprint_d(3)).toBe(expected_fp3);
+      // expect(grid.dc3()).toBe(expected_fp3);
     });
   });
 });

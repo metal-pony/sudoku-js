@@ -13,7 +13,7 @@ import {
   countBits
 } from '../util/arrays.js';
 import { randomBitCombo } from '@metal-pony/counting-js';
-import SudokuSieve, { searchForItemsFromMask, seedSieve } from './SudokuSieve.js';
+import SudokuSieve, { searchForItemsFromMask, seedSieveDc } from './SudokuSieve.js';
 
 /**
  * @callback SolutionFoundCallback
@@ -719,9 +719,9 @@ export class Sudoku {
         if (grid.filter(mask).solutionsFlag() !== 1) {
           puzzleCheckFails++;
           if (useSieve && puzzleCheckFails === 100 && sieve.length < 36) {
-            seedSieve({ grid, sieve, level: 2 });
+            seedSieveDc({ grid, sieve, level: 2 });
           } else if (useSieve && puzzleCheckFails === 2500 && sieve.length < 200) {
-            seedSieve({ grid, sieve, level: 3 });
+            seedSieveDc({ grid, sieve, level: 3 });
           } else if (useSieve && puzzleCheckFails > 10000 && sieve.length < 1000) {
             searchForItemsFromMask(grid, sieve, mask);
           } else if (useSieve && puzzleCheckFails > 25000) {
@@ -915,17 +915,17 @@ export class Sudoku {
 
       let count = 0;
       for (let candidateDigit of CANDIDATE_DECODINGS[originalVal]) {
-          this.setDigit(candidateDigit, ci); // mutates constraints
-          const flag = this.solutionsFlag();
-          this.setDigit(0, ci); // undo the constraints mutation
-          this._board[ci] = originalVal;
+        this.setDigit(candidateDigit, ci); // mutates constraints
+        const flag = this.solutionsFlag();
+        this.setDigit(0, ci); // undo the constraints mutation
+        this._board[ci] = originalVal;
         this._digits[ci] = originalDigit;
         if (flag === 2) return false;
         if (flag === 1) count++;
       }
       if (count < 2) {
         console.log(`🚨 only ${count} valid options for cell ${ci}; board ${this.toString()}`);
-            return false;
+        return false;
       }
     }
 
@@ -967,8 +967,8 @@ export class Sudoku {
     if (!puzzle.isValid()) return;
     if (puzzle.isSolved()) {
       solutionCallback(puzzle);
-        return;
-      }
+      return;
+    }
 
     const search = new SearchState(puzzle);
     while (search.advanceToSolution()) {
@@ -1296,8 +1296,8 @@ export class Sudoku {
 
   /** Returns true if the board is full. */
   isFull() {
-return this._numEmptyCells === 0;
-}
+    return this._numEmptyCells === 0;
+  }
 
   /** Returns true if the board is full and valid. */
   isSolved() {
@@ -1779,19 +1779,72 @@ return this._numEmptyCells === 0;
     return mask;
   }
 
-  // TODO Cache fingerprints until board changes. Maybe make these getters.
-  fingerprint_d(level) {
+  /** Gets the grid's fingerprint using the digitCombos algorithm, level 2. */
+  dc2() {
+    const sieve = new SudokuSieve({ config: this });
+    return this._fp(sieve, 2, sieve.getDigitComboMasks(2));
+  }
+  /** Gets the grid's fingerprint using the digitCombos algorithm, level 3. */
+  dc3() {
+    const sieve = new SudokuSieve({ config: this });
+    return this._fp(sieve, 3, sieve.getDigitComboMasks(3));
+  }
+  /** Gets the grid's fingerprint using the digitCombos algorithm, level 4. */
+  dc4() {
+    const sieve = new SudokuSieve({ config: this });
+    return this._fp(sieve, 4, sieve.getDigitComboMasks(4));
+  }
+  /**
+   * Gets the grid's fingerprint using the digitCombos algorithm
+   * with the specified level.
+   * @param {number} level
+   */
+  dc(level) {
+    const sieve = new SudokuSieve({ config: this });
+    return this._fp(sieve, level, sieve.getDigitComboMasks(level));
+  }
+  /** Gets the grid's fingerprint using the fullCombos algorithm, level 2. */
+  fp2() {
+    const sieve = new SudokuSieve({ config: this });
+    return this._fp(sieve, 2, sieve.getFullComboMasks(2));
+  }
+  /** Gets the grid's fingerprint using the fullCombos algorithm, level 3. */
+  fp3() {
+    const sieve = new SudokuSieve({ config: this });
+    return this._fp(sieve, 3, sieve.getFullComboMasks(3));
+  }
+  /** Gets the grid's fingerprint using the fullCombos algorithm, level 4. */
+  fp4() {
+    const sieve = new SudokuSieve({ config: this });
+    return this._fp(sieve, 4, sieve.getFullComboMasks(4));
+  }
+  /**
+   * Gets the grid's fingerprint using the fullCombos algorithm
+   * with the specified level.
+   * @param {number} level
+   */
+  fp(level) {
+    const sieve = new SudokuSieve({ config: this });
+    return this._fp(sieve, level, sieve.getFullComboMasks(level));
+  }
+  /**
+   * Helper for seeding sieve with masks and building fingerprint string.
+   * @param {SudokuSieve} sieve
+   * @param {number} level
+   * @param {bigint[]} masks
+   * @returns {string}
+   */
+  _fp(sieve, level, masks) {
     if (!this.isSolved()) throw new Error('Invalid configuration.');
     if (level < 2 || level > 4) throw new Error('Unsupported level. [2 <= level <= 4]');
 
-    const ss = new SudokuSieve({ config: this });
-    ss.seed(level);
+    sieve.seedFromMasks(masks);
 
     let minM = SPACES;
     let maxM = 0;
     /** @type {number[]} */
     const itemsByM = Array(SPACES).fill(0);
-    ss.items.forEach(item => {
+    sieve.items.forEach(item => {
       const count = countBigBits(item);
       itemsByM[count]++;
       if (count < minM) minM = count;

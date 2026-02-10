@@ -114,17 +114,13 @@ export function seedSieve({ grid, sieve = [], level = 2 }) {
  */
 function _validate(config, item) {
   const p = config.filter(~item);
+  // Must not reduce further
   const pEmptyCells = p._numEmptyCells;
   p._reduce();
+  if (p.numEmptyCells !== pEmptyCells) return false;
 
-  return (
-    // Must not reduce further
-    (p.numEmptyCells === pEmptyCells) &&
-    // Must have multiple solutions
-    (p.solutionsFlag() === 2) &&
-    // Every antiderivative must have a single solution
-    p.allAntiesSolve()
-  );
+  // Every antiderivative must have a single solution
+  return p.allAntiesSolve();
 }
 
 export default class SudokuSieve {
@@ -138,7 +134,7 @@ export default class SudokuSieve {
     if (
       !Boolean(config) ||
       !(config instanceof Sudoku) ||
-      !config.isConfig()
+      !config.isSolved()
     ) {
       throw new Error('Given config is not valid.');
     }
@@ -268,7 +264,7 @@ export default class SudokuSieve {
   doesMaskSatisfy(mask) {
     for (let group of this._items) {
       for (let item of group) {
-        if ((item & mask) === 0n) {
+        if (!(item & mask)) {
           return false;
         }
       }
@@ -282,7 +278,7 @@ export default class SudokuSieve {
    */
   _addItemToMatrix(item) {
     for (let ci = 0; ci < SPACES; ci++) {
-      if ((item & cellMask(ci)) > 0n) {
+      if (item & cellMask(ci)) {
         this._reductionMatrix[ci]++;
       }
     }
@@ -294,7 +290,7 @@ export default class SudokuSieve {
    */
   _removeItemFromMatrix(item) {
     for (let ci = 0; ci < SPACES; ci++) {
-      if ((item & cellMask(ci)) > 0n) {
+      if (item & cellMask(ci)) {
         this._reductionMatrix[ci]--;
       }
     }
@@ -337,7 +333,7 @@ export default class SudokuSieve {
    * @returns {number} The number of items added.
    */
   addFromMask(mask, itemFoundCallback = null) {
-    const initialCount = this._length;
+    const initialSieveSize = this._length;
     const puzzle = this._config.filter(mask);
     puzzle.searchForSolutions2({
       solutionFoundCallback: (solution) => {
@@ -353,7 +349,7 @@ export default class SudokuSieve {
       }
     });
 
-    return (this._length - initialCount);
+    return (this._length - initialSieveSize);
   }
 
   /**
@@ -393,9 +389,7 @@ export default class SudokuSieve {
    * @returns {boolean}
    */
   isDerivative(mask) {
-    if (mask === 0n) {
-      return true;
-    }
+    if (mask === 0n) return true;
 
     for (let group of this._items) {
       for (let item of group) {

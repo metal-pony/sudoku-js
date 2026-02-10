@@ -54,7 +54,7 @@ const FULL_CONSTRAINTS = ROW_MASK | COLUMN_MASK | REGION_MASK;
  * Example: `cellmask(0) => 0b1000000...000`
  *
  * Example: `cellmask(80) => 0b1000000...000`
- * @param {number} cellIndex `[0, 80]`; ⚠️ not checked.
+ * @param {number} cellIndex `[0, 80]`;
  */
 export const cellMask = (cellIndex) => (1n << (BigInt(SPACES - cellIndex - 1)));
 
@@ -68,7 +68,7 @@ export const cellMask = (cellIndex) => (1n << (BigInt(SPACES - cellIndex - 1)));
  * `digitMask(2) => 0b000000010`
  *
  * `digitMask(9) => 0b100000000`
- * @param {number} digit `[1, 9]`; ⚠️ not checked.
+ * @param {number} digit `[1, 9]`;
  */
 export const digitMask = (digit) => (1 << (digit - 1));
 
@@ -222,8 +222,12 @@ const ROW_NEIGHBORS = range(SPACES).map((ci) => indicesFor.row[CELL_ROWS[ci]].fi
 const COL_NEIGHBORS = range(SPACES).map((ci) => indicesFor.col[CELL_COLS[ci]].filter(i => i !== ci));
 /** Maps cell indices to cell indices of region neighbors. Excludes itself. */
 const REGION_NEIGHBORS = range(SPACES).map((ci) => indicesFor.region[CELL_REGIONS[ci]].filter(i => i !== ci));
-/** Maps cell indices to cell indices of row, column, and region neighbors. Excludes itself. */
+/**
+ * Maps cell indices to cell indices of row, column, and region neighbors. Excludes itself.
+ * @type {number[][]}
+ */
 const CELL_NEIGHBORS = range(SPACES).map((ci) => {
+  /** @type {Set<number>} */
   const neighbors = new Set();
   ROW_NEIGHBORS[ci].forEach(n => neighbors.add(n));
   COL_NEIGHBORS[ci].forEach(n => neighbors.add(n));
@@ -345,7 +349,6 @@ export class Sudoku {
       if (digit > 0) {
         board.setDigit(digit, index);
       }
-      board._clues[index] = digit;
     });
 
     return board;
@@ -417,9 +420,7 @@ export class Sudoku {
       return null;
     }
 
-    const puzzle = puzzleStack[puzzleStack.length - 1].sudoku;
-    puzzle._clues = puzzle.board;
-    return puzzle;
+    return puzzleStack[puzzleStack.length - 1].sudoku;
   }
 
   /**
@@ -428,8 +429,8 @@ export class Sudoku {
    * @returns {Sudoku}
    */
   filter(mask) {
-    return new Sudoku(this.board.map((d, i) => (
-      (mask & (1n << BigInt(SPACES - i - 1))) === 0n ? 0 : d)
+    return new Sudoku(this._digits.map((d, i) => (
+      (mask & CELL_MASKS[i]) ? d : 0)
     ));
   }
 
@@ -545,7 +546,7 @@ export class Sudoku {
         // Check if mask satisfies sieve
         let satisfies = true;
         for (const item of sieve) {
-          if ((item & ~mask) === item) {
+          if (!(item & mask)) {
             satisfies = false;
             break;
           }
@@ -558,10 +559,11 @@ export class Sudoku {
           mask |= cellMask(choice);
 
           // Once in awhile, check the time
-          if (timeoutMs > 0 && (maskFails % 100) === 0) {
+          if (timeoutMs > 0 && maskFails === 100) {
             if ((Date.now() - start) > timeoutMs) {
               return null;
             }
+            maskFails -= 100;
           }
 
           continue;
@@ -1216,23 +1218,17 @@ export class Sudoku {
   }
 
   /** Returns true if the board is full. */
-  isFull() { return this._numEmptyCells === 0; }
+  isFull() {
+return this._numEmptyCells === 0;
+}
 
-  /**
-   * Returns true if the board is full and valid.
-   * @returns {boolean}
-   */
+  /** Returns true if the board is full and valid. */
   isSolved() {
-    return this._numEmptyCells === 0 && this._constraints.every((c) => c === FULL_CONSTRAINTS);
-  }
-
-  /**
-   * Returns whether the board is a valid Sudoku configuration (i.e. full and valid by the rules of Sudoku).
-   * @alias Sudoku#isSolved
-   * @returns {boolean}
-   */
-  isConfig() {
-    return this.isSolved();
+    if (!this.isFull()) return false;
+    for (let c of this._constraints) {
+      if (c !== FULL_CONSTRAINTS) return false;
+    }
+    return true;
   }
 
   /**
@@ -1548,45 +1544,39 @@ export class Sudoku {
   };
 
   /**
-   *
-   * @param {number} ci
-   * @returns {number}
+   * Checks if the given cell contains a candidate unique to its
+   * row, column, or region.
+   * @param {number} ci Index of cell being checked.
+   * @returns {number} The unique candidate digit; or 0 if none.
    */
   _getUniqueCandidate(ci) {
-    const candidates = CANDIDATES[this._board[ci]];
-    for (let candidate of candidates) {
+    for (let candidate of CANDIDATES[this._board[ci]]) {
       let unique = true;
       for (let ni of ROW_NEIGHBORS[ci]) {
-        if ((this._board[ni] & candidate) > 0) {
+        if (this._board[ni] & candidate) {
           unique = false;
           break;
         }
       }
-      if (unique) {
-        return candidate;
-      }
+      if (unique) return candidate;
 
       unique = true;
       for (let ni of COL_NEIGHBORS[ci]) {
-        if ((this._board[ni] & candidate) > 0) {
+        if (this._board[ni] & candidate) {
           unique = false;
           break;
         }
       }
-      if (unique) {
-        return candidate;
-      }
+      if (unique) return candidate;
 
       unique = true;
       for (let ni of REGION_NEIGHBORS[ci]) {
-        if ((this._board[ni] & candidate) > 0) {
+        if (this._board[ni] & candidate) {
           unique = false;
           break;
         }
       }
-      if (unique) {
-        return candidate;
-      }
+      if (unique) return candidate;
     }
 
     return 0;
@@ -1598,24 +1588,24 @@ export class Sudoku {
    */
   _pickEmptyCell() {
     if (this._numEmptyCells === 0) return -1;
+    if (this._numEmptyCells === SPACES) return Math.trunc(Math.random() * SPACES);
 
     // TODO Keep track of empty cells in state for instant lookup.
     let minNumCandidates = DIGITS + 1;
-    let minCandidatesBucket = [];
+    let _minimums = [];
     this._board.forEach((candidates, ci) => {
       const numCandidates = BIT_COUNT_MAP[candidates];
       if (numCandidates > 1) {
         if (numCandidates < minNumCandidates) {
           minNumCandidates = numCandidates;
-          minCandidatesBucket = [ci];
+          _minimums = [ci];
         } else if (numCandidates === minNumCandidates) {
-          minCandidatesBucket.push(ci);
+          _minimums.push(ci);
         }
       }
     });
 
-    // If min still === 10, then there are no empty cells.
-    return (minNumCandidates === (DIGITS + 1)) ? -1 : chooseRandom(minCandidatesBucket);
+    return _minimums.length ? chooseRandom(_minimums) : -1;
   }
 
   /**
@@ -1639,42 +1629,8 @@ export class Sudoku {
    * - `2 or higher` - Multiple solutions.
    */
   solutionsFlag() {
-    if (!this._isValid) {
-      return 0;
-    }
-
-    if (this.numEmptyCells > (SPACES - MIN_CLUES)) {
-      return 2;
-    }
-
-    let solutionCount = 0;
-    this.searchForSolutions2({ solutionFoundCallback: (_) => (++solutionCount < 2) });
-    return solutionCount;
-  }
-
-  /**
-   * Attempts to solve this board.
-   * The board values will be updated only if a single solution is found.
-   *
-   * @returns {boolean} True if there is a single solution; otherwise false.
-   */
-  solve() {
-    let solution = null;
-    let count = 0;
-    this.searchForSolutions2({
-      solutionFoundCallback: (_solution) => {
-        solution = _solution;
-        count++;
-        return count < 2;
-      }
-    });
-
-    if (count === 1) {
-      this.setBoard(solution.board);
-      return true;
-    }
-
-    return false;
+    if (!this.isValid()) return 0;
+    if (this.numEmptyCells > (SPACES - MIN_CLUES)) return 2;
   }
 
   /**
@@ -1696,7 +1652,7 @@ export class Sudoku {
 
   // TODO Cache fingerprints until board changes. Maybe make these getters.
   fingerprint_d(level) {
-    if (!this.isConfig()) throw new Error('Invalid configuration.');
+    if (!this.isSolved()) throw new Error('Invalid configuration.');
     if (level < 2 || level > 4) throw new Error('Unsupported level. [2 <= level <= 4]');
 
     const ss = new SudokuSieve({ config: this });

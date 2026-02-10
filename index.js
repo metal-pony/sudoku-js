@@ -12,12 +12,16 @@ import Sudoku, {
   cellRow,
   cellCol,
   cellRegion,
-  cellRegion2D
+  cellRegion2D,
+  SearchState,
 } from './src/sudoku/Sudoku.js';
 
 import SudokuSieve, {
   searchForItemsFromMask,
-  seedSieve
+  seedSieveDc,
+  seedSieveFp,
+  getDigitComboMasks,
+  getAreaComboMasks,
 } from './src/sudoku/SudokuSieve.js';
 
 export {
@@ -36,8 +40,12 @@ export {
   cellRegion,
   cellRegion2D,
   Sudoku,
+  SearchState,
 
   SudokuSieve,
   searchForItemsFromMask,
-  seedSieve
+  seedSieveDc,
+  seedSieveFp,
+  getDigitComboMasks,
+  getAreaComboMasks,
 };

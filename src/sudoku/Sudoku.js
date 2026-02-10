@@ -640,7 +640,6 @@ export class Sudoku {
 
   /**
    * Performs a solutions search for the board and returns the first found.
-   * @param {object} options
    * @returns {Sudoku | null} The first solution found, or `null` if none was found.
    */
   firstSolution() {
@@ -677,7 +676,6 @@ export class Sudoku {
       }
     }
 
-    this._clues = this._clues.map((digit, ci) => ((digit > 0) ? boardCopy[ci] : 0));
     this.setBoard(boardCopy);
 
     return this;
@@ -739,25 +737,27 @@ export class Sudoku {
    * checks that the board solves uniquely.
    */
   allAntiesSolve() {
-    let digit = 0;
     for (let ci = 0; ci < SPACES; ci++) {
       const originalVal = this._board[ci];
-      if (originalVal === 0) {
-        return false;
-      }
+      const originalDigit = this._digits[ci];
+      // Fail fast if there are any cells with no candidates
+      if (originalVal === 0) return false;
+      // Skip the filled-in cells
+      if (originalDigit > 0) continue;
 
-      digit = decode(originalVal);
-      if (digit === 0) {
-        for (const candidateDigit of CANDIDATE_DECODINGS[originalVal]) {
-          const originalVal = this._board[ci];
+      let count = 0;
+      for (let candidateDigit of CANDIDATE_DECODINGS[originalVal]) {
           this.setDigit(candidateDigit, ci); // mutates constraints
           const flag = this.solutionsFlag();
           this.setDigit(0, ci); // undo the constraints mutation
           this._board[ci] = originalVal;
-          if (flag !== 1) {
+        this._digits[ci] = originalDigit;
+        if (flag === 2) return false;
+        if (flag === 1) count++;
+      }
+      if (count < 2) {
+        console.log(`🚨 only ${count} valid options for cell ${ci}; board ${this.toString()}`);
             return false;
-          }
-        }
       }
     }
 
@@ -933,6 +933,9 @@ export class Sudoku {
      */
     this._board;
 
+    /** @type {number[]} */
+    this._digits;
+
     /**
      * Contains puzzle constraints in the form of 27-bit blocks,
      *
@@ -945,12 +948,6 @@ export class Sudoku {
      * @type {number[]}
      */
     this._constraints;
-
-    /**
-     * The initial clues on the board.
-     * @type {number[]}
-     */
-    this._clues;
 
     /** Keeps track of the number of empty cells on the board.*/
     this._numEmptyCells = SPACES;
@@ -968,23 +965,21 @@ export class Sudoku {
 
     if (data instanceof Sudoku) {
       this._board = [...data._board];
+      this._digits = [...data._digits];
       this._constraints = [...data._constraints];
-      this._clues = data.board;
       this._numEmptyCells = data._numEmptyCells;
       this._isValid = data._isValid;
     } else if (typeof data === 'string') {
       const parsed = Sudoku.fromString(data);
       this._board = [...parsed._board];
+      this._digits = [...parsed._digits];
       this._constraints = [...parsed._constraints];
-      this._clues = parsed.clues;
       this._numEmptyCells = parsed._numEmptyCells;
     } else if (Array.isArray(data)) {
       this._board = [...EMPTY_BOARD];
+      this._digits = Array(SPACES).fill(0);
       this._constraints = Array(DIGITS).fill(0);
-      if (data.length === SPACES) {
-        this.setBoard(data);
-      }
-      this._clues = this.board;
+      if (data.length === SPACES) this.setBoard(data);
     } else {
       throw new Error(`Invalid data type: ${typeof data}`);
     }
@@ -995,13 +990,10 @@ export class Sudoku {
    * @returns {number[]}
    */
   get board() {
-    return this._board.map(decode);
+    return [...this._digits];
   }
 
-  /**
-   * Returns a copy of the board as a 2D array.
-   * @returns {number[][]}
-   */
+  /** Returns a copy of the board as a 2D array. */
   get board2D() {
     const boardRows = [];
     for (let r = 0; r < DIGITS; r++) {
@@ -1013,24 +1005,14 @@ export class Sudoku {
     return boardRows;
   }
 
-  /**
-   * Returns the initial clues on the board.
-   * @returns {number[]}
-   */
-  get clues() {
-    return [...this._clues];
-  }
-
-  /**
-   * Returns the number of empty cells currently on the board.
-   * @returns {number}
-   */
+  /** Returns the number of empty cells currently on the board. */
   get numEmptyCells() {
     return this._numEmptyCells;
   }
 
   /**
-   * @returns {number[]}
+   * Returns a mapping of cell indices to a count of how
+   * many areas the cell is invalid in.
    */
   get cellValidityMap() {
     const v = { row: [], col: [], region: [] };
@@ -1045,36 +1027,25 @@ export class Sudoku {
   }
 
   /**
-   * Returns whether the cell at the given index was given as a clue.
-   * @param {number} cellIndex
-   * @returns {boolean}
-   */
-  isClue(cellIndex) {
-    return this._clues[cellIndex] > 0;
-  }
-
-  /**
    * Sets the value of the board at the given index.
    * @param {number} digit
    * @param {number} index
    * @returns {void}
    */
   setDigit(digit, index) {
-    const prevVal = this._board[index];
-    const newVal = encode(digit);
-    this._board[index] = newVal;
+    const prevDigit = this._digits[index];
+    if (prevDigit === digit) return;
 
-    if (isDigit(prevVal) && !isDigit(newVal)) {
+    this._digits[index] = digit;
+    this._board[index] = ENCODER[digit];
+
+    if (prevDigit > 0) {
       this._numEmptyCells++;
-      this._removeConstraint(index, decode(prevVal));
-    } else if (!isDigit(prevVal) && isDigit(newVal)) {
+      this._removeConstraint(index, prevDigit);
+    }
+
+    if (digit > 0) {
       this._numEmptyCells--;
-      this._addConstraint(index, digit);
-    } else if (isDigit(prevVal) && isDigit(newVal)) {
-      // If both the previous and new values are digits, then the
-      // constraint for the previous value is removed and the
-      // constraint for the new value is added.
-      this._removeConstraint(index, decode(prevVal));
       this._addConstraint(index, digit);
     }
   }
@@ -1095,6 +1066,7 @@ export class Sudoku {
     // The constructor(data == Array) handles this
     this._numEmptyCells = SPACES;
     this._board.fill(ALL);
+    this._digits.fill(0);
     this._constraints.fill(0);
 
     digits.forEach((digit, i) => {
@@ -1118,7 +1090,7 @@ export class Sudoku {
    * @returns {number}
    */
   getDigit(index) {
-    return decode(this._board[index]);
+    return this._digits[index];
   }
 
   /**
@@ -1135,8 +1107,8 @@ export class Sudoku {
    */
   clear() {
     this._board.fill(ALL);
+    this._digits.fill(0);
     this._constraints.fill(0);
-    this._clues.fill(0);
     this._numEmptyCells = SPACES;
   }
 
@@ -1145,9 +1117,9 @@ export class Sudoku {
    */
   reset() {
     this._board.fill(ALL);
+    this._digits.fill(0);
     this._constraints.fill(0);
     this._numEmptyCells = SPACES;
-    this._clues.forEach((digit, index) => this.setDigit(digit, index));
   }
 
   /**
@@ -1303,8 +1275,7 @@ return this._numEmptyCells === 0;
     const digits = range(DIGITS + 1, 1);
     shuffle(digits).forEach((digit, i) => {
       swapAllInArr(this._board, encode(digit), encode(i + 1));
-      swapAllInArr(this._clues, digit, i + 1);
-    });
+      swapAllInArr(this._digits, digit, i + 1);
   }
 
   /**
@@ -1314,7 +1285,7 @@ return this._numEmptyCells === 0;
    */
   reflectOverHorizontal() {
     reflectOverHorizontal(this._board, DIGITS);
-    reflectOverHorizontal(this._clues, DIGITS);
+    reflectOverHorizontal(this._digits, DIGITS);
   }
 
   /**
@@ -1324,7 +1295,7 @@ return this._numEmptyCells === 0;
    */
   reflectOverVertical() {
     reflectOverVertical(this._board, DIGITS);
-    reflectOverVertical(this._clues, DIGITS);
+    reflectOverVertical(this._digits, DIGITS);
   }
 
   /**
@@ -1334,7 +1305,7 @@ return this._numEmptyCells === 0;
    */
   reflectOverDiagonal() {
     reflectOverDiagonal(this._board);
-    reflectOverDiagonal(this._clues);
+    reflectOverDiagonal(this._digits);
   }
 
   /**
@@ -1344,7 +1315,7 @@ return this._numEmptyCells === 0;
    */
   reflectOverAntidiagonal() {
     reflectOverAntiDiagonal(this._board);
-    reflectOverAntiDiagonal(this._clues);
+    reflectOverAntiDiagonal(this._digits);
   }
 
   /**
@@ -1354,7 +1325,7 @@ return this._numEmptyCells === 0;
    */
   rotate90() {
     rotateArr90(this._board);
-    rotateArr90(this._clues);
+    rotateArr90(this._digits);
   }
 
   /**
@@ -1377,16 +1348,16 @@ return this._numEmptyCells === 0;
       this._board.slice(N, N*2),
       this._board.slice(N*2, N*3)
     ];
-    const clues = [
-      this._clues.slice(0, N),
-      this._clues.slice(N, N*2),
-      this._clues.slice(N*2, N*3),
+    const digits = [
+      this._digits.slice(0, N),
+      this._digits.slice(N, N*2),
+      this._digits.slice(N*2, N*3),
     ];
 
     swap(bands, b1, b2);
-    swap(clues, b1, b2);
+    swap(digits, b1, b2);
     this._board = bands.flat();
-    this._clues = clues.flat();
+    this._digits = digits.flat();
   }
 
   /**
@@ -1407,11 +1378,11 @@ return this._numEmptyCells === 0;
 
     const N = DIGITS;
     const rows = range(DIGITS).map(i => this._board.slice(N*i, N*(i+1)));
-    const clueRows = range(DIGITS).map(i => this._clues.slice(N*i, N*(i+1)));
+    const digitRows = range(DIGITS).map(i => this._digits.slice(N*i, N*(i+1)));
     swap(rows, r1, r2);
-    swap(clueRows, r1, r2);
+    swap(digitRows, r1, r2);
     this._board = rows.flat();
-    this._clues = clueRows.flat();
+    this._digits = digitRows.flat();
   }
 
   /**
@@ -1436,9 +1407,9 @@ return this._numEmptyCells === 0;
       this._board[r * DIGITS + c1] = this._board[r * DIGITS + c2];
       this._board[r * DIGITS + c2] = temp;
 
-      temp = this._clues[r * DIGITS + c1];
-      this._clues[r * DIGITS + c1] = this._clues[r * DIGITS + c2];
-      this._clues[r * DIGITS + c2] = temp;
+      temp = this._digits[r * DIGITS + c1];
+      this._digits[r * DIGITS + c1] = this._digits[r * DIGITS + c2];
+      this._digits[r * DIGITS + c2] = temp;
     }
   }
 
@@ -1470,21 +1441,25 @@ return this._numEmptyCells === 0;
   _resetConstraints() {
     this._constraints.fill(0);
     this._isValid = true;
-    this.board.forEach((digit, i) => {
-      if (digit > 0) {
-        if (this._cellConstraints(i) & encode(digit)) {
+    for (let i = 0; i < SPACES; i++) {
+      if (this._digits[i] > 0) {
+        if (this._cellConstraints(i) & this._board[i]) {
           this._isValid = false;
         }
-        this._addConstraint(i, digit);
+        this._addConstraint(i, this._digits[i]);
       }
-    });
+    }
   }
 
   /**
    * Resets empty cells to include all candidates.
    */
   _resetEmptyCells() {
-    this._board = this._board.map((val) => (isDigit(val) ? val : ALL));
+    for (let i = 0; i < SPACES; i++) {
+      if (this._digits[i] === 0) {
+        this._board[i] = ALL;
+      }
+    }
   };
 
   /**
@@ -1500,46 +1475,29 @@ return this._numEmptyCells === 0;
    * Attempts to solve a given cell or reduce its candidates.
    *
    * If successful reduced, this is recursively called for all the cell's neighbors.
-   * @param {number} cellIndex
+   * @param {number} ci Index of cell being reduced.
    */
-  _reduce2(cellIndex) {
-    // Original candidates before potentially modifying.
-    const candidates = this._board[cellIndex];
-
-    // Cell is already resolved to a digit.
-    if (isDigit(candidates)) return false;
-
-    // Cell has no candidate digits.
-    if (candidates <= 0) {
-      this._isValid = false;
-      return false;
-    }
-
-    // Apply constraints bitmask.
-    let reducedCandidates = (candidates & ~this._cellConstraints(cellIndex));
+  _reduceCell(ci) {
+    if (this._digits[ci] > 0) return false;
+    const originalCandidates = this._board[ci];
+    this._board[ci] &= ~this._cellConstraints(ci);
 
     // If there are no more candidates for the cell, the board is invalid.
-    if (reducedCandidates <= 0) {
+    if (this._board[ci] <= 0) {
       this._isValid = false;
-      this.setDigit(0, cellIndex);
+      this.setDigit(0, ci);
       return false;
     }
 
-    if (isDigit(reducedCandidates)) {
-      this.setDigit(decode(reducedCandidates), cellIndex);
-    } else {
-      const uniqueCandidate = this._getUniqueCandidate(cellIndex);
-      if (uniqueCandidate > 0) {
-        this.setDigit(decode(uniqueCandidate), cellIndex);
-        reducedCandidates = uniqueCandidate;
-      } else {
-        this._board[cellIndex] = reducedCandidates;
-      }
+    if (isDigit(this._board[ci])) {
+      this.setDigit(decode(this._board[ci]), ci);
     }
 
     // Propagate to neighboring cells if there was any reduction to the cell.
-    if (reducedCandidates < candidates) {
-      for (let ni of CELL_NEIGHBORS[cellIndex]) this._reduce2(ni);
+    if (this._board[ci] < originalCandidates) {
+      for (let ni of CELL_NEIGHBORS[ci]) {
+        if (this._digits[ni] === 0) this._reduceCell(ni);
+      }
     }
   };
 
@@ -1593,9 +1551,9 @@ return this._numEmptyCells === 0;
     // TODO Keep track of empty cells in state for instant lookup.
     let minNumCandidates = DIGITS + 1;
     let _minimums = [];
-    this._board.forEach((candidates, ci) => {
-      const numCandidates = BIT_COUNT_MAP[candidates];
-      if (numCandidates > 1) {
+    for (let ci = 0; ci < SPACES; ci++) {
+      if (this._digits[ci] === 0) {
+        const numCandidates = BIT_COUNT_MAP[this._board[ci]];
         if (numCandidates < minNumCandidates) {
           minNumCandidates = numCandidates;
           _minimums = [ci];
@@ -1603,7 +1561,7 @@ return this._numEmptyCells === 0;
           _minimums.push(ci);
         }
       }
-    });
+    }
 
     return _minimums.length ? chooseRandom(_minimums) : -1;
   }
@@ -1724,7 +1682,7 @@ return this._numEmptyCells === 0;
         CANDIDATE_DECODINGS[sudoku._board[emptyCi]].forEach(digit => {
           const nextSudoku = new Sudoku(sudoku);
           nextSudoku.setDigit(digit, emptyCi);
-          for (let ni of CELL_NEIGHBORS[emptyCi]) nextSudoku._reduce2(ni);
+          for (let ni of CELL_NEIGHBORS[emptyCi]) nextSudoku._reduceCell(ni);
           queue.push({ sudoku: nextSudoku, difficulty: (node.difficulty + 1) });
         });
       });

@@ -986,9 +986,20 @@ export class Sudoku {
   }
 
   /**
-   * Returns a copy of the board.
-   * @returns {number[]}
+   * Copies sudoku instance data from another instance into this one.
+   * @param {Sudoku} other Sudoku to copy from.
+   * @returns This sudoku for convenience.
    */
+  copyFrom(other) {
+    this._board = [...other._board];
+    this._digits = [...other._digits];
+    this._constraints = [...other._constraints];
+    this._numEmptyCells = other._numEmptyCells;
+    this._isValid = other._isValid;
+    return this;
+  }
+
+  /** Returns a copy of the board. */
   get board() {
     return [...this._digits];
   }

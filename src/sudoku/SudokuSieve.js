@@ -8,6 +8,7 @@ import Sudoku, {
   cellRow,
   digitMask,
   DIGITS,
+  SearchState,
   SPACES
 } from './Sudoku.js';
 
@@ -30,32 +31,33 @@ const CELL_MASKS = range(81).map((ci) => (1n << (BigInt(81 - ci - 1))));
  * @param {boolean} announce (Default `false`) Whether to log the unavoidable sets.
  */
 export function searchForItemsFromMask(grid, sieve, mask, announce = false) {
-  grid.filter(mask).searchForSolutions2({
-    solutionFoundCallback: (solution) => {
-      const diff = grid.diff(solution);
-
+  const search = new SearchState(grid.filter(mask));
+  while (search.advanceToSolution()) {
+    const diff = grid.diff(search.solution);
       // Filter out solutions that are the original grid
-      if (diff === 0n) return true;
+    if (diff === 0n) continue;
+
       // Filter out solutions already covered by an existing sieve item
-      for (const item of sieve) if ((item & diff) === item) return true;
+    for (const item of sieve) if ((item & diff) === item) continue;
+
       // Now, for a diff to be considered a sieve item...
       // (1) it must not be reducible
       const p = grid.filter(~diff);
       const pEmptyCells = p._numEmptyCells;
       p._reduce();
-      if (p.numEmptyCells !== pEmptyCells) return true;
+    if (p.numEmptyCells !== pEmptyCells) continue;
+
       // (2) it must have multiple solutions
-      if (p.solutionsFlag() !== 2) return true;
+    // IGNORED: A diff puzzle will always have multiple solutions.
+    // if (p.solutionsFlag() !== 2) continue;
+
       // (3) for each empty cell, filling it with one of its remaining candidates and solving yields a solution
-      if (!p.allAntiesSolve()) return true;
+    if (!p.allAntiesSolve()) continue;
 
       // We've made it this far, so this diff is an Unavoidable Set ('UA' or 'sieve item')
       sieve.push(diff);
       if (announce) console.log(`+ ${grid.filter(diff).toString()}`);
-
-      return true;
     }
-  });
 }
 
 /**
@@ -166,7 +168,7 @@ export default class SudokuSieve {
     this._cellSum = 0;
 
     if (items.length > 0) {
-      items.forEach(item => this.add(item));
+      items.forEach(item => this.rawAdd(item));
     }
 
     /**
@@ -335,8 +337,7 @@ export default class SudokuSieve {
   addFromMask(mask, itemFoundCallback = null) {
     const initialSieveSize = this._length;
     const puzzle = this._config.filter(mask);
-    puzzle.searchForSolutions2({
-      solutionFoundCallback: (solution) => {
+    puzzle.forEachSolution((solution) => {
         const diff = this._config.diff(solution);
         if (diff > 0n) {
           if (this.add(diff)) {
@@ -344,8 +345,6 @@ export default class SudokuSieve {
               itemFoundCallback(diff);
             }
           }
-        }
-        return true;
       }
     });
 

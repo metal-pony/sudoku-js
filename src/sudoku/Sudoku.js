@@ -263,6 +263,61 @@ function isAreaValid(areaVals) {
  */
 const isAreaFull = (areaVals) => areaVals.every(isDigit);
 
+class SearchNode {
+  /**
+   * @param {Sudoku} sudoku
+   */
+  constructor() {
+    this.sudoku = new Sudoku();
+    this.emptyCellIndex = -1;
+    this.candidates = -1;
+  }
+
+  load(otherSudoku) {
+    this.sudoku.copyFrom(otherSudoku);
+    this.pickCell();
+  }
+
+  pickCell() {
+    this.emptyCellIndex = this.sudoku._pickEmptyCell();
+    if (this.emptyCellIndex != -1) {
+      this.candidates = this.sudoku._board[this.emptyCellIndex];
+    }
+  }
+
+  next(reductionLevel = 1) {
+    // No further branches to try (sudoku is probably invalid or solved).
+    if (!this.hasNext()) return null;
+
+    return this._next(new SearchNode(), reductionLevel);
+  }
+
+  /**
+   *
+   * @param {SearchNode} nextNode
+   * @param {number} reductionLevel
+   * @returns {SearchNode}
+   */
+  _next(nextNode, reductionLevel = 1) {
+    nextNode.sudoku.copyFrom(this.sudoku);
+
+    // Pick a random candidate and set it in the next node.
+    const candidateDigits = CANDIDATE_DECODINGS[this.candidates];
+    const randomCandidateDigit = chooseRandom(candidateDigits);
+    nextNode.sudoku.setDigit(randomCandidateDigit, this.emptyCellIndex);
+    this.candidates &= ~ENCODER[randomCandidateDigit];
+
+    nextNode.sudoku._reduce(reductionLevel);
+    nextNode.pickCell();
+
+    return nextNode;
+  }
+
+  hasNext() {
+    return (this.candidates > 0 && this.sudoku.isValid());
+  }
+};
+
 export class SudokuNode {
   /**
    *
@@ -312,6 +367,77 @@ export class SudokuNode {
   getNextUnvisited(omittedNextCells = []) {
     this._findNexts(omittedNextCells);
     return chooseRandom(this.nexts.filter(n => (n !== null && !n.visited)));
+  }
+}
+
+export class SearchState {
+  /**
+   * Creates a new object used for searching for sudoku solutions.
+   * @param {Sudoku?} puzzle (Optional) A sudoku puzzle to initialize with.
+   */
+  constructor(puzzle) {
+    /**
+     * Used for search.
+     * @type {SearchNode[]}
+     */
+    this._stack = Array(SPACES).fill(0).map(_=>new SearchNode());
+
+    this._stackSize = 0;
+
+    /**
+     * The last solution found.
+     * `null` if no solution found.
+     * @type {Sudoku}
+     */
+    this.solution = new Sudoku();
+
+    /**
+     * A count of solutions found during search.
+     */
+    this._solutionCount = 0;
+
+    if (puzzle) {
+      this.init(puzzle);
+    }
+  }
+
+  get numSolutions() {
+    return this._solutionCount;
+  }
+
+  /**
+   * Initializes the search state with the given puzzle.
+   * @param {Sudoku} newPuzzle
+   */
+  init(newPuzzle) {
+    this._solutionCount = 0;
+    this._stack[0].load(newPuzzle);
+    this._stackSize = 1;
+    this.solution.clear();
+  }
+
+  /**
+   * Advances the search state to the next solution.
+   * @returns True if a solution was found; else false.
+   */
+  advanceToSolution(reductionLevel) {
+    let top;
+    while (this._stackSize > 0) {
+      top = this._stack[this._stackSize - 1];
+      // console.log(`${' '.repeat(this._stackSize)} ${top.sudoku.toString()}`);
+      if (top.sudoku.isSolved()) {
+        this.solution.copyFrom(top.sudoku);
+        this._solutionCount++;
+        this._stackSize--;
+        return true;
+      } else if (top.hasNext()) {
+        top._next(this._stack[this._stackSize], reductionLevel);
+        this._stackSize++;
+      } else {
+        this._stackSize--;
+      }
+    }
+    return false;
   }
 }
 
@@ -653,25 +779,46 @@ export class Sudoku {
    * @param {boolean} [options.normalize=false] (default: `false`) Whether to normalize the generated board.
    * @returns {Sudoku} A valid configuration
    */
-  static generateConfig({ normalize } = { normalize: false }) {
-    const config = Sudoku.configSeed().firstSolution();
-    config._clues = config.board;
-    return (normalize) ? config.normalize() : config;
+  static generateConfig() {
+    return new Sudoku().genConfig(new SearchState());
+  }
+
+  /**
+   * Replaces this instance with a randomly generated Sudoku configuration.
+   * @param {SearchState} search
+   * @returns {Sudoku} This sudoku instance.
+   */
+  genConfig(search = new SearchState()) {
+    this.clear();
+    shuffle(DIGIT_BAG);
+    DIGIT_BAG.forEach((digit, i) => this.setDigit(digit, indicesFor.region[0][i]));
+    shuffle(DIGIT_BAG);
+    DIGIT_BAG.forEach((digit, i) => this.setDigit(digit, indicesFor.region[4][i]));
+    shuffle(DIGIT_BAG);
+    DIGIT_BAG.forEach((digit, i) => this.setDigit(digit, indicesFor.region[8][i]));
+
+    for (let ci = 0; ci < SPACES; ci++) {
+      if (this._digits[ci]) continue;
+      this._board[ci] &= ~this._cellConstraints(ci);
+    }
+
+    search.init(this);
+    if (search.advanceToSolution(1)) {
+      return this.copyFrom(search.solution);
+    } else {
+      console.error(`Something went wrong resolving config seed into solution.\nSeed: ${this.toString()}`);
+      return null;
+    }
   }
 
   /**
    * Performs a solutions search for the board and returns the first found.
    * @returns {Sudoku | null} The first solution found, or `null` if none was found.
    */
-  firstSolution() {
-    let result = null;
-    this.searchForSolutions2({
-      solutionFoundCallback: (solution) => {
-        result = solution;
-        return false;
-      }
-    });
-    return result;
+  solution() {
+    const search = new SearchState();
+    search.init(this);
+    return search.advanceToSolution() ? new Sudoku(search.solution) : null;
   }
 
   /**
@@ -810,97 +957,23 @@ export class Sudoku {
   }
 
   /**
-   * Performs a depth-first search for sudoku solution(s) of the given board.
-   * The given callback function is triggered when a solution is found. If the callback
-   * returns `false`, the search will stop;
-   * otherwise it will continue searching for solutions.
-   *
-   * @param {object} options
-   * @param {(solution: Sudoku) => boolean} [options.solutionFoundCallback] Called with a solution when one is found.
-   * If the callback returns truthy, the search will continue.
+   * Performs a callback function for each solution found.
+   * @param {(solution: Sudoku) => void} solutionCallback
    */
-  searchForSolutions2({
-    solutionFoundCallback = (solution) => true
-  }) {
-    const root = new Sudoku(this);
-    root._resetEmptyCells();
-    root._resetConstraints();
-    root._reduce();
+  forEachSolution(solutionCallback) {
+    const puzzle = new Sudoku(this);
+    puzzle._reduce();
 
-    if (root.isSolved()) {
-      if (solutionFoundCallback) {
-        solutionFoundCallback(root);
+    if (!puzzle.isValid()) return;
+    if (puzzle.isSolved()) {
+      solutionCallback(puzzle);
         return;
       }
+
+    const search = new SearchState(puzzle);
+    while (search.advanceToSolution()) {
+      solutionCallback(new Sudoku(search.solution));
     }
-
-    if (!root._isValid) {
-      return;
-    }
-
-    /**
-     * @typedef {Object} Nodey
-     * @property {Sudoku} sudoku
-     * @property {number} emptyCellIndex
-     * @property {() => Nodey | null} next
-     */
-
-    /**
-     *
-     * @param {Sudoku} sudoku
-     * @return {Nodey}
-     */
-    const Nodey = (sudoku) => {
-      // sudoku._reduce();
-      const emptyCellIndex = sudoku._pickEmptyCell();
-
-      return ({
-        /** @type {Sudoku} */
-        sudoku,
-        emptyCellIndex,
-        emptyCellCandidatesEncoded: (emptyCellIndex >= 0) ? sudoku._board[emptyCellIndex] : 0,
-
-        /** @return {Nodey | null} */
-        next() {
-          if (this.emptyCellCandidatesEncoded === 0 || !this.sudoku._isValid) {
-            return null;
-          }
-
-          const s = new Sudoku(this.sudoku);
-          const randomCandidateDigit = chooseRandom(CANDIDATE_DECODINGS[this.emptyCellCandidatesEncoded]);
-          s.setDigit(randomCandidateDigit, this.emptyCellIndex);
-          for (let ni of CELL_NEIGHBORS[this.emptyCellIndex]) s._reduce2(ni);
-          this.emptyCellCandidatesEncoded &= ~(ENCODER[randomCandidateDigit])
-          return Nodey(s);
-        }
-      });
-    };
-
-    /** @type {Nodey[]} */
-    let stack = [Nodey(root)];
-
-    while (stack.length > 0) {
-      const top = stack[stack.length - 1];
-      const sudoku = top.sudoku;
-
-      if (sudoku.isSolved()) {
-        stack.pop();
-        if (Boolean(solutionFoundCallback(sudoku))) {
-          continue;
-        } else {
-          break;
-        }
-      }
-
-      const next = top.next();
-      if (next === null) {
-        stack.pop();
-      } else {
-        stack.push(next);
-      }
-    }
-
-    return;
   }
 
   /**
@@ -1673,6 +1746,20 @@ return this._numEmptyCells === 0;
   solutionsFlag() {
     if (!this.isValid()) return 0;
     if (this.numEmptyCells > (SPACES - MIN_CLUES)) return 2;
+
+    const search = new SearchState(this);
+    while (search.numSolutions < 2 && search.advanceToSolution());
+    return search.numSolutions;
+  }
+
+  /**
+   * Counts and returns the number of solutions for this puzzle.
+   * Note: This performs a full depth-first search.
+   */
+  solutionCount() {
+    const search = new SearchState(this);
+    while (search.advanceToSolution());
+    return search.numSolutions;
   }
 
   /**

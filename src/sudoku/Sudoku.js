@@ -424,14 +424,35 @@ export class Sudoku {
   }
 
   /**
-   *
-   * @param {bigint} mask 81 or less length bit mask, where 1s represent cells to keep.
+   * Creates a new Sudoku using the digits from this one, but only set
+   * for the cells corresponding to the set bits in the given mask.
+   * Note: The new sudoku will not carry over any reduced candidates,
+   * and constraints will be rebuilt as digits are added to the new board.
+   * @param {bigint} mask Bitmask where set bits represent cells to keep.
    * @returns {Sudoku}
    */
   filter(mask) {
     return new Sudoku(this._digits.map((d, i) => (
       (mask & CELL_MASKS[i]) ? d : 0)
     ));
+  }
+
+  /**
+   * Creates a string representation of this sudoku, filtered through the given mask.
+   * @param {*} mask Bitmask where set bits represent cells to keep.
+   */
+  filterStr(mask) {
+    return this._digits.map((d, i) => ((mask & CELL_MASKS[i]) ? d : '.')).join('');
+  }
+
+  /**
+   * Gets a bitmask version of this grid, where bits set correspond with
+   * filled-in cells (cells with single digits - not multiple candidats).
+   */
+  get mask() {
+    return this._digits.reduce((mask, digit, ci) => (
+      digit ? (mask | cellMask(ci)) : mask
+    ), 0n);
   }
 
   /**

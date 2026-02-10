@@ -1533,8 +1533,26 @@ return this._numEmptyCells === 0;
    *
    * When finished, all cell values should have reduced to valid candidates.
    */
-  _reduce() {
-    for (let i = 0; i < 81; i++) this._reduce2(i);
+  _reduce(level = 1) {
+    let hadReduction;
+    do {
+      hadReduction = false;
+
+      // Resolves naked singles
+      for (let i = 0; i < SPACES; i++) this._reduceCell(i);
+
+      // Resolves hidden singles
+      if (level >= 1) {
+        for (let i = 0; i < SPACES; i++) {
+          if (this._digits[i] > 0) continue;
+          let uniqueCandidate = this._getUniqueCandidate(i);
+          if (uniqueCandidate > 0) {
+            this.setDigit(DECODER[uniqueCandidate], i);
+            hadReduction = true;
+          }
+        }
+      }
+    } while (hadReduction);
   }
 
   /**

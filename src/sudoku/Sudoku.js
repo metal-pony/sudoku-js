@@ -1283,6 +1283,40 @@ return this._numEmptyCells === 0;
   }
 
   /**
+   * Builds a compact string representation of this board.
+   * @returns {string}
+   */
+  toMedString() {
+    return Sudoku.toMedString(this._digits);
+  }
+
+  /**
+   * Builds a compact string representation of the given board digits.
+   * @param {number[]} board
+   * @returns {string}
+   */
+  static toMedString(board) {
+    return board.reduce((str, val, i) => {
+      str += val > 0 ? val : ' ';
+      if ((((i+1)%3) === 0) && (((i+1)%9) !== 0)) {
+        str += '|';
+      } else {
+        str += ' ';
+      }
+
+      if (((i+1)%9) === 0) {
+        str += '\n';
+
+        if (i === 26 || i === 53) {
+          str += '-----+-----+-----\n';
+        }
+      }
+
+      return str;
+    }, '');
+  }
+
+  /**
    * Normalizes sudoku board values such that the top row is in sequential order.
    * @returns {number[]} A copy of the normalized board.
    */

@@ -1,6 +1,6 @@
 import arg from 'arg';
 import Sudoku from '../../src/sudoku/Sudoku.js';
-import { seedSieve } from '../../src/sudoku/SudokuSieve.js';
+import { seedSieveDc } from '../../src/sudoku/SudokuSieve.js';
 
 const args = arg({
   '--grid': String,
@@ -25,10 +25,12 @@ const level = Math.trunc(Number(args['--level']) || DEFAULT_LEVEL);
 if (level < 2 || level > 4) throw new Error(`Invalid level; expected 2 <= level <= 4`);
 const asNumbers = Boolean(args['--numbers']);
 
-const sieve = seedSieve({ grid, sieve: [], level });
+const sieve = seedSieveDc({ grid, sieve: [], level });
 
 if (asNumbers) {
   console.log(JSON.stringify(sieve.map(item => item.toString())));
 } else {
   console.log(JSON.stringify(sieve.map(item => grid.filter(item).toString()), null, '  '));
 }
+
+console.log(`generated sieve with ${sieve.length} items`);

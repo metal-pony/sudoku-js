@@ -1,6 +1,6 @@
 import { randomCombo } from '@metal-pony/counting-js';
 import { Sudoku } from '../../index.js';
-import puzzles from './puzzles24.js';
+import puzzles from './puzzles24.json';
 import { range, shuffle } from '../../src/util/arrays.js';
 import { SearchState } from '../../src/sudoku/Sudoku.js';
 
@@ -104,34 +104,32 @@ describe('Sudoku', () => {
   });
 
   describe('solutionsFlag', () => {
-    describe('for empty puzzles', () => {
-      test('returns 2', () => {
-        expect(new Sudoku().solutionsFlag()).toBe(2);
+    test('returns 2 for empty puzzles', () => {
+      expect(new Sudoku().solutionsFlag()).toBe(2);
+    });
+
+    test('returns 1 for valid puzzles', () => {
+      SINGLE_SOLUTION_PUZZLES.forEach(p => {
+        expect(new Sudoku(p).solutionsFlag()).toBe(1);
       });
     });
 
-    describe('for valid puzzles', () => {
-      test('returns 1', () => {
-        SINGLE_SOLUTION_PUZZLES.forEach(p => {
-          expect(new Sudoku(p).solutionsFlag()).toBe(1);
-        });
+    test('returns 0 for puzzles with no solutions', () => {
+      NO_SOLUTION_PUZZLES.forEach(p => {
+        expect(new Sudoku(p).solutionsFlag()).toBe(0);
       });
     });
 
-    describe('with no solutions', () => {
-      test('returns 0', () => {
-        NO_SOLUTION_PUZZLES.forEach(p => {
-          expect(new Sudoku(p).solutionsFlag()).toBe(0);
-        });
+    test('returns 2 for puzzles with multiple solutions', () => {
+      MULTI_SOLUTION_PUZZLES.forEach(({ puzzleStr }) => {
+        expect(new Sudoku(puzzleStr).solutionsFlag()).toBe(2);
       });
     });
 
-    describe('for puzzles with multiple solutions', () => {
-      test('returns 2', () => {
-        MULTI_SOLUTION_PUZZLES.forEach(({ puzzleStr, numSolutions }) => {
-          expect(new Sudoku(puzzleStr).solutionsFlag()).toBe(2);
-        });
-      });
+    test('returns 1 for generated configs', () => {
+      for (let n = 0; n < 10; n++) {
+        expect(Sudoku.generateConfig().solutionsFlag()).toBe(1);
+      }
     });
   });
 
@@ -140,6 +138,8 @@ describe('Sudoku', () => {
       for (let n = 0; n < 10; n++) {
         const config = Sudoku.generateConfig();
         expect(config.numEmptyCells).toBe(0);
+        expect(config.isValid()).toBe(true);
+        expect(config.isFull()).toBe(true);
         expect(config.isSolved()).toBe(true);
         expect(config.solutionsFlag()).toBe(1);
       }

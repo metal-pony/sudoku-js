@@ -15,12 +15,6 @@ import {
 import { randomBitCombo } from '@metal-pony/counting-js';
 import SudokuSieve, { searchForItemsFromMask, seedSieveDc } from './SudokuSieve.js';
 
-/**
- * @callback SolutionFoundCallback
- * @param {Sudoku} sudoku
- * @returns {boolean} If `true`, the search will continue for more solutions.
- */
-
 export const RANK = 3;
 /** The number of digits used in sudoku.*/
 export const DIGITS = RANK * RANK;
@@ -120,6 +114,13 @@ const CANDIDATE_DECODINGS = range(1<<DIGITS).map(encoded => {
   }
   return candidates;
 });
+
+/**
+ * Performs some function for each candidate digit in the given encoded value.
+ * @param {number} encoded
+ * @param {(candidateDigit: number) => void} callback
+ */
+export const forEachCandidate = (encoded, callback) => CANDIDATE_DECODINGS[encoded].forEach(d => callback(d));
 
 /**
  * Maps the encoded board values (the indices) to the list of candidate digits (ENCODED) they represent.
@@ -445,6 +446,28 @@ export class SearchState {
  * Represents a Sudoku board.
  */
 export class Sudoku {
+  /**
+   * Determines whether the given string represents a sudoku board, i.e. the
+   * string is of proper length and contains only digits.
+   *
+   * The dot character `.` can also be used to represent an empty space.
+   *
+   * The dash character `-` can be used to represent 9 consecutive empty spaces.
+   *
+   * Does not check if the sudoku board is valid.
+   * @param {string} str
+   * @returns {boolean}
+   */
+  static validateStr(str) {
+    if (!str || typeof str !== 'string' || str.length > SPACES) return false;
+    // Replace '-' and '.' with '0's
+    let _str = str.replace(/-/g, '0'.repeat(DIGITS)).replace(/\./g, '0');
+    return (
+      (_str.length === SPACES) &&
+      (/^[0-9]{81}$/).test(_str)
+    );
+  }
+
   /**
    * Builds a Sudoku board from a string, where:
    * - `.` represents an empty cell.
@@ -1411,8 +1434,7 @@ export class Sudoku {
    * Note: board constraints and empty cell values will be out of sync.
    */
   shuffleDigits() {
-    const digits = range(DIGITS + 1, 1);
-    shuffle(digits).forEach((digit, i) => {
+    shuffle(DIGIT_BAG).forEach((digit, i) => {
       swapAllInArr(this._board, encode(digit), encode(i + 1));
       swapAllInArr(this._digits, digit, i + 1);
   }

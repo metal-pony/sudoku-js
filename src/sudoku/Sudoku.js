@@ -1160,11 +1160,11 @@ export class Sudoku {
    * Sets the value of the board at the given index.
    * @param {number} digit
    * @param {number} index
-   * @returns {void}
+   * @returns {boolean} Whether the board was modified.
    */
   setDigit(digit, index) {
     const prevDigit = this._digits[index];
-    if (prevDigit === digit) return;
+    if (prevDigit === digit) return false;
 
     this._digits[index] = digit;
     this._board[index] = ENCODER[digit];
@@ -1176,8 +1176,12 @@ export class Sudoku {
 
     if (digit > 0) {
       this._numEmptyCells--;
+      if (this._cellConstraints(index) & ENCODER[digit]) {
+        this._isValid = false;
+      }
       this._addConstraint(index, digit);
     }
+    return true;
   }
 
   /**

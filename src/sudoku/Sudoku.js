@@ -1902,8 +1902,10 @@ export class Sudoku {
     root._resetConstraints();
     root._reduce();
 
-    if (root.isSolved()) return 1;
-    if (!root._isValid) return -1;
+    let diff = 1;
+
+    if (root.isSolved()) return diff;
+    if (!root.isValid()) return -1;
 
     /**
      * @typedef {Object} Nodey
@@ -1912,12 +1914,22 @@ export class Sudoku {
      */
 
     /** @type {Nodey[]} */
-    let queue = [{ sudoku: root, difficulty: 1 }];
+    const queue = [{ sudoku: root, difficulty: 1 }];
+    const diffs = [];
+    let solution = null;
 
     while (queue.length > 0) {
       const node = queue.shift();
       const sudoku = node.sudoku;
-      if (sudoku.isSolved()) return node.difficulty;
+      if (sudoku.isSolved()) {
+        if (!solution) {
+          solution = sudoku.toString();
+        } else if (sudoku.toString() !== solution) {
+          return -1;
+        }
+        // return node.difficulty;
+        diffs.push(node.difficulty);
+      }
 
       // Get all empty cells of minimum candidates
       let minNumCandidates = DIGITS + 1;
@@ -1939,7 +1951,7 @@ export class Sudoku {
         CANDIDATE_DECODINGS[sudoku._board[emptyCi]].forEach(digit => {
           const nextSudoku = new Sudoku(sudoku);
           nextSudoku.setDigit(digit, emptyCi);
-          for (let ni of CELL_NEIGHBORS[emptyCi]) nextSudoku._reduceCell(ni);
+          nextSudoku._reduce();
           queue.push({ sudoku: nextSudoku, difficulty: (node.difficulty + 1) });
         });
       });
@@ -1948,7 +1960,8 @@ export class Sudoku {
       queue.sort((a, b) => (a.difficulty - b.difficulty));
     }
 
-    return -1;
+    if (diffs.length === 0) return -1;
+    return diffs.reduce((acc, d) => (acc + d), 0) / diffs.length;
   }
 }
 

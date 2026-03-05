@@ -1018,6 +1018,24 @@ export class Sudoku {
   }
 
   /**
+   * Creates a new Sudoku instance from the given digits and candidates.
+   *
+   * @param {object} options
+   * @param {number[]} options.digits
+   * @param {number[]} options.candidates
+   * @returns {Sudoku}
+   */
+  static fromState({ digits, candidates }) {
+    const sudoku = new Sudoku(digits);
+    sudoku._board = [...candidates];
+    // If any cell lacks valid candidates, mark as invalid.
+    if (sudoku._board.some((val, ci) => (~sudoku._cellConstraints(ci) & val) === 0)) {
+      sudoku._isValid = false;
+    }
+    return sudoku;
+  }
+
+  /**
    * Sudoku Class Thing
    * @param {number[] | string | Sudoku} data
    */

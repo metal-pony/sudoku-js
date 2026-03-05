@@ -17,13 +17,13 @@ import SudokuSieve, { searchForItemsFromMask, seedSieveDc } from './SudokuSieve.
 
 export const RANK = 3;
 /** The number of digits used in sudoku.*/
-export const DIGITS = RANK * RANK;
-/** `0x1ff`; Represents the combination of all candidates for a given cell on a sudoku board.*/
-const ALL = (1 << DIGITS) - 1;
+export const DIGITS = 9;
+/** Represents the combination of all candidates for a given cell on a sudoku board.*/
+export const ALL = 511;
 /** The number of spaces on a sudoku board.*/
-export const SPACES = DIGITS * DIGITS;
+export const SPACES = 81;
 /** The minimum number of clues required for a sudoku puzzle.*/
-export const MIN_CLUES = DIGITS * 2 - 1;
+export const MIN_CLUES = 17;
 
 /**
  * Contains the digits 1-9.
@@ -40,31 +40,20 @@ const COLUMN_MASK = ALL << DIGITS;
 const REGION_MASK = ALL;
 const FULL_CONSTRAINTS = ROW_MASK | COLUMN_MASK | REGION_MASK;
 
+const DIGIT_MASKS = range(DIGITS).map((d) => (1 << (d - 1)));
 /**
- * Encodes a cell index as an 81-bit mask.
- *
- * Note: The leftmost mask bits correspond with the top-left sudoku board cell.
- *
- * Example: `cellmask(0) => 0b1000000...000`
- *
- * Example: `cellmask(80) => 0b1000000...000`
- * @param {number} cellIndex `[0, 80]`;
- */
-export const cellMask = (cellIndex) => (1n << (BigInt(SPACES - cellIndex - 1)));
-
-/**
- * Encodes a digit as a 9-bit mask.
+ * Encodes a digit as a bitmask.
  *
  * Note: The higher order bits correspond with higher digit values.
  *
- * Example:
+ * Examples:
  *
  * `digitMask(2) => 0b000000010`
  *
  * `digitMask(9) => 0b100000000`
- * @param {number} digit `[1, 9]`;
+ * @param {number} digit in the interval [1, 9]`;
  */
-export const digitMask = (digit) => (1 << (digit - 1));
+export const digitMask = (digit) => DIGIT_MASKS[digit];
 
 /**
  * Returns an array of cell indices from the given mask.
@@ -84,10 +73,14 @@ export function cellsFromMask(mask) {
   return cells;
 }
 
-const CELL_MASKS = range(SPACES).map(cellMask);
-
-/** @type {number[]} */
-const EMPTY_BOARD = Array(SPACES).fill(ALL);
+const CELL_MASKS = range(SPACES).map((cellIndex) => (1n << (BigInt(SPACES - cellIndex - 1))));
+/**
+ * Encodes a cell index as a bitmask.
+ *
+ * Note: The leftmost bit correspond with the topleft board space (`cellIndex 0`).
+ * @param {number} cellIndex in the interval [0,81);
+ */
+export const cellMask = (cellIndex) => CELL_MASKS[cellIndex];
 
 /**
  * Maps digits (the indices) to their encoded board values.
@@ -164,59 +157,47 @@ export const masksFor = {
 /**
  * Encodes a digit value.
  * @param {number} digit From 0 - 9
- * @returns {number}
  */
 export const encode = (digit) => ENCODER[digit];
 
 /**
  * Decodes an encoded value.
  * @param {number} encoded
- * @returns {number}
  */
 export const decode = (encoded) => DECODER[encoded];
 
 /**
  * Returns whether the given encoded value represents a digit.
  * @param {number} encoded
- * @returns {boolean}
  */
 export const isDigit = (encoded) => DECODER[encoded] > 0;
 
+/** Maps cell indices to rows. */
+const CELL_ROWS = range(SPACES).map((cellIndex) => (cellIndex / DIGITS) | 0);
 /**
  * Returns the row index of the given cell.
  * @param {number} cellIndex
- * @returns {number}
  */
-export const cellRow = (cellIndex) => (cellIndex / DIGITS) | 0;
+export const cellRow = (cellIndex) => CELL_ROWS[cellIndex];
 
+/** Maps cell indices to columns. */
+const CELL_COLS = range(SPACES).map((cellIndex) => cellIndex % DIGITS);
 /**
  * Returns the column index of the given cell.
  * @param {number} cellIndex
- * @returns {number}
  */
-export const cellCol = (cellIndex) => cellIndex % DIGITS;
+export const cellCol = (cellIndex) => CELL_COLS[cellIndex];
 
+/** Maps cell indices to regions. */
+const CELL_REGIONS = range(SPACES).map((cellIndex) => (
+  (cellIndex / 27) | 0) * 3 + (((cellIndex % 9) / 3) | 0
+));
 /**
  * Returns the region index of the given cell.
  * @param {number} cellIndex
- * @returns {number}
  */
-export const cellRegion = (cellIndex) => ((cellIndex / 27) | 0) * 3 + (((cellIndex % 9) / 3) | 0);
+export const cellRegion = (cellIndex) => CELL_REGIONS[cellIndex];
 
-/**
- * Returns the region index of the given cell.
- * @param {number} row
- * @param {number} col
- * @returns {number}
- */
-export const cellRegion2D = (row, col) => ((row / 3) | 0) * 3 + ((col / 3) | 0);
-
-/** Maps cell indices to rows. */
-const CELL_ROWS = range(SPACES).map(cellRow);
-/** Maps cell indices to columns. */
-const CELL_COLS = range(SPACES).map(cellCol);
-/** Maps cell indices to regions. */
-const CELL_REGIONS = range(SPACES).map(cellRegion);
 /** Maps cell indices to cell indices of row neighbors. Excludes itself. */
 const ROW_NEIGHBORS = range(SPACES).map((ci) => indicesFor.row[CELL_ROWS[ci]].filter(i => i !== ci));
 /** Maps cell indices to cell indices of column neighbors. Excludes itself. */
@@ -227,7 +208,7 @@ const REGION_NEIGHBORS = range(SPACES).map((ci) => indicesFor.region[CELL_REGION
  * Maps cell indices to cell indices of row, column, and region neighbors. Excludes itself.
  * @type {number[][]}
  */
-const CELL_NEIGHBORS = range(SPACES).map((ci) => {
+export const CELL_NEIGHBORS = range(SPACES).map((ci) => {
   /** @type {Set<number>} */
   const neighbors = new Set();
   ROW_NEIGHBORS[ci].forEach(n => neighbors.add(n));
@@ -235,6 +216,9 @@ const CELL_NEIGHBORS = range(SPACES).map((ci) => {
   REGION_NEIGHBORS[ci].forEach(n => neighbors.add(n));
   return [...neighbors];
 });
+
+/** Returns the region index of the given cell.*/
+export const cellRegion2D = (row, col) => CELL_REGIONS[row * DIGITS + col];
 
 /**
  * Returns whether an area on a Sudoku board (row, column, or region)
@@ -515,7 +499,7 @@ export class Sudoku {
     const rootNode = new SudokuNode(config);
     let puzzleStack = [rootNode];
 
-    // let _board = [...EMPTY_BOARD];
+    // let _board = Array(SPACES).fill(ALL);
     // puzzleStack.push(rootNode);
 
     let numPops = 0; // Number of pops. If the search resets, so does this.
@@ -1093,7 +1077,7 @@ export class Sudoku {
       this._constraints = [...parsed._constraints];
       this._numEmptyCells = parsed._numEmptyCells;
     } else if (Array.isArray(data)) {
-      this._board = [...EMPTY_BOARD];
+      this._board = Array(SPACES).fill(ALL);
       this._digits = Array(SPACES).fill(0);
       this._constraints = Array(DIGITS).fill(0);
       if (data.length === SPACES) this.setBoard(data);
@@ -1882,7 +1866,12 @@ export class Sudoku {
   }
 
   /**
+   * *WORK IN PROGRESS* -- This function is experimental and will be
+   * replaced in the future. It's not an accurate ranking for medium/hard puzzles
+   * and is very expensive to calculate.
    *
+   * Indicates the difficulty of this sudoku.
+   * Invalid puzzles, or puzzles with
    * @returns {number}
    */
   difficulty() {

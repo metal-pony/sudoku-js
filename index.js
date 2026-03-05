@@ -2,6 +2,7 @@ import Sudoku, {
   RANK,
   DIGITS,
   SPACES,
+  ALL,
   MIN_CLUES,
   encode, decode, isDigit,
   cellMask,
@@ -14,6 +15,7 @@ import Sudoku, {
   cellRegion,
   cellRegion2D,
   SearchState,
+  forEachCandidate
 } from './src/sudoku/Sudoku.js';
 
 import SudokuSieve, {
@@ -25,27 +27,21 @@ import SudokuSieve, {
 } from './src/sudoku/SudokuSieve.js';
 
 export {
-  encode, decode, isDigit,
   RANK,
   DIGITS,
   SPACES,
+  ALL,
   MIN_CLUES,
-  cellMask,
-  digitMask,
-  cellsFromMask,
   indicesFor,
   masksFor,
-  cellRow,
-  cellCol,
-  cellRegion,
-  cellRegion2D,
+  encode, decode, isDigit,
+  digitMask, cellMask, cellsFromMask,
+  cellRow, cellCol, cellRegion, cellRegion2D,
   Sudoku,
   SearchState,
-
   SudokuSieve,
   searchForItemsFromMask,
-  seedSieveDc,
-  seedSieveFp,
-  getDigitComboMasks,
-  getAreaComboMasks,
+  seedSieveDc, seedSieveFp,
+  getDigitComboMasks, getAreaComboMasks,
+  forEachCandidate,
 };

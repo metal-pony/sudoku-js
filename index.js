@@ -26,6 +26,8 @@ import SudokuSieve, {
   getAreaComboMasks,
 } from './src/sudoku/SudokuSieve.js';
 
+import sudoku17 from './src/sudoku/sudoku-17.json' with { type: 'json' };
+
 export {
   RANK,
   DIGITS,
@@ -44,4 +46,5 @@ export {
   seedSieveDc, seedSieveFp,
   getDigitComboMasks, getAreaComboMasks,
   forEachCandidate,
+  sudoku17
 };

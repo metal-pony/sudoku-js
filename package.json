@@ -1,6 +1,6 @@
 {
   "name": "@metal-pony/sudoku-js",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Sudoku solver and generator module",
   "type": "module",
   "license": "MIT",

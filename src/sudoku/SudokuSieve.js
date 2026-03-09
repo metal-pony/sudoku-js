@@ -2,17 +2,36 @@
 import { bitCombo, nChooseK } from '@metal-pony/counting-js';
 import { range } from '../util/arrays.js';
 import Sudoku, {
+  ALL,
   cellMask,
   digitMask,
   SearchState,
 } from './Sudoku.js';
 
+
+/**
+ *
+ * @param {number} value
+ */
+function _countBits(value) {
+  let count = 0;
+  while (value > 0) {
+    if (value & 1) count++;
+    value >>= 1;
+  }
+  return count;
+}
+
 /**
  * @param {bigint} mask
- * @returns {number}
  */
-function _countBits(mask) {
-  return (mask.toString(2).match(/1/g) || []).length;
+function _countBigBits(mask) {
+  let count = 0;
+  while (mask > 0n) {
+    if (mask & 1n) count++;
+    mask >>= 1n;
+  }
+  return count;
 }
 
 const DIGITS = 9;
@@ -35,6 +54,11 @@ const COL_COMBO_MASKS = Array(MAX_LEVEL + 1).fill(0).map(_=>[]);
 const REGION_COMBO_MASKS = Array(MAX_LEVEL + 1).fill(0).map(_=>[]);
 /** @type {bigint[][]} */
 const ALL_AREA_COMBO_MASKS = Array(MAX_LEVEL + 1).fill(0).map(_=>[]);
+/** @type {number[][]} */
+const DCMASKS_FOR_LEVEL = Array(DIGITS + 1).fill(0).map(_=>[]);
+for (let v = 0; v <= 511; v++) {
+  DCMASKS_FOR_LEVEL[_countBits(v)].push(v);
+}
 
 for (let level = MIN_LEVEL; level <= MAX_LEVEL; level++) {
   const nck = nChooseK(DIGITS, level);
@@ -78,23 +102,18 @@ export function getAreaComboMasks(level) {
  * @param {number} level Number of digits in each combo.
  */
 export function getDigitComboMasks(config, level) {
-  /** @type {bigint[]} */
-  const masks = [];
-  const nck = nChooseK(DIGITS, level);
-  const _board = config.board;
-  for (let r = 0n; r < nck; r++) {
-    const dCombo = Number(bitCombo(DIGITS, level, r));
-    let digMask = FULL_MASK;
-    for (let ci = 0; ci < SPACES; ci++) {
-      if ((dCombo & digitMask(_board[ci])) > 0) {
-        digMask &= ~CELL_MASKS[ci];
+  const boardDigits = config.board;
+  return DCMASKS_FOR_LEVEL[level].map(dc => {
+    const m = boardDigits.reduce((mask, d, ci) => {
+      if (dc & digitMask(d)) {
+        mask &= ~CELL_MASKS[ci];
       }
-    }
-    masks.push(digMask);
-  }
-  return masks;
-}
+      return mask;
+    }, FULL_MASK);
 
+    return m;
+  });
+}
 
 /**
  * Filters `grid` with `mask` to create a puzzle, then adds all derived unavoidable sets
@@ -158,15 +177,7 @@ export function seedSieveDc({ grid, sieve = [], level = 2 }) {
     searchForItemsFromMask(grid, sieve, digMask);
   }
 
-  sieve.sort((a, b) => {
-    const aBits = _countBits(a);
-    const bBits = _countBits(b);
-    if (aBits > bBits) return 1;
-    if (bBits > aBits) return -1;
-    if (aBits === bBits) return (a === b) ? 0 : (a > b) ? 1 : -1;
-  });
-
-  return sieve;
+  return sortSieve(sieve);
 }
 
 /**
@@ -186,15 +197,21 @@ export function seedSieveFp({ grid, sieve = [], level = 2 }) {
 
   ALL_AREA_COMBO_MASKS[level].forEach(mask => searchForItemsFromMask(grid, sieve, mask));
 
-  sieve.sort((a, b) => {
-    const aBits = _countBits(a);
-    const bBits = _countBits(b);
+  return sortSieve(sieve);
+}
+
+/**
+ *
+ * @param {bigint[]} sieve
+ */
+export function sortSieve(sieve) {
+  return sieve.sort((a, b) => {
+    const aBits = _countBigBits(a);
+    const bBits = _countBigBits(b);
     if (aBits > bBits) return 1;
     if (bBits > aBits) return -1;
     if (aBits === bBits) return (a === b) ? 0 : (a > b) ? 1 : -1;
   });
-
-  return sieve;
 }
 
 /**
@@ -333,7 +350,7 @@ export default class SudokuSieve {
    * @returns
    */
   _itemsFor(mask) {
-    return this._items[_countBits(mask)];
+    return this._items[_countBigBits(mask)];
   }
 
   /**

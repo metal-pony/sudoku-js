@@ -40,7 +40,7 @@ const COLUMN_MASK = ALL << DIGITS;
 const REGION_MASK = ALL;
 const FULL_CONSTRAINTS = ROW_MASK | COLUMN_MASK | REGION_MASK;
 
-const DIGIT_MASKS = range(DIGITS).map((d) => (1 << (d - 1)));
+const DIGIT_MASKS = [0, ...range(DIGITS).map((d) => (1 << d))];
 /**
  * Encodes a digit as a bitmask.
  *
@@ -1443,6 +1443,7 @@ export class Sudoku {
     shuffle(DIGIT_BAG).forEach((digit, i) => {
       swapAllInArr(this._board, encode(digit), encode(i + 1));
       swapAllInArr(this._digits, digit, i + 1);
+    });
   }
 
   /**

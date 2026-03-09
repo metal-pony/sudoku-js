@@ -15,12 +15,16 @@ const args = arg({
 
 const rawPuzzle = args['--puzzle'] || args['_'][0];
 const puzzle = rawPuzzle ? new Sudoku(rawPuzzle.trim().slice(0, 81)) : null;
-if (!puzzle) throw new Error('No puzzle provided');
+if (!puzzle) {
+  console.log('No puzzle provided');
+  process.exit(1);
+}
 const firstOnly = Boolean(args['--first']);
 const verbose = Boolean(args['--verbose']);
 
-console.log(puzzle.toString());
-console.log('Solution search...\n');
+if (verbose) {
+  console.log(`Solving ${puzzle.toString()}`);
+}
 
 if (firstOnly) {
   console.log(puzzle.solution().toString());
@@ -32,6 +36,6 @@ if (firstOnly) {
   }
   const end = Date.now();
   if (verbose) {
-    console.log(`Found ${search.numSolutions} solutions; ${end - start} ms.`);
+    console.log(`Found ${search.numSolutions} solutions in ${end - start} ms.`);
   }
 }

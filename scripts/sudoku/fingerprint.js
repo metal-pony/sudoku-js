@@ -3,11 +3,7 @@ import Sudoku from '../../src/sudoku/Sudoku.js';
 
 const args = arg({
   '--grid': String,
-  '--puzzle': '--grid',
-  '--solution': '--grid',
   '-g': '--grid',
-  '-p': '--grid',
-  '-s': '--grid',
 
   '--level': Number,
   '-l': '--level',
@@ -20,10 +16,31 @@ const args = arg({
 const DEFAULT_LEVEL = 2;
 const verbose = Boolean(args['--verbose']);
 const rawGrid = args['--grid'] || args['_'][0];
-const grid = rawGrid ? new Sudoku(rawGrid.trim().slice(0, 81)) : null;
-if (!grid) throw new Error('No grid provided');
+let grid = null;
+try {
+  grid = rawGrid ? new Sudoku(rawGrid.trim().slice(0, 81)) : null;
+} catch (err) {
+  console.log('Failed to parse grid (is it proper length?)');
+  process.exit();
+}
+if (!grid) {
+  console.log('No grid provided');
+  process.exit();
+}
+if (!grid.isValid() || !grid.isSolved()) {
+  console.log('Provided grid is invalid or not solved');
+  process.exit();
+}
 const level = Math.trunc(Number(args['--level']) || DEFAULT_LEVEL);
-if (level < 2 || level > 4) throw new Error(`Invalid level; expected 2 <= level <= 4`);
+if (level < 2 || level > 4) {
+  consolee.log(`Invalid level; expected 2 <= level <= 4`);
+  process.exit();
+}
+
+if (verbose) {
+  console.log(`Generating fingerprint (level ${level}) for grid`);
+  console.log(grid.toString());
+}
 
 const start = Date.now();
 let fp;
@@ -35,5 +52,5 @@ switch (level) {
 console.log(fp);
 const end = Date.now();
 if (verbose) {
-  console.log(`Fingerprinted in ${end - start} ms.`);
+  console.log(`Done (${end - start} ms)`);
 }

@@ -744,15 +744,15 @@ export class Sudoku {
         i--;
       }
 
-      // If no cells were chosen
+      // If no cells were chosen, or difficulty requirement unmet
       // - Put some cells back and try again
       if (
-        (
-          remaining.length === numClues &&
-          difficulty > 0 &&
-          grid.filter(mask).solutionsFlag() === 1 &&
-          grid.filter(mask).difficulty() !== difficulty
-        ) ||
+        // (
+        //   remaining.length === numClues &&
+        //   difficulty > 0 &&
+        //   grid.filter(mask).solutionsFlag() === 1 &&
+        //   grid.filter(mask).difficulty() !== difficulty
+        // ) ||
         remaining.length === startChoices
       ) {
         const numToPutBack = 1 + (putBacks % 4) + (((putBacks % 8)*Math.random())|0);

@@ -27,7 +27,7 @@ const args = arg({
 });
 
 const DEFAULT_AMOUNT = 1;
-const DEFAULT_NUM_CLUES = 33;
+const DEFAULT_NUM_CLUES = 32;
 const DEFAULT_TIME_LIMIT_MS = 60*1000; // 1 Minute
 const DEFAULT_SIEVE_LEVEL = 0; // Valid levels: 0 (omit), 2, 3, 4. There is no '1', is that weird?
 
@@ -61,7 +61,7 @@ let fp3 = undefined;
 let fp4 = undefined;
 if (providedSolution) {
   if (normalize) providedSolution.normalize();
-  seedSieveDc({ grid: providedSolution, sieve, level: sieveLevel });
+  if (sieveLevel >= 2) seedSieveDc({ grid: providedSolution, sieve, level: sieveLevel });
   if (fpLevel >= 2) fp2 = providedSolution.dc2();
   if (fpLevel >= 3) fp3 = providedSolution.dc3();
   if (fpLevel >= 4) fp4 = providedSolution.dc4();
@@ -70,8 +70,11 @@ if (providedSolution) {
 let count = 0;
 if (json && amount > 1) console.log('[');
 while (count < amount) {
-  const grid = providedSolution || Sudoku.generateConfig({ normalize });
-  sieve = providedSolution ? sieve : seedSieveDc({ grid, sieve: [], level: sieveLevel });
+  const grid = providedSolution || Sudoku.generateConfig();
+  if (normalize) grid.normalize();
+  if (!providedSolution && sieveLevel >= 2) {
+    sieve = seedSieveDc({ grid, sieve: [], level: sieveLevel });
+  }
   const puzzle = Sudoku.generatePuzzle2({
     grid,
     numClues,
@@ -89,7 +92,7 @@ while (count < amount) {
         puzzle: puzzle.toString(),
         solution: grid.toString(),
         numClues: 81 - puzzle.numEmptyCells,
-        difficulty: puzzle.difficulty(),
+        // difficulty: puzzle.difficulty(),
         fingerprint2: fp2,
         fingerprint3: fp3,
         fingerprint4: fp4

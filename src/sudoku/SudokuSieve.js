@@ -2,24 +2,118 @@
 import { bitCombo, nChooseK } from '@metal-pony/counting-js';
 import { range } from '../util/arrays.js';
 import Sudoku, {
-  cellCol,
+  ALL,
   cellMask,
-  cellRegion,
-  cellRow,
   digitMask,
-  DIGITS,
-  SPACES
+  SearchState,
 } from './Sudoku.js';
+
+
+/**
+ *
+ * @param {number} value
+ */
+function _countBits(value) {
+  let count = 0;
+  while (value > 0) {
+    if (value & 1) count++;
+    value >>= 1;
+  }
+  return count;
+}
 
 /**
  * @param {bigint} mask
- * @returns {number}
  */
-function _countBits(mask) {
-  return (mask.toString(2).match(/1/g) || []).length;
+function _countBigBits(mask) {
+  let count = 0;
+  while (mask > 0n) {
+    if (mask & 1n) count++;
+    mask >>= 1n;
+  }
+  return count;
 }
 
-const CELL_MASKS = range(81).map((ci) => (1n << (BigInt(81 - ci - 1))));
+const DIGITS = 9;
+const SPACES = 81;
+const MIN_LEVEL = 2;
+const MAX_LEVEL = 4;
+const CELL_MASKS = range(SPACES).map((ci) => (1n << (BigInt(SPACES - ci - 1))));
+const FULL_MASK = (1n << BigInt(SPACES)) - 1n;
+
+// TODO Repeated functions with Sudoku, needed for static intialization.
+const cellRow = (cellIndex) => (cellIndex / DIGITS) | 0;
+const cellCol = (cellIndex) => cellIndex % DIGITS;
+const cellRegion = (cellIndex) => ((cellIndex / 27) | 0) * 3 + (((cellIndex % 9) / 3) | 0);
+
+/** @type {bigint[][]} */
+const ROW_COMBO_MASKS = Array(MAX_LEVEL + 1).fill(0).map(_=>[]);
+/** @type {bigint[][]} */
+const COL_COMBO_MASKS = Array(MAX_LEVEL + 1).fill(0).map(_=>[]);
+/** @type {bigint[][]} */
+const REGION_COMBO_MASKS = Array(MAX_LEVEL + 1).fill(0).map(_=>[]);
+/** @type {bigint[][]} */
+const ALL_AREA_COMBO_MASKS = Array(MAX_LEVEL + 1).fill(0).map(_=>[]);
+/** @type {number[][]} */
+const DCMASKS_FOR_LEVEL = Array(DIGITS + 1).fill(0).map(_=>[]);
+for (let v = 0; v <= 511; v++) {
+  DCMASKS_FOR_LEVEL[_countBits(v)].push(v);
+}
+
+for (let level = MIN_LEVEL; level <= MAX_LEVEL; level++) {
+  const nck = nChooseK(DIGITS, level);
+  for (let r = 0n; r < nck; r++) {
+    const combo = Number(bitCombo(DIGITS, level, r));
+    let rowMask = FULL_MASK;
+    let colMask = FULL_MASK;
+    let regionMask = FULL_MASK;
+
+    for (let ci = 0; ci < SPACES; ci++) {
+      if (combo & (1 << cellRow(ci))) rowMask &= ~CELL_MASKS[ci];
+      if (combo & (1 << cellCol(ci))) colMask &= ~CELL_MASKS[ci];
+      if (combo & (1 << cellRegion(ci))) regionMask &= ~CELL_MASKS[ci];
+    }
+
+    ROW_COMBO_MASKS[level].push(rowMask);
+    COL_COMBO_MASKS[level].push(colMask);
+    REGION_COMBO_MASKS[level].push(regionMask);
+    ALL_AREA_COMBO_MASKS[level].push(rowMask, colMask, regionMask);
+  }
+}
+
+/**
+ * Gets the masks for all combinations of `level`(2 - 4) areas of a sudoku board.
+ * 'Areas' being rows, columns, and regions.
+ * Different types of areas are not combined - each combo will
+ * only include rows, or only include columns, or only include regions.
+ * @param {number} level Number of rows, columns, or regions in each combo.
+ */
+export function getAreaComboMasks(level) {
+  if (level < MIN_LEVEL || level > MAX_LEVEL) {
+    throw new Error(`Invalid level: ${level}. Level must be between ${MIN_LEVEL} and ${MAX_LEVEL}.`);
+  }
+  return [...ALL_AREA_COMBO_MASKS[level]];
+}
+
+/**
+ * Generates the masks for all combinations of `level`(2 - 4) digits
+ * in the given sudoku board.
+ * @param {Sudoku} config Sudoku board. Assumed to be a valid configuration.
+ * @param {number} level Number of digits in each combo.
+ */
+export function getDigitComboMasks(config, level) {
+  const boardDigits = config.board;
+  return DCMASKS_FOR_LEVEL[level].map(dc => {
+    const m = boardDigits.reduce((mask, d, ci) => {
+      if (dc & digitMask(d)) {
+        mask &= ~CELL_MASKS[ci];
+      }
+      return mask;
+    }, FULL_MASK);
+
+    return m;
+  });
+}
 
 /**
  * Filters `grid` with `mask` to create a puzzle, then adds all derived unavoidable sets
@@ -30,80 +124,94 @@ const CELL_MASKS = range(81).map((ci) => (1n << (BigInt(81 - ci - 1))));
  * @param {boolean} announce (Default `false`) Whether to log the unavoidable sets.
  */
 export function searchForItemsFromMask(grid, sieve, mask, announce = false) {
-  grid.filter(mask).searchForSolutions2({
-    solutionFoundCallback: (solution) => {
-      const diff = grid.diff(solution);
+  const search = new SearchState(grid.filter(mask));
+  while (search.advanceToSolution()) {
+    const diff = grid.diff(search.solution);
+    // Filter out solutions that are the original grid
+    if (diff === 0n) continue;
 
-      // Filter out solutions that are the original grid
-      if (diff === 0n) return true;
-      // Filter out solutions already covered by an existing sieve item
-      for (const item of sieve) if ((item & diff) === item) return true;
-      // Now, for a diff to be considered a sieve item...
-      // (1) it must not be reducible
-      const p = grid.filter(~diff);
-      const pEmptyCells = p._numEmptyCells;
-      p._reduce();
-      if (p.numEmptyCells !== pEmptyCells) return true;
-      // (2) it must have multiple solutions
-      if (p.solutionsFlag() !== 2) return true;
-      // (3) for each empty cell, filling it with one of its remaining candidates and solving yields a solution
-      if (!p.allAntiesSolve()) return true;
+    // Filter out solutions already covered by an existing sieve item
+    for (const item of sieve) if ((item & diff) === item) continue;
 
-      // We've made it this far, so this diff is an Unavoidable Set ('UA' or 'sieve item')
-      sieve.push(diff);
-      if (announce) console.log(`+ ${grid.filter(diff).toString()}`);
+    // Now, for a diff to be considered a sieve item...
+    // (1) it must not be reducible
+    const p = grid.filter(~diff);
+    const pEmptyCells = p._numEmptyCells;
+    p._reduce();
+    if (p.numEmptyCells !== pEmptyCells) continue;
 
-      return true;
-    }
-  });
+    // (2) it must have multiple solutions
+    // IGNORED: A diff puzzle will always have multiple solutions.
+    // if (p.solutionsFlag() !== 2) continue;
+
+    // (3) for each empty cell, filling it with one of its remaining candidates and solving yields a solution
+    if (!p.allAntiesSolve()) continue;
+
+    // We've made it this far, so this diff is an Unavoidable Set ('UA' or 'sieve item')
+    sieve.push(diff);
+    if (announce) console.log(`+ ${grid.filter(diff).toString()}`);
+  }
 }
 
 /**
- * Seeds a sieve array to a given level.
+ * Seeds a sieve array with the digitCombos algorithm and the specified level.
  * @param {object} options
- * @param {Sudoku} options.grid (! REQUIRED !)
+ * @param {Sudoku} options.grid The grid that the sieve is meant for.
  * @param {bigint[]} options.sieve (Optional, Default new array) The array to populate.
- * @param {number} options.level (Default `2`) Recommended `2 <= level <= 4`.
- *
- * Typical modern cpu (2025): Level 2 is fairly instant. 3 should be take less than 1s, 4 may take up to a minute.
- * @returns {bigint[]} The sieve populated with items.
+ * @param {number} options.level (Default `2`) Between `2` and `4`.
+ * @returns {bigint[]} The sieve populated with items, sorted.
  */
-export function seedSieve({ grid, sieve = [], level = 2 }) {
-  if (level < 2) return sieve;
+export function seedSieveDc({ grid, sieve = [], level = 2 }) {
+  if (level < MIN_LEVEL || level > MAX_LEVEL) {
+    throw new Error(`Invalid level: ${level}. Level must be between ${MIN_LEVEL} and ${MAX_LEVEL}.`);
+  }
   const nck = nChooseK(DIGITS, level);
   const _board = grid.board;
-  const fullMask = (1n << BigInt(SPACES)) - 1n;
 
   for (let r = 0n; r < nck; r++) {
     const dCombo = Number(bitCombo(DIGITS, level, r));
-
-    let digMask = fullMask;
-    let rowMask = fullMask;
-    let colMask = fullMask;
-    let regionMask = fullMask;
-
+    let digMask = FULL_MASK;
     for (let ci = 0; ci < SPACES; ci++) {
       if ((dCombo & digitMask(_board[ci])) > 0) digMask &= ~CELL_MASKS[ci];
-      if ((dCombo & (1 << cellRow(ci))) > 0) rowMask &= ~CELL_MASKS[ci];
-      if ((dCombo & (1 << cellCol(ci))) > 0) colMask &= ~CELL_MASKS[ci];
-      if ((dCombo & (1 << cellRegion(ci))) > 0) regionMask &= ~CELL_MASKS[ci];
     }
-
     searchForItemsFromMask(grid, sieve, digMask);
-    searchForItemsFromMask(grid, sieve, rowMask);
-    searchForItemsFromMask(grid, sieve, colMask);
-    searchForItemsFromMask(grid, sieve, regionMask);
   }
 
-  sieve.sort((a, b) => {
-    const aBits = _countBits(a);
-    const bBits = _countBits(b);
+  return sortSieve(sieve);
+}
+
+/**
+ * Seeds a sieve array with the fullCombo algorithm and the specified level.
+ * @param {object} options
+ * @param {Sudoku} options.grid The grid that the sieve is meant for.
+ * @param {bigint[]} options.sieve (Optional) The array to populate.
+ * @param {number} options.level (Default `2`) Between `2` and `4`.
+ * @returns {bigint[]} The sieve populated with items, sorted.
+ */
+export function seedSieveFp({ grid, sieve = [], level = 2 }) {
+  if (level < MIN_LEVEL || level > MAX_LEVEL) {
+    throw new Error(`Invalid level: ${level}. Level must be between ${MIN_LEVEL} and ${MAX_LEVEL}.`);
+  }
+
+  sieve.push(...seedSieveDc({ grid, sieve, level }));
+
+  ALL_AREA_COMBO_MASKS[level].forEach(mask => searchForItemsFromMask(grid, sieve, mask));
+
+  return sortSieve(sieve);
+}
+
+/**
+ *
+ * @param {bigint[]} sieve
+ */
+export function sortSieve(sieve) {
+  return sieve.sort((a, b) => {
+    const aBits = _countBigBits(a);
+    const bBits = _countBigBits(b);
     if (aBits > bBits) return 1;
     if (bBits > aBits) return -1;
     if (aBits === bBits) return (a === b) ? 0 : (a > b) ? 1 : -1;
   });
-
-  return sieve;
 }
 
 /**
@@ -114,17 +222,13 @@ export function seedSieve({ grid, sieve = [], level = 2 }) {
  */
 function _validate(config, item) {
   const p = config.filter(~item);
+  // Must not reduce further
   const pEmptyCells = p._numEmptyCells;
   p._reduce();
+  if (p.numEmptyCells !== pEmptyCells) return false;
 
-  return (
-    // Must not reduce further
-    (p.numEmptyCells === pEmptyCells) &&
-    // Must have multiple solutions
-    (p.solutionsFlag() === 2) &&
-    // Every antiderivative must have a single solution
-    p.allAntiesSolve()
-  );
+  // Every antiderivative must have a single solution
+  return p.allAntiesSolve();
 }
 
 export default class SudokuSieve {
@@ -138,7 +242,7 @@ export default class SudokuSieve {
     if (
       !Boolean(config) ||
       !(config instanceof Sudoku) ||
-      !config.isConfig()
+      !config.isSolved()
     ) {
       throw new Error('Given config is not valid.');
     }
@@ -170,7 +274,7 @@ export default class SudokuSieve {
     this._cellSum = 0;
 
     if (items.length > 0) {
-      items.forEach(item => this.add(item));
+      items.forEach(item => this.rawAdd(item));
     }
 
     /**
@@ -246,7 +350,7 @@ export default class SudokuSieve {
    * @returns
    */
   _itemsFor(mask) {
-    return this._items[_countBits(mask)];
+    return this._items[_countBigBits(mask)];
   }
 
   /**
@@ -268,7 +372,7 @@ export default class SudokuSieve {
   doesMaskSatisfy(mask) {
     for (let group of this._items) {
       for (let item of group) {
-        if ((item & mask) === 0n) {
+        if (!(item & mask)) {
           return false;
         }
       }
@@ -282,7 +386,7 @@ export default class SudokuSieve {
    */
   _addItemToMatrix(item) {
     for (let ci = 0; ci < SPACES; ci++) {
-      if ((item & cellMask(ci)) > 0n) {
+      if (item & cellMask(ci)) {
         this._reductionMatrix[ci]++;
       }
     }
@@ -294,7 +398,7 @@ export default class SudokuSieve {
    */
   _removeItemFromMatrix(item) {
     for (let ci = 0; ci < SPACES; ci++) {
-      if ((item & cellMask(ci)) > 0n) {
+      if (item & cellMask(ci)) {
         this._reductionMatrix[ci]--;
       }
     }
@@ -337,23 +441,20 @@ export default class SudokuSieve {
    * @returns {number} The number of items added.
    */
   addFromMask(mask, itemFoundCallback = null) {
-    const initialCount = this._length;
+    const initialSieveSize = this._length;
     const puzzle = this._config.filter(mask);
-    puzzle.searchForSolutions2({
-      solutionFoundCallback: (solution) => {
-        const diff = this._config.diff(solution);
-        if (diff > 0n) {
-          if (this.add(diff)) {
-            if (itemFoundCallback) {
-              itemFoundCallback(diff);
-            }
+    puzzle.forEachSolution((solution) => {
+      const diff = this._config.diff(solution);
+      if (diff > 0n) {
+        if (this.add(diff)) {
+          if (itemFoundCallback) {
+            itemFoundCallback(diff);
           }
         }
-        return true;
       }
     });
 
-    return (this._length - initialCount);
+    return (this._length - initialSieveSize);
   }
 
   /**
@@ -393,9 +494,7 @@ export default class SudokuSieve {
    * @returns {boolean}
    */
   isDerivative(mask) {
-    if (mask === 0n) {
-      return true;
-    }
+    if (mask === 0n) return true;
 
     for (let group of this._items) {
       for (let item of group) {
@@ -430,42 +529,12 @@ export default class SudokuSieve {
   }
 
   /**
-   *
-   * @param {number} level
+   * Seeds the sieve with items generated from the given masks.
+   * @param {bigint[]} masks
    * @param {(item: bigint)=>void} itemFoundCallback
    */
-  seed(level, itemFoundCallback = null) {
-    const nck = nChooseK(DIGITS, level);
-    const _board = this._config.board;
-    const fullMask = (1n << BigInt(SPACES)) - 1n;
-    for (let r = 0n; r < nck; r++) {
-      const dCombo = Number(bitCombo(DIGITS, level, r));
-
-      let digMask = fullMask;
-      let rowMask = fullMask;
-      let colMask = fullMask;
-      let regionMask = fullMask;
-
-      for (let ci = 0; ci < SPACES; ci++) {
-        if ((dCombo & digitMask(_board[ci])) > 0) {
-          digMask &= ~CELL_MASKS[ci];
-        }
-        if ((dCombo & (1 << cellRow(ci))) > 0) {
-          rowMask &= ~CELL_MASKS[ci];
-        }
-        if ((dCombo & (1 << cellCol(ci))) > 0) {
-          colMask &= ~CELL_MASKS[ci];
-        }
-        if ((dCombo & (1 << cellRegion(ci))) > 0) {
-          regionMask &= ~CELL_MASKS[ci];
-        }
-      }
-      this.addFromMask(digMask, itemFoundCallback);
-      this.addFromMask(rowMask, itemFoundCallback);
-      this.addFromMask(colMask, itemFoundCallback);
-      this.addFromMask(regionMask, itemFoundCallback);
-    }
-
+  seedFromMasks(masks, itemFoundCallback = null) {
+    masks.forEach(mask => this.addFromMask(mask, itemFoundCallback));
     this._sortInGroups();
   }
 
@@ -473,5 +542,27 @@ export default class SudokuSieve {
     for (let group of this._items) {
       group.sort((a, b) => (a === b) ? 0 : (a > b) ? 1 : -1);
     }
+  }
+
+  /**
+   * Generates the masks for all combinations of `level`(2 - 4) digits
+   * in the config's board.
+   * @param {number} level Number of digits in each combo.
+   */
+  getDigitComboMasks(level) {
+    return getDigitComboMasks(this._config, level);
+  }
+
+  /**
+   * Generates the masks for all combinations of `level`(2 - 4) areas
+   * and digits in the config's board.
+   * See `getAreaComboMasks` for combos of areas only.
+   * @param {number} level Number of areas/digits in each combo.
+   */
+  getFullComboMasks(level) {
+    return [
+      ...ALL_AREA_COMBO_MASKS[level],
+      ...this.getDigitComboMasks(level)
+    ];
   }
 }

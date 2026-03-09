@@ -6,6 +6,7 @@ on:
 
 jobs:
   publish-gpr:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     permissions:
       packages: write

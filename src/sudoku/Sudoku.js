@@ -1647,7 +1647,7 @@ export class Sudoku {
       if (level >= 1) {
         for (let i = 0; i < SPACES; i++) {
           if (this._digits[i] > 0) continue;
-          let uniqueCandidate = this._checkHiddenPairs(i);
+          let uniqueCandidate = this._checkHiddenSingles(i);
           if (uniqueCandidate > 0) {
             this.setDigit(DECODER[uniqueCandidate], i);
             hadReduction = true;
@@ -1693,7 +1693,7 @@ export class Sudoku {
    * @param {number} ci Index of cell being checked.
    * @returns {number} The unique candidate digit; or 0 if none.
    */
-  _checkHiddenPairs(ci) {
+  _checkHiddenSingles(ci) {
     for (let candidate of CANDIDATES[this._board[ci]]) {
       let unique = true;
       for (let ni of ROW_NEIGHBORS[ci]) {

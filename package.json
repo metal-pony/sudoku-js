@@ -19,9 +19,9 @@
     "fingerprint": "node scripts/sudoku/fingerprint.js"
   },
   "devDependencies": {
-    "jest": "^30.2.0",
-    "jest-environment-jsdom": "^30.2.0",
-    "jest-expect-message": "^1.1.3"
+    "jest": "30.4.2",
+    "jest-environment-jsdom": "30.4.1",
+    "jest-expect-message": "1.1.3"
   },
   "publishConfig": {
     "@metal-pony:registry": "https://npm.pkg.github.com"
@@ -31,7 +31,7 @@
     "url": "git+https://github.com/metal-pony/sudoku-js.git"
   },
   "dependencies": {
-    "@metal-pony/counting-js": "^1.0.0",
-    "arg": "^5.0.2"
+    "@metal-pony/counting-js": "1.0.0",
+    "arg": "5.0.2"
   }
 }

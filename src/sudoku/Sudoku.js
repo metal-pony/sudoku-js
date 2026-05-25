@@ -1437,16 +1437,59 @@ export class Sudoku {
   }
 
   /**
-   * Swaps all digits with another digit at random.
-   * Akin to colors on a rubix cube.
+   * Swaps all occurrences of the given digits.
+   *
+   * Note: board constraints and empty cell values will be out of sync.
+   *
+   * @param {number} a
+   * @param {number} b
+   */
+  swapDigits(a, b) {
+    if (a < 0 || b < 0 || a > DIGITS || b > DIGITS) {
+      throw new Error('given digit is out of bounds');
+    }
+    swapAllInArr(this._digits, a, b);
+
+    const aEncoded = encode(a);
+    const bEncoded = encode(b);
+    const abEncoded = (aEncoded | bEncoded);
+    for (let ci = 0; ci < SPACES; ci++) {
+      // Skip if cell has both candidates
+      if ((this._board[ci] & abEncoded) === abEncoded) continue;
+
+      if ((this._board[ci] & aEncoded) > 0) {
+        this._board[ci] &= ~aEncoded;
+        this._board[ci] |= bEncoded;
+      } else if ((this._board[ci] & bEncoded) > 0) {
+        this._board[ci] &= ~bEncoded;
+        this._board[ci] |= aEncoded;
+      }
+    }
+  }
+
+  /**
+   * Swaps the digits in the given array with their associated indices (+ 1).
+   *
+   * Note: board constraints and empty cell values will be out of sync.
+   *
+   * @param {number[]} order
+   */
+  swapAllDigits(order) {
+    if (!order) throw new Error('digit order not specified');
+    if (order.length > DIGITS) throw new Error('order array improper length');
+
+    order.forEach((digit, i) => {
+      this.swapDigits(digit, i + 1);
+    });
+  }
+
+  /**
+   * Swaps digit pairs at random.
    *
    * Note: board constraints and empty cell values will be out of sync.
    */
   shuffleDigits() {
-    shuffle(DIGIT_BAG).forEach((digit, i) => {
-      swapAllInArr(this._board, encode(digit), encode(i + 1));
-      swapAllInArr(this._digits, digit, i + 1);
-    });
+    this.swapAllDigits(shuffle(DIGIT_BAG));
   }
 
   /**

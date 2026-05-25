@@ -1437,6 +1437,55 @@ export class Sudoku {
   }
 
   /**
+   * Generates a function and a preset of operations for scrambling a Sudoku.
+   */
+  static createScrambler() {
+    /** @type {{ i: number, j: number }[]} */
+    const bands = [];
+    /** @type {{ i: number, j: number }[]} */
+    const stacks = [];
+    /** @type {{ i: number, j: number }[]} */
+    const rows = [];
+    /** @type {{ i: number, j: number }[]} */
+    const cols = [];
+    for (let i = 2; i > 0; i--) {
+      bands.push({ i, j: (Math.random() * (i+1)) | 0 });
+      stacks.push({ i, j: (Math.random() * (i+1)) | 0 });
+
+      rows.push({ i: i + 6, j: (Math.random() * (i+1)) | 0 + 6 });
+      rows.push({ i: i + 3, j: (Math.random() * (i+1)) | 0 + 3 });
+      rows.push({ i, j: (Math.random() * (i+1)) | 0 });
+
+      cols.push({ i: i + 6, j: (Math.random() * (i+1)) | 0 + 6 });
+      cols.push({ i: i + 3, j: (Math.random() * (i+1)) | 0 + 3 });
+      cols.push({ i, j: (Math.random() * (i+1)) | 0 });
+    }
+
+    /** @type {number[]} */
+    const order = [...shuffle(DIGIT_BAG)];
+
+    /**
+     * @param {Sudoku} sudoku
+     */
+    return (sudoku) => {
+      bands.forEach(b => { sudoku.swapBands(b.i, b.j); });
+      stacks.forEach(s => { sudoku.swapStacks(s.i, s.j); });
+      rows.forEach(r => { sudoku.swapStacks(r.i, r.j); });
+      cols.forEach(c => { sudoku.swapStacks(c.i, c.j); });
+      sudoku.swapAllDigits(order);
+    };
+  }
+
+  /**
+   * Randomly scrambles the grid.
+   *
+   * Note: constraints will be out of sync afterwards.
+   */
+  scramble() {
+    Sudoku.createScrambler()(this);
+  }
+
+  /**
    * Swaps all occurrences of the given digits.
    *
    * Note: board constraints and empty cell values will be out of sync.

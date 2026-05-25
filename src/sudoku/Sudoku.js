@@ -1011,6 +1011,13 @@ export class Sudoku {
   }
 
   _removeConstraint(ci, digit) {
+    // TODO Remove Hack
+    // Recalculate constraints to ensure _isValid is correct
+    if (!this._isValid) {
+      this._resetConstraints();
+      return;
+    }
+
     const dMask = ENCODER[digit];
     this._constraints[CELL_ROWS[ci]] &= ~(dMask << (DIGITS*2));
     this._constraints[CELL_COLS[ci]] &= ~(dMask << DIGITS);
@@ -1094,6 +1101,7 @@ export class Sudoku {
       this._digits = [...parsed._digits];
       this._constraints = [...parsed._constraints];
       this._numEmptyCells = parsed._numEmptyCells;
+      this._isValid = parsed._isValid;
     } else if (Array.isArray(data)) {
       this._board = Array(SPACES).fill(ALL);
       this._digits = Array(SPACES).fill(0);
@@ -1315,12 +1323,7 @@ export class Sudoku {
    * @returns {boolean}
    */
   isValid() {
-    // TODO Check constraints instead
-    return range(DIGITS).every((i) => (
-      this.isRowValid(i) &&
-      this.isColValid(i) &&
-      this.isRegionValid(i)
-    ));
+    return this._isValid;
   }
 
   /** Returns true if the board is full. */

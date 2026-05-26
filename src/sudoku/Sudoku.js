@@ -1011,6 +1011,13 @@ export class Sudoku {
   }
 
   _removeConstraint(ci, digit) {
+    // TODO Remove Hack
+    // Recalculate constraints to ensure _isValid is correct
+    if (!this._isValid) {
+      this._resetConstraints();
+      return;
+    }
+
     const dMask = ENCODER[digit];
     this._constraints[CELL_ROWS[ci]] &= ~(dMask << (DIGITS*2));
     this._constraints[CELL_COLS[ci]] &= ~(dMask << DIGITS);
@@ -1094,6 +1101,7 @@ export class Sudoku {
       this._digits = [...parsed._digits];
       this._constraints = [...parsed._constraints];
       this._numEmptyCells = parsed._numEmptyCells;
+      this._isValid = parsed._isValid;
     } else if (Array.isArray(data)) {
       this._board = Array(SPACES).fill(ALL);
       this._digits = Array(SPACES).fill(0);
@@ -1315,12 +1323,7 @@ export class Sudoku {
    * @returns {boolean}
    */
   isValid() {
-    // TODO Check constraints instead
-    return range(DIGITS).every((i) => (
-      this.isRowValid(i) &&
-      this.isColValid(i) &&
-      this.isRegionValid(i)
-    ));
+    return this._isValid;
   }
 
   /** Returns true if the board is full. */
@@ -1434,16 +1437,108 @@ export class Sudoku {
   }
 
   /**
-   * Swaps all digits with another digit at random.
-   * Akin to colors on a rubix cube.
+   * Generates a function and a preset of operations for scrambling a Sudoku.
+   */
+  static createScrambler() {
+    /** @type {{ i: number, j: number }[]} */
+    const bands = [];
+    /** @type {{ i: number, j: number }[]} */
+    const stacks = [];
+    /** @type {{ i: number, j: number }[]} */
+    const rows = [];
+    /** @type {{ i: number, j: number }[]} */
+    const cols = [];
+    for (let i = 2; i > 0; i--) {
+      bands.push({ i, j: (Math.random() * (i+1)) | 0 });
+      stacks.push({ i, j: (Math.random() * (i+1)) | 0 });
+
+      rows.push({ i: i + 6, j: (Math.random() * (i+1)) | 0 + 6 });
+      rows.push({ i: i + 3, j: (Math.random() * (i+1)) | 0 + 3 });
+      rows.push({ i, j: (Math.random() * (i+1)) | 0 });
+
+      cols.push({ i: i + 6, j: (Math.random() * (i+1)) | 0 + 6 });
+      cols.push({ i: i + 3, j: (Math.random() * (i+1)) | 0 + 3 });
+      cols.push({ i, j: (Math.random() * (i+1)) | 0 });
+    }
+
+    /** @type {number[]} */
+    const order = [...shuffle(DIGIT_BAG)];
+
+    /**
+     * @param {Sudoku} sudoku
+     */
+    return (sudoku) => {
+      bands.forEach(b => { sudoku.swapBands(b.i, b.j); });
+      stacks.forEach(s => { sudoku.swapStacks(s.i, s.j); });
+      rows.forEach(r => { sudoku.swapStacks(r.i, r.j); });
+      cols.forEach(c => { sudoku.swapStacks(c.i, c.j); });
+      sudoku.swapAllDigits(order);
+    };
+  }
+
+  /**
+   * Randomly scrambles the grid.
+   *
+   * Note: constraints will be out of sync afterwards.
+   */
+  scramble() {
+    Sudoku.createScrambler()(this);
+  }
+
+  /**
+   * Swaps all occurrences of the given digits.
+   *
+   * Note: board constraints and empty cell values will be out of sync.
+   *
+   * @param {number} a
+   * @param {number} b
+   */
+  swapDigits(a, b) {
+    if (a < 0 || b < 0 || a > DIGITS || b > DIGITS) {
+      throw new Error('given digit is out of bounds');
+    }
+    swapAllInArr(this._digits, a, b);
+
+    const aEncoded = encode(a);
+    const bEncoded = encode(b);
+    const abEncoded = (aEncoded | bEncoded);
+    for (let ci = 0; ci < SPACES; ci++) {
+      // Skip if cell has both candidates
+      if ((this._board[ci] & abEncoded) === abEncoded) continue;
+
+      if ((this._board[ci] & aEncoded) > 0) {
+        this._board[ci] &= ~aEncoded;
+        this._board[ci] |= bEncoded;
+      } else if ((this._board[ci] & bEncoded) > 0) {
+        this._board[ci] &= ~bEncoded;
+        this._board[ci] |= aEncoded;
+      }
+    }
+  }
+
+  /**
+   * Swaps the digits in the given array with their associated indices (+ 1).
+   *
+   * Note: board constraints and empty cell values will be out of sync.
+   *
+   * @param {number[]} order
+   */
+  swapAllDigits(order) {
+    if (!order) throw new Error('digit order not specified');
+    if (order.length > DIGITS) throw new Error('order array improper length');
+
+    order.forEach((digit, i) => {
+      this.swapDigits(digit, i + 1);
+    });
+  }
+
+  /**
+   * Swaps digit pairs at random.
    *
    * Note: board constraints and empty cell values will be out of sync.
    */
   shuffleDigits() {
-    shuffle(DIGIT_BAG).forEach((digit, i) => {
-      swapAllInArr(this._board, encode(digit), encode(i + 1));
-      swapAllInArr(this._digits, digit, i + 1);
-    });
+    this.swapAllDigits(shuffle(DIGIT_BAG));
   }
 
   /**

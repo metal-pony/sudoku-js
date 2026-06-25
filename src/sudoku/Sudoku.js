@@ -1270,7 +1270,7 @@ export class Sudoku {
    * @returns {number[]}
    */
   rowVals(row) {
-    return indicesFor.row[row].map((i) => this._board[i]);
+    return indicesFor.row[row].map((i) => this._digits[i]);
   }
 
   /**
@@ -1279,7 +1279,7 @@ export class Sudoku {
    * @returns {number[]}
    */
   colVals(col) {
-    return indicesFor.col[col].map((i) => this._board[i]);
+    return indicesFor.col[col].map((i) => this._digits[i]);
   }
 
   /**
@@ -1288,7 +1288,7 @@ export class Sudoku {
    * @returns {number[]}
    */
   regionVals(reg) {
-    return indicesFor.region[reg].map((i) => this._board[i]);
+    return indicesFor.region[reg].map((i) => this._digits[i]);
   }
 
   /**

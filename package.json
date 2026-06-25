@@ -19,6 +19,7 @@
     "fingerprint": "node scripts/sudoku/fingerprint.js"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "jest": "30.4.2",
     "jest-environment-jsdom": "30.4.1",
     "jest-expect-message": "1.1.3"

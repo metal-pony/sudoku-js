@@ -1,8 +1,8 @@
 import { randomCombo } from '@metal-pony/counting-js';
-import { Sudoku } from '../../index.js';
+import { Sudoku, sudoku17 } from '../../index.js';
 import puzzles from './puzzles24.json';
 import { range, shuffle } from '../../src/util/arrays.js';
-import { SearchState } from '../../src/sudoku/Sudoku.js';
+import { SearchState, SPACES } from '../../src/sudoku/Sudoku.js';
 
 // A subset of `puzzles`, chosen at random.
 const SINGLE_SOLUTION_PUZZLES = shuffle(range(puzzles.length)).slice(0, 100).map(i => puzzles[i]);
@@ -210,6 +210,76 @@ describe('Sudoku', () => {
       expect(grid.dc2()).toBe(expected_dc2);
       // Disabled for performance.
       // expect(grid.dc3()).toBe(expected_fp3);
+    });
+  });
+
+  describe('shake', () => {
+    test('when grid is empty, does nothing', () => {
+      const grid = new Sudoku();
+      // Copy of grid to preserve original state for comparison.
+      const originalGridCopy = new Sudoku(grid);
+
+      grid.shake();
+
+      expect(grid).toStrictEqual(originalGridCopy);
+    });
+
+    test('when grid is invalid, does nothing', () => {
+      // Test with a generated config and set _isValid = false,
+      // or set the first 2 cells to the same digit.
+      const grid = Sudoku.generateConfig();
+      grid.setDigit(1, 0);
+      grid.setDigit(1, 1);
+      const originalGridCopy = new Sudoku(grid);
+      grid.shake();
+      expect(grid).toStrictEqual(originalGridCopy);
+
+      // Test with NO_SOLUTION_PUZZLES and MULTI_SOLUTION_PUZZLES
+      NO_SOLUTION_PUZZLES.forEach(p => {
+        const grid = new Sudoku(p);
+        const originalGridCopy = new Sudoku(grid);
+        grid.shake();
+        expect(grid).toStrictEqual(originalGridCopy);
+      });
+
+      MULTI_SOLUTION_PUZZLES.forEach(({ puzzleStr }) => {
+        const grid = new Sudoku(puzzleStr);
+        const originalGridCopy = new Sudoku(grid);
+        grid.shake();
+        expect(grid).toStrictEqual(originalGridCopy);
+      });
+    });
+
+    /**
+     * @param {Sudoku} grid
+     */
+    const expectGridToBeIrreducable = (grid) => {
+      for (let ci = 0; ci < SPACES; ci++) {
+        if (grid.getDigit(ci) === 0) continue;
+        const clone = new Sudoku(grid);
+        clone.setDigit(0, ci);
+        expect(clone.hasUniqueSolution()).toBe(false);
+      }
+    };
+
+    test('when grid is valid, no remaining digit can be removed', () => {
+      // Test with several puzzle from the sudoku-17 file.
+      for (let i = 0; i < 10; i++) {
+        const si = (Math.random() * sudoku17.length) | 0;
+        const grid = new Sudoku(sudoku17[si]);
+        expectGridToBeIrreducable(grid);
+      }
+
+      // Test several times with generated configs.
+      for (let i = 0; i < 10; i++) {
+        expectGridToBeIrreducable(Sudoku.generateConfig());
+      }
+
+      // Test with SINGLE_SOLUTION_PUZZLES.
+      const ENDI = Math.min(10, SINGLE_SOLUTION_PUZZLES.length);
+      for (let i = 0; i < ENDI; i++) {
+        expectGridToBeIrreducable(new Sudoku(SINGLE_SOLUTION_PUZZLES[i]));
+      }
     });
   });
 });

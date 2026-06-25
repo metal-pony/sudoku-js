@@ -2060,6 +2060,35 @@ export class Sudoku {
     if (diffs.length === 0) return -1;
     return diffs.reduce((acc, d) => (acc + d), 0) / diffs.length;
   }
+
+  /**
+   * Continuously removes digits from the board at random,
+   * until the board is as empty as possible without becoming unsolvable. This method
+   * modifies the current Sudoku instance.
+   *
+   * @returns {Sudoku} This Sudoku instance.
+   */
+  shake() {
+    // If this grid does not have a unique solution, return immediately.
+    if (!this.hasUniqueSolution()) return;
+
+    const clonedSudoku = new Sudoku(this);
+    shuffle(range(SPACES)).forEach((ci) => {
+      // Skip if the cell is already empty.
+      if (this._digits[ci] === 0) return;
+
+      // Attempt to remove cell on the clone.
+      clonedSudoku.setDigit(0, ci);
+      if (clonedSudoku.hasUniqueSolution()) {
+        this.setDigit(0, ci);
+      } else {
+        // Multiple solutions; revert clone state.
+        clonedSudoku.copyFrom(this);
+      }
+    });
+
+    return this;
+  }
 }
 
 export default Sudoku;

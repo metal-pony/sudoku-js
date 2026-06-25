@@ -960,7 +960,8 @@ export class Sudoku {
    * @returns {boolean}
    */
   equals(other) {
-    return this.board.every((val, i) => val === other.board[i]);
+    const otherBoard = other.board;
+    return this.board.every((val, i) => val === otherBoard[i]);
   }
 
   /**

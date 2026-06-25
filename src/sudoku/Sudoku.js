@@ -960,8 +960,7 @@ export class Sudoku {
    * @returns {boolean}
    */
   equals(other) {
-    const otherBoard = other.board;
-    return this.board.every((val, i) => val === otherBoard[i]);
+    return this._digits.every((val, i) => val === other._digits[i]);
   }
 
   /**
@@ -1360,7 +1359,7 @@ export class Sudoku {
    * @returns {string}
    */
   toString() {
-    return this.board.join('').replace(/0/g, '.');
+    return this._digits.join('').replace(/0/g, '.');
   }
 
   /**
@@ -1368,8 +1367,8 @@ export class Sudoku {
    * @returns {string}
    */
   toFullString() {
-    return this._board.reduce((str, val, i) => {
-      str += isDigit(val) ? decode(val) : '.';
+    return this._digits.reduce((str, val, i) => {
+      str += ((val > 0) ? val : '.');
       str += (((((i+1)%3) === 0) && (((i+1)%9) !== 0)) ? ' | ' : '   ');
 
       if (((i+1)%9) === 0) {
@@ -1403,7 +1402,7 @@ export class Sudoku {
    */
   static toMedString(board) {
     return board.reduce((str, val, i) => {
-      str += val > 0 ? val : ' ';
+      str += ((val > 0) ? val : ' ');
       if ((((i+1)%3) === 0) && (((i+1)%9) !== 0)) {
         str += '|';
       } else {
@@ -1427,7 +1426,7 @@ export class Sudoku {
    * @returns {number[]} A copy of the normalized board.
    */
   get normalizedBoard() {
-    const copy = [...this.board];
+    const copy = [...this._digits];
     for (let i = 1; i <= DIGITS; i++) {
       const digit = copy[i - 1];
       if (digit != i) {

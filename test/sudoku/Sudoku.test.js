@@ -2,7 +2,7 @@ import { randomCombo } from '@metal-pony/counting-js';
 import { Sudoku, sudoku17 } from '../../index.js';
 import puzzles from './puzzles24.json';
 import { range, shuffle } from '../../src/util/arrays.js';
-import { cellRegion, SearchState, SPACES } from '../../src/sudoku/Sudoku.js';
+import { cellRegion, isAreaValid, SearchState, SPACES } from '../../src/sudoku/Sudoku.js';
 
 // A subset of `puzzles`, chosen at random.
 const SINGLE_SOLUTION_PUZZLES = shuffle(range(puzzles.length)).slice(0, 100).map(i => puzzles[i]);
@@ -31,6 +31,31 @@ const MULTI_SOLUTION_PUZZLES = [
   { puzzleStr: '1..4..7.9......3...75.8.6143........8.43...6......4...2..1....6..8.........9.5..2', numSolutions: 3383 },
   { puzzleStr: '.2.......9.6.175..........34.....961.....5....7.9.4.......42...237.8...5....3..2.', numSolutions: 243 },
 ];
+
+describe('isAreaValid', () => {
+  describe('when areaDigits is empty or contains no nonzero digits', () => {
+    test('returns true', () => {
+      expect(isAreaValid([])).toBe(true);
+      expect(isAreaValid([0])).toBe(true);
+      expect(isAreaValid([0, 0, 0])).toBe(true);
+    });
+  });
+
+  describe('when areaDigits contains no duplicate digits', () => {
+    test('returns true', () => {
+      expect(isAreaValid([1, 2, 3])).toBe(true);
+      expect(isAreaValid([1, 2, 3, 4, 5, 6, 7, 8, 9])).toBe(true);
+      expect(isAreaValid([1, 2, 3, 4, 0, 6, 7, 8, 0])).toBe(true);
+    });
+  });
+
+  describe('when areaDigits contains duplicate digits', () => {
+    test('returns false', () => {
+      expect(isAreaValid([1, 2, 3, 4, 5, 6, 7, 8, 1])).toBe(false);
+      expect(isAreaValid([4, 0, 0, 0, 0, 0, 0, 0, 4])).toBe(false);
+    });
+  });
+});
 
 describe('SearchState', () => {
   /** @type {SearchState} */

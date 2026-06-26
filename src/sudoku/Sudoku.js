@@ -222,15 +222,15 @@ export const cellRegion2D = (row, col) => CELL_REGIONS[row * DIGITS + col];
 
 /**
  * Returns whether an area on a Sudoku board (row, column, or region)
- * is valid given the encoded values of the cells that make up the area.
- * @param {number[]} areaVals
+ * is valid given the digits of the cells that make up the area.
+ * @param {number[]} areaDigits
  * @returns {boolean}
  */
-function isAreaValid(areaVals) {
+export function isAreaValid(areaDigits) {
   let reduced = 0;
-  const vals = areaVals.filter(isDigit);
+  const vals = areaDigits.filter(d => ((d > 0) && (d <= DIGITS)));
   for (let vi = 0; vi < vals.length; vi++) {
-    const val = vals[vi];
+    const val = encode(vals[vi]);
     if ((reduced & val) > 0) {
       return false;
     }
@@ -246,7 +246,7 @@ function isAreaValid(areaVals) {
  * @param {number[]} areaVals
  * @returns {boolean}
  */
-const isAreaFull = (areaVals) => areaVals.every(isDigit);
+const isAreaFull = (areaVals) => areaVals.every(d => (d > 0 && d <= DIGITS));
 
 class SearchNode {
   /**

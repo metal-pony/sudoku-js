@@ -222,15 +222,15 @@ export const cellRegion2D = (row, col) => CELL_REGIONS[row * DIGITS + col];
 
 /**
  * Returns whether an area on a Sudoku board (row, column, or region)
- * is valid given the encoded values of the cells that make up the area.
- * @param {number[]} areaVals
+ * is valid given the digits of the cells that make up the area.
+ * @param {number[]} areaDigits
  * @returns {boolean}
  */
-function isAreaValid(areaVals) {
+export function isAreaValid(areaDigits) {
   let reduced = 0;
-  const vals = areaVals.filter(isDigit);
+  const vals = areaDigits.filter(d => ((d > 0) && (d <= DIGITS)));
   for (let vi = 0; vi < vals.length; vi++) {
-    const val = vals[vi];
+    const val = encode(vals[vi]);
     if ((reduced & val) > 0) {
       return false;
     }
@@ -246,7 +246,7 @@ function isAreaValid(areaVals) {
  * @param {number[]} areaVals
  * @returns {boolean}
  */
-const isAreaFull = (areaVals) => areaVals.every(isDigit);
+const isAreaFull = (areaVals) => areaVals.every(d => (d > 0 && d <= DIGITS));
 
 class SearchNode {
   /**
@@ -960,7 +960,7 @@ export class Sudoku {
    * @returns {boolean}
    */
   equals(other) {
-    return this.board.every((val, i) => val === other.board[i]);
+    return this._digits.every((val, i) => val === other._digits[i]);
   }
 
   /**
@@ -1189,6 +1189,11 @@ export class Sudoku {
       }
       this._addConstraint(index, digit);
     }
+
+    if (digit === 0) {
+      this._board[index] = ALL ^ this._cellConstraints(index);
+    }
+
     return true;
   }
 
@@ -1270,7 +1275,7 @@ export class Sudoku {
    * @returns {number[]}
    */
   rowVals(row) {
-    return indicesFor.row[row].map((i) => this._board[i]);
+    return indicesFor.row[row].map((i) => this._digits[i]);
   }
 
   /**
@@ -1279,7 +1284,7 @@ export class Sudoku {
    * @returns {number[]}
    */
   colVals(col) {
-    return indicesFor.col[col].map((i) => this._board[i]);
+    return indicesFor.col[col].map((i) => this._digits[i]);
   }
 
   /**
@@ -1288,7 +1293,7 @@ export class Sudoku {
    * @returns {number[]}
    */
   regionVals(reg) {
-    return indicesFor.region[reg].map((i) => this._board[i]);
+    return indicesFor.region[reg].map((i) => this._digits[i]);
   }
 
   /**
@@ -1359,7 +1364,7 @@ export class Sudoku {
    * @returns {string}
    */
   toString() {
-    return this.board.join('').replace(/0/g, '.');
+    return this._digits.join('').replace(/0/g, '.');
   }
 
   /**
@@ -1367,8 +1372,8 @@ export class Sudoku {
    * @returns {string}
    */
   toFullString() {
-    return this._board.reduce((str, val, i) => {
-      str += isDigit(val) ? decode(val) : '.';
+    return this._digits.reduce((str, val, i) => {
+      str += ((val > 0) ? val : '.');
       str += (((((i+1)%3) === 0) && (((i+1)%9) !== 0)) ? ' | ' : '   ');
 
       if (((i+1)%9) === 0) {
@@ -1402,7 +1407,7 @@ export class Sudoku {
    */
   static toMedString(board) {
     return board.reduce((str, val, i) => {
-      str += val > 0 ? val : ' ';
+      str += ((val > 0) ? val : ' ');
       if ((((i+1)%3) === 0) && (((i+1)%9) !== 0)) {
         str += '|';
       } else {
@@ -1426,7 +1431,7 @@ export class Sudoku {
    * @returns {number[]} A copy of the normalized board.
    */
   get normalizedBoard() {
-    const copy = [...this.board];
+    const copy = [...this._digits];
     for (let i = 1; i <= DIGITS; i++) {
       const digit = copy[i - 1];
       if (digit != i) {
@@ -2058,6 +2063,35 @@ export class Sudoku {
 
     if (diffs.length === 0) return -1;
     return diffs.reduce((acc, d) => (acc + d), 0) / diffs.length;
+  }
+
+  /**
+   * Continuously removes digits from the board at random,
+   * until the board is as empty as possible without becoming unsolvable. This method
+   * modifies the current Sudoku instance.
+   *
+   * @returns {Sudoku} This Sudoku instance.
+   */
+  shake() {
+    // If this grid does not have a unique solution, return immediately.
+    if (!this.hasUniqueSolution()) return;
+
+    const clonedSudoku = new Sudoku(this);
+    shuffle(range(SPACES)).forEach((ci) => {
+      // Skip if the cell is already empty.
+      if (this._digits[ci] === 0) return;
+
+      // Attempt to remove cell on the clone.
+      clonedSudoku.setDigit(0, ci);
+      if (clonedSudoku.hasUniqueSolution()) {
+        this.setDigit(0, ci);
+      } else {
+        // Multiple solutions; revert clone state.
+        clonedSudoku.copyFrom(this);
+      }
+    });
+
+    return this;
   }
 }
 

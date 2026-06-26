@@ -267,18 +267,24 @@ describe('Sudoku', () => {
       for (let i = 0; i < 10; i++) {
         const si = (Math.random() * sudoku17.length) | 0;
         const grid = new Sudoku(sudoku17[si]);
+        grid.shake();
         expectGridToBeIrreducable(grid);
       }
 
       // Test several times with generated configs.
       for (let i = 0; i < 10; i++) {
-        expectGridToBeIrreducable(Sudoku.generateConfig());
+        const grid = Sudoku.generateConfig();
+        grid.shake();
+        expectGridToBeIrreducable(grid);
+        expect(grid.numEmptyCells).toBeGreaterThan(0);
       }
 
       // Test with SINGLE_SOLUTION_PUZZLES.
       const ENDI = Math.min(10, SINGLE_SOLUTION_PUZZLES.length);
       for (let i = 0; i < ENDI; i++) {
-        expectGridToBeIrreducable(new Sudoku(SINGLE_SOLUTION_PUZZLES[i]));
+        const grid = new Sudoku(SINGLE_SOLUTION_PUZZLES[i]);
+        grid.shake();
+        expectGridToBeIrreducable(grid);
       }
     });
   });

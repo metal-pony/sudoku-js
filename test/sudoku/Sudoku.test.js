@@ -2,7 +2,7 @@ import { randomCombo } from '@metal-pony/counting-js';
 import { Sudoku, sudoku17 } from '../../index.js';
 import puzzles from './puzzles24.json';
 import { range, shuffle } from '../../src/util/arrays.js';
-import { SearchState, SPACES } from '../../src/sudoku/Sudoku.js';
+import { cellRegion, SearchState, SPACES } from '../../src/sudoku/Sudoku.js';
 
 // A subset of `puzzles`, chosen at random.
 const SINGLE_SOLUTION_PUZZLES = shuffle(range(puzzles.length)).slice(0, 100).map(i => puzzles[i]);
@@ -130,6 +130,23 @@ describe('Sudoku', () => {
       for (let n = 0; n < 10; n++) {
         expect(Sudoku.generateConfig().solutionsFlag()).toBe(1);
       }
+    });
+
+    describe('when a config has some non-intersecting digits cleared', () => {
+      test('returns 1', () => {
+        const config = Sudoku.generateConfig();
+
+        // Collect indices of cells within the diagonal regions
+        const cellsToRemove = shuffle(range(SPACES).filter(ci => {
+          const r = cellRegion(ci);
+          return (r === 0 || r === 4 || r === 8);
+        }));
+
+        cellsToRemove.forEach(ci => {
+          config.setDigit(0, ci);
+          expect(config.solutionsFlag()).toBe(1);
+        });
+      });
     });
   });
 

@@ -1189,6 +1189,11 @@ export class Sudoku {
       }
       this._addConstraint(index, digit);
     }
+
+    if (digit === 0) {
+      this._board[index] = ALL ^ this._cellConstraints(index);
+    }
+
     return true;
   }
 

@@ -2,7 +2,7 @@ import { randomCombo } from '@metal-pony/counting-js';
 import { Sudoku, sudoku17 } from '../../index.js';
 import puzzles from './puzzles24.json';
 import { range, shuffle } from '../../src/util/arrays.js';
-import { cellRegion, isAreaValid, SearchState, SPACES } from '../../src/sudoku/Sudoku.js';
+import { cellRegion, DIGITS, isAreaValid, SearchState, SPACES } from '../../src/sudoku/Sudoku.js';
 
 // A subset of `puzzles`, chosen at random.
 const SINGLE_SOLUTION_PUZZLES = shuffle(range(puzzles.length)).slice(0, 100).map(i => puzzles[i]);
@@ -112,6 +112,199 @@ describe('SearchState', () => {
 });
 
 describe('Sudoku', () => {
+  describe('static', () => {
+    describe('validateStr', () => {
+      describe('returns false', () => {
+        test('when the string is not given', () => {
+          expect(Sudoku.validateStr()).toBe(false);
+          expect(Sudoku.validateStr(null)).toBe(false);
+          expect(Sudoku.validateStr(undefined)).toBe(false);
+        });
+
+        test('when str is not a string', () => {
+          expect(Sudoku.validateStr(123)).toBe(false);
+          expect(Sudoku.validateStr({})).toBe(false);
+          expect(Sudoku.validateStr(['meow'])).toBe(false);
+        });
+
+        test('when str is long', () => {
+          expect(Sudoku.validateStr('.'.repeat(SPACES + 1))).toBe(false);
+        });
+
+        test('when expanded str is not the correct length', () => {
+          expect(Sudoku.validateStr('--------')).toBe(false);
+          expect(Sudoku.validateStr('.'.repeat(SPACES - 1))).toBe(false);
+        });
+
+        test('when str contains invalid characters', () => {
+          expect(Sudoku.validateStr('a'.repeat(SPACES))).toBe(false);
+          expect(Sudoku.validateStr('1'.repeat(SPACES - 1) + 'A')).toBe(false);
+        });
+      });
+
+      describe('returns true', () => {
+        test('when str is correct length containing only numbers and dots', () => {
+          const validStr = '123456789'.repeat(9);
+          expect(Sudoku.validateStr(validStr)).toBe(true);
+
+          [
+            ...SINGLE_SOLUTION_PUZZLES,
+            ...NO_SOLUTION_PUZZLES,
+            ...(MULTI_SOLUTION_PUZZLES.map(p => p.puzzleStr))
+          ].forEach(p => {
+            expect(Sudoku.validateStr(p)).toBe(true);
+          });
+        });
+
+        test('when str expands to correct length containing only numbers and dots', () => {
+          const validStrs = [
+            '.'.repeat(72) + '-',
+            '-' + '.'.repeat(72),
+            '1' + '.'.repeat(71) + '-',
+            '-' + '1' + '.'.repeat(71),
+            '1' + '.'.repeat(70) + '-1',
+            '1' + '.'.repeat(70) + '-9',
+          ];
+
+          validStrs.forEach(str => {
+            expect(Sudoku.validateStr(str)).toBe(true);
+          });
+        });
+
+        test('the str does not necessarily need to represent a valid sudoku', () => {
+          expect(Sudoku.validateStr('1'.repeat(SPACES))).toBe(true);
+        });
+      });
+    });
+
+    describe('fromString', () => {
+      describe('when str is invalid in any way', () => {
+        test('throws error', () => {
+          // Invalid because of length
+          expect(() => Sudoku.fromString('.'.repeat(SPACES - 1))).toThrow();
+
+          // Invalid because str did not expand to correct length
+          expect(() => Sudoku.fromString('1' + '.'.repeat(70) + '-')).toThrow();
+          expect(() => Sudoku.fromString('1' + '.'.repeat(72) + '-')).toThrow();
+
+          // Invalid because of invalid characters
+          expect(() => Sudoku.fromString('1'.repeat(SPACES - 1) + 'A')).toThrow();
+
+          // Invalid because of invalid characters after expansion
+          expect(() => Sudoku.fromString('-' + '.'.repeat(71) + '!')).toThrow();
+        });
+      });
+
+      describe('when str represents a grid', () => {
+        test('returns a grid with the correct digits set', () => {
+          const puzzleStr = '123456789'.repeat(9);
+          const grid = Sudoku.fromString(puzzleStr);
+          expect(grid.toString()).toBe(puzzleStr);
+        });
+      });
+    });
+
+    describe('generateConfig', () => {
+      test('is full and solved', () => {
+        for (let n = 0; n < 10; n++) {
+          const config = Sudoku.generateConfig();
+          expect(config.numEmptyCells).toBe(0);
+          expect(config.isValid()).toBe(true);
+          expect(config.isFull()).toBe(true);
+          expect(config.isSolved()).toBe(true);
+          expect(config.solutionsFlag()).toBe(1);
+        }
+      });
+    });
+
+    test('generatePuzzle2', () => {
+      for (let numClues = 81; numClues >= 24; numClues--) {
+        const puzzle = Sudoku.generatePuzzle2({ numClues });
+        expect(puzzle.numEmptyCells).toBe(81 - numClues);
+        expect(puzzle.solutionsFlag()).toBe(1);
+      }
+    });
+  });
+
+  describe('setBoard', () => {
+    describe('throws error', () => {
+      test('when digits is incorrect length', () => {
+        expect(() => new Sudoku().setBoard([])).toThrow();
+        expect(() => new Sudoku().setBoard([1, 2, 3])).toThrow();
+        expect(() => new Sudoku().setBoard(Array(SPACES - 1).fill(0))).toThrow();
+        expect(() => new Sudoku().setBoard(Array(SPACES + 1).fill(0))).toThrow();
+      });
+
+      test('when any element is not a number', () => {
+        const digits = Array(SPACES).fill(0);
+        digits[0] = 'x';
+        expect(() => new Sudoku().setBoard(digits)).toThrow();
+      });
+
+      test('when any element is out of bounds', () => {
+        const digits = Array(SPACES).fill(0);
+        digits[0] = 10;
+        expect(() => new Sudoku().setBoard(digits)).toThrow();
+      });
+    });
+
+    test('sets the board digits appropriately', () => {
+      const digits = Array(SPACES).fill(0);
+      digits[0] = 5;
+      digits[80] = 9;
+      const grid = new Sudoku();
+      grid.setBoard(digits);
+      expect(grid.board).toEqual(digits);
+      expect(grid.numEmptyCells).toBe(79);
+      expect(grid.isValid()).toBe(true);
+    });
+
+    describe('-integration-', () => {
+      describe('when data represents a valid grid', () => {
+        test('grid is solvable and has correct properties', () => {
+          // Pull from puzzles24
+          SINGLE_SOLUTION_PUZZLES.forEach(p => {
+            const digits = p.split('').map(c => (c === '.' ? 0 : Number(c)));
+            const grid = new Sudoku();
+            grid.setBoard(digits);
+            expect(grid.isValid()).toBe(true);
+            expect(grid.isFull()).toBe(false);
+            expect(grid.isSolved()).toBe(false);
+            expect(grid.numEmptyCells).toBe(81 - 24);
+            expect(grid.solutionsFlag()).toBe(1);
+          });
+
+          // Pull from a subset of sudoku17
+          const sudoku17Subset = [];
+          for (let i = 0; i < 20; i++) {
+            const si = (Math.random() * sudoku17.length) | 0;
+            sudoku17Subset.push(sudoku17[si]);
+          }
+          sudoku17Subset.forEach(p => {
+            const digits = p.split('').map(c => (c === '.' ? 0 : Number(c)));
+            const grid = new Sudoku();
+            grid.setBoard(digits);
+            expect(grid.isValid()).toBe(true);
+            expect(grid.isFull()).toBe(false);
+            expect(grid.isSolved()).toBe(false);
+            expect(grid.numEmptyCells).toBe(81 - 17);
+            expect(grid.solutionsFlag()).toBe(1);
+          });
+        });
+
+        test('board returns array identical to the given digits', () => {
+          const digits = Array(SPACES).fill(0);
+          digits[0] = 7;
+          digits[4] = 3;
+          const grid = new Sudoku();
+          grid.setBoard(digits);
+          expect(grid.board).toEqual(digits);
+          expect(grid.board).not.toBe(digits);
+        });
+      });
+    });
+  });
+
   describe('solutionCount', () => {
     test('finds the expected number of solutions', () => {
       SINGLE_SOLUTION_PUZZLES.forEach(p => {
@@ -175,27 +368,6 @@ describe('Sudoku', () => {
     });
   });
 
-  describe('generateConfig', () => {
-    test('is full and solved', () => {
-      for (let n = 0; n < 10; n++) {
-        const config = Sudoku.generateConfig();
-        expect(config.numEmptyCells).toBe(0);
-        expect(config.isValid()).toBe(true);
-        expect(config.isFull()).toBe(true);
-        expect(config.isSolved()).toBe(true);
-        expect(config.solutionsFlag()).toBe(1);
-      }
-    });
-  });
-
-  test('generatePuzzle2', () => {
-    for (let numClues = 81; numClues >= 24; numClues--) {
-      const puzzle = Sudoku.generatePuzzle2({ numClues });
-      expect(puzzle.numEmptyCells).toBe(81 - numClues);
-      expect(puzzle.solutionsFlag()).toBe(1);
-    }
-  });
-
   describe('fingerprint', () => {
     const gridStr = '218574639573896124469123578721459386354681792986237415147962853695318247832745961';
     const expected_dc2 = '9:9:7:4:2:3::16';
@@ -251,7 +423,7 @@ describe('Sudoku', () => {
       }
       expect(grid.dc2()).toBe(expected_dc2);
       // Disabled for performance.
-      // expect(grid.dc3()).toBe(expected_fp3);
+      // expect(grid.dc3()).toBe(expected_dc3);
     });
   });
 
@@ -304,30 +476,41 @@ describe('Sudoku', () => {
       }
     };
 
-    test('when grid is valid, no remaining digit can be removed', () => {
-      // Test with several puzzle from the sudoku-17 file.
-      for (let i = 0; i < 10; i++) {
-        const si = (Math.random() * sudoku17.length) | 0;
-        const grid = new Sudoku(sudoku17[si]);
-        grid.shake();
-        expectGridToBeIrreducable(grid);
-      }
+    describe('when grid is valid', () => {
+      test('no remaining digit can be removed', () => {
+        // Test with several puzzle from the sudoku-17 file.
+        for (let i = 0; i < 10; i++) {
+          const si = (Math.random() * sudoku17.length) | 0;
+          const grid = new Sudoku(sudoku17[si]);
+          grid.shake();
+          expectGridToBeIrreducable(grid);
+        }
 
-      // Test several times with generated configs.
-      for (let i = 0; i < 10; i++) {
-        const grid = Sudoku.generateConfig();
-        grid.shake();
-        expectGridToBeIrreducable(grid);
-        expect(grid.numEmptyCells).toBeGreaterThan(0);
-      }
+        // Test several times with generated configs.
+        for (let i = 0; i < 10; i++) {
+          const grid = Sudoku.generateConfig();
+          grid.shake();
+          expectGridToBeIrreducable(grid);
+          expect(grid.numEmptyCells).toBeGreaterThan(0);
+        }
 
-      // Test with SINGLE_SOLUTION_PUZZLES.
-      const ENDI = Math.min(10, SINGLE_SOLUTION_PUZZLES.length);
-      for (let i = 0; i < ENDI; i++) {
-        const grid = new Sudoku(SINGLE_SOLUTION_PUZZLES[i]);
-        grid.shake();
-        expectGridToBeIrreducable(grid);
-      }
+        // Test with SINGLE_SOLUTION_PUZZLES.
+        const ENDI = Math.min(10, SINGLE_SOLUTION_PUZZLES.length);
+        for (let i = 0; i < ENDI; i++) {
+          const grid = new Sudoku(SINGLE_SOLUTION_PUZZLES[i]);
+          grid.shake();
+          expectGridToBeIrreducable(grid);
+        }
+      });
+
+      test('resulting grid is solvable', () => {
+        // Test several times with generated configs.
+        for (let i = 0; i < 10; i++) {
+          const grid = Sudoku.generateConfig();
+          grid.shake();
+          expect(grid.hasUniqueSolution()).toBe(true);
+        }
+      });
     });
   });
 });

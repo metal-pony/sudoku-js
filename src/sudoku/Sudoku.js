@@ -1191,7 +1191,9 @@ export class Sudoku {
     }
 
     if (digit === 0) {
-      this._candidates[index] = ALL ^ this._cellConstraints(index);
+      // PATCHED -- Newly added logic causing incorrect solutnionsFlags
+      // this._candidates[index] = ALL ^ this._cellConstraints(index);
+      this._candidates[index] = ALL;
     }
 
     return true;
@@ -1861,7 +1863,8 @@ export class Sudoku {
    */
   solutionsFlag() {
     if (!this.isValid()) return 0;
-    if (this.numEmptyCells > (SPACES - MIN_CLUES)) return 2;
+    if (this.numEmptyCells > (SPACES - MIN_CLUES)) return 3;
+    if (BIT_COUNT_MAP[this.digitsUsed()] < 8) return 4;
 
     const search = new SearchState(this);
     while (search.numSolutions < 2 && search.advanceToSolution());
@@ -2079,6 +2082,23 @@ export class Sudoku {
     });
 
     return this;
+  }
+
+  /**
+   *
+   * @returns {number} Encoded number indicating which digits are in use in this grid.
+   */
+  digitsUsed() {
+    let ds = 0;
+    let bc = 0;
+    for (let ci = 0; ci < SPACES & bc < 9; ci++) {
+      const d = this._digits[ci];
+      if (d > 0 && (ds & ENCODER[d]) === 0) {
+        ds |= ENCODER[d];
+        bc++;
+      }
+    }
+    return ds;
   }
 }
 

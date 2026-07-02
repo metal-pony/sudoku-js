@@ -4,6 +4,21 @@ import puzzles from './puzzles24.json';
 import { range, shuffle } from '../../src/util/arrays.js';
 import { cellRegion, DIGITS, isAreaValid, SearchState, SPACES } from '../../src/sudoku/Sudoku.js';
 
+/**
+ * Get a random number from 0 to upper (exclusive).
+ * @param {number} upper
+ * @returns {number}
+ */
+const rand = (upper) => ((Math.random() * upper) | 0);
+
+
+/**
+ * Get a random sudoku17 puzzle.
+ * @returns {Sudoku}
+ */
+const randomSudoku17 = () => new Sudoku(sudoku17[rand(sudoku17.length)]);
+
+
 // A subset of `puzzles`, chosen at random.
 const SINGLE_SOLUTION_PUZZLES = shuffle(range(puzzles.length)).slice(0, 100).map(i => puzzles[i]);
 
@@ -322,36 +337,30 @@ describe('Sudoku', () => {
   });
 
   describe('solutionsFlag', () => {
-    test('returns 2 for empty puzzles', () => {
-      expect(new Sudoku().solutionsFlag()).toBe(2);
-    });
-
-    test('returns 1 for valid puzzles', () => {
-      SINGLE_SOLUTION_PUZZLES.forEach(p => {
-        expect(new Sudoku(p).solutionsFlag()).toBe(1);
-      });
-    });
-
     test('returns 0 for puzzles with no solutions', () => {
       NO_SOLUTION_PUZZLES.forEach(p => {
         expect(new Sudoku(p).solutionsFlag()).toBe(0);
       });
     });
 
-    test('returns 2 for puzzles with multiple solutions', () => {
-      MULTI_SOLUTION_PUZZLES.forEach(({ puzzleStr }) => {
-        expect(new Sudoku(puzzleStr).solutionsFlag()).toBe(2);
+    describe('returns 1', () => {
+      test('for generated configs', () => {
+        for (let n = 0; n < 10; n++) {
+          expect(Sudoku.generateConfig().solutionsFlag()).toBe(1);
+        }
       });
-    });
 
-    test('returns 1 for generated configs', () => {
-      for (let n = 0; n < 10; n++) {
-        expect(Sudoku.generateConfig().solutionsFlag()).toBe(1);
-      }
-    });
+      test('for valid puzzles', () => {
+        SINGLE_SOLUTION_PUZZLES.forEach(p => {
+          expect(new Sudoku(p).solutionsFlag()).toBe(1);
+        });
 
-    describe('when a config has some non-intersecting digits cleared', () => {
-      test('returns 1', () => {
+        for (let n = 0; n < 10; n++) {
+          expect(randomSudoku17().solutionsFlag()).toBe(1);
+        }
+      });
+
+      test('when a config has some non-intersecting digits cleared', () => {
         const config = Sudoku.generateConfig();
 
         // Collect indices of cells within the diagonal regions
@@ -365,6 +374,25 @@ describe('Sudoku', () => {
           expect(config.solutionsFlag()).toBe(1);
         });
       });
+    });
+
+    test('returns 2 for puzzles with multiple solutions', () => {
+      MULTI_SOLUTION_PUZZLES.forEach(({ puzzleStr }) => {
+        expect(new Sudoku(puzzleStr).solutionsFlag()).toBe(2);
+      });
+    });
+
+    test('returns 3 for puzzles with fewer than 17 clues', () => {
+      for (let n = 0; n < 20; n++) {
+        const s17 = randomSudoku17();
+        for (let ci = 0; ci < SPACES; ci++) {
+          if (s17.getDigit(ci) > 0) {
+            const clone = new Sudoku(s17);
+            clone.setDigit(0, ci);
+            expect(clone.solutionsFlag()).toBe(3);
+          }
+        }
+      }
     });
   });
 
@@ -483,6 +511,7 @@ describe('Sudoku', () => {
           const si = (Math.random() * sudoku17.length) | 0;
           const grid = new Sudoku(sudoku17[si]);
           grid.shake();
+          expect(grid.solutionsFlag()).toBe(1);
           expectGridToBeIrreducable(grid);
         }
 
@@ -490,6 +519,8 @@ describe('Sudoku', () => {
         for (let i = 0; i < 10; i++) {
           const grid = Sudoku.generateConfig();
           grid.shake();
+          expect(grid.solutionsFlag()).toBe(1);
+          expect(new Sudoku(grid.toString()).solutionsFlag()).toBe(1);
           expectGridToBeIrreducable(grid);
           expect(grid.numEmptyCells).toBeGreaterThan(0);
         }
@@ -499,6 +530,7 @@ describe('Sudoku', () => {
         for (let i = 0; i < ENDI; i++) {
           const grid = new Sudoku(SINGLE_SOLUTION_PUZZLES[i]);
           grid.shake();
+          expect(grid.solutionsFlag()).toBe(1);
           expectGridToBeIrreducable(grid);
         }
       });
@@ -508,6 +540,7 @@ describe('Sudoku', () => {
         for (let i = 0; i < 10; i++) {
           const grid = Sudoku.generateConfig();
           grid.shake();
+          expect(grid.solutionsFlag()).toBe(1);
           expect(grid.hasUniqueSolution()).toBe(true);
         }
       });

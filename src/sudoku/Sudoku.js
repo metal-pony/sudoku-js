@@ -266,7 +266,7 @@ class SearchNode {
   pickCell() {
     this.emptyCellIndex = this.sudoku._pickEmptyCell();
     if (this.emptyCellIndex != -1) {
-      this.candidates = this.sudoku._board[this.emptyCellIndex];
+      this.candidates = this.sudoku._candidates[this.emptyCellIndex];
     }
   }
 
@@ -806,7 +806,7 @@ export class Sudoku {
 
     for (let ci = 0; ci < SPACES; ci++) {
       if (this._digits[ci]) continue;
-      this._board[ci] &= ~this._cellConstraints(ci);
+      this._candidates[ci] &= ~this._cellConstraints(ci);
     }
 
     search.init(this);
@@ -839,7 +839,7 @@ export class Sudoku {
    * @throws {Error} If the top row is not fully filled.
    */
   normalize() {
-    if (!isAreaFull(this.rowVals(0))) {
+    if (!isAreaFull(this._digits.slice(0, DIGITS))) {
       throw new Error('Top row must be fully filled before normalizing.');
     }
 
@@ -913,7 +913,7 @@ export class Sudoku {
    */
   allAntiesSolve() {
     for (let ci = 0; ci < SPACES; ci++) {
-      const originalVal = this._board[ci];
+      const originalVal = this._candidates[ci];
       const originalDigit = this._digits[ci];
       // Fail fast if there are any cells with no candidates
       if (originalVal === 0) return false;
@@ -925,7 +925,7 @@ export class Sudoku {
         this.setDigit(candidateDigit, ci); // mutates constraints
         const flag = this.solutionsFlag();
         this.setDigit(0, ci); // undo the constraints mutation
-        this._board[ci] = originalVal;
+        this._candidates[ci] = originalVal;
         this._digits[ci] = originalDigit;
         if (flag === 2) return false;
         if (flag === 1) count++;
@@ -1034,9 +1034,9 @@ export class Sudoku {
    */
   static fromState({ digits, candidates }) {
     const sudoku = new Sudoku(digits);
-    sudoku._board = [...candidates];
+    sudoku._candidates = [...candidates];
     // If any cell lacks valid candidates, mark as invalid.
-    if (sudoku._board.some((val, ci) => (~sudoku._cellConstraints(ci) & val) === 0)) {
+    if (sudoku._candidates.some((val, ci) => (~sudoku._cellConstraints(ci) & val) === 0)) {
       sudoku._isValid = false;
     }
     return sudoku;
@@ -1048,7 +1048,7 @@ export class Sudoku {
    */
   constructor(data = []) {
     /**
-     * The Sudoku board, represented as an array of bit masks, each a length of `NUM_DIGITS` bits.
+     * The sudoku board cell candidates, represented as an array of 9-bit masks.
      * The masks correspond to the candidate values for each cell, e.g.:
      * - `0b000000001` = 1
      * - `0b000000010` = 2
@@ -1057,7 +1057,7 @@ export class Sudoku {
      * - `0b111111111` = all candidates (1 - 9)
      * @type {number[]}
      */
-    this._board;
+    this._candidates;
 
     /** @type {number[]} */
     this._digits;
@@ -1090,20 +1090,20 @@ export class Sudoku {
     this._isValid = true;
 
     if (data instanceof Sudoku) {
-      this._board = [...data._board];
+      this._candidates = [...data._candidates];
       this._digits = [...data._digits];
       this._constraints = [...data._constraints];
       this._numEmptyCells = data._numEmptyCells;
       this._isValid = data._isValid;
     } else if (typeof data === 'string') {
       const parsed = Sudoku.fromString(data);
-      this._board = [...parsed._board];
+      this._candidates = [...parsed._candidates];
       this._digits = [...parsed._digits];
       this._constraints = [...parsed._constraints];
       this._numEmptyCells = parsed._numEmptyCells;
       this._isValid = parsed._isValid;
     } else if (Array.isArray(data)) {
-      this._board = Array(SPACES).fill(ALL);
+      this._candidates = Array(SPACES).fill(ALL);
       this._digits = Array(SPACES).fill(0);
       this._constraints = Array(DIGITS).fill(0);
       if (data.length === SPACES) this.setBoard(data);
@@ -1118,7 +1118,7 @@ export class Sudoku {
    * @returns This sudoku for convenience.
    */
   copyFrom(other) {
-    this._board = [...other._board];
+    this._candidates = [...other._candidates];
     this._digits = [...other._digits];
     this._constraints = [...other._constraints];
     this._numEmptyCells = other._numEmptyCells;
@@ -1137,7 +1137,7 @@ export class Sudoku {
     for (let r = 0; r < DIGITS; r++) {
       const start = r * DIGITS;
       const end = start + DIGITS;
-      const rowValues = this.board.slice(start, end);
+      const rowValues = this._digits.slice(start, end);
       boardRows.push(rowValues);
     }
     return boardRows;
@@ -1175,7 +1175,7 @@ export class Sudoku {
     if (prevDigit === digit) return false;
 
     this._digits[index] = digit;
-    this._board[index] = ENCODER[digit];
+    this._candidates[index] = ENCODER[digit];
 
     if (prevDigit > 0) {
       this._numEmptyCells++;
@@ -1191,7 +1191,9 @@ export class Sudoku {
     }
 
     if (digit === 0) {
-      this._board[index] = ALL ^ this._cellConstraints(index);
+      // PATCHED -- Newly added logic causing incorrect solutnionsFlags
+      // this._candidates[index] = ALL ^ this._cellConstraints(index);
+      this._candidates[index] = ALL;
     }
 
     return true;
@@ -1211,10 +1213,7 @@ export class Sudoku {
 
     // TODO Maybe we don't need to do this
     // The constructor(data == Array) handles this
-    this._numEmptyCells = SPACES;
-    this._board.fill(ALL);
-    this._digits.fill(0);
-    this._constraints.fill(0);
+    this.clear();
 
     digits.forEach((digit, i) => {
       if (typeof digit !== 'number') {
@@ -1246,24 +1245,14 @@ export class Sudoku {
    * @returns {number[]}
    */
   getCandidates(cellIndex) {
-    return CANDIDATE_DECODINGS[this._board[cellIndex]];
+    return CANDIDATE_DECODINGS[this._candidates[cellIndex]];
   }
 
   /**
    * Clears all values and clues on the board. The result will be completely blank.
    */
   clear() {
-    this._board.fill(ALL);
-    this._digits.fill(0);
-    this._constraints.fill(0);
-    this._numEmptyCells = SPACES;
-  }
-
-  /**
-   * Resets the board to its initial clues.
-   */
-  reset() {
-    this._board.fill(ALL);
+    this._candidates.fill(ALL);
     this._digits.fill(0);
     this._constraints.fill(0);
     this._numEmptyCells = SPACES;
@@ -1351,7 +1340,7 @@ export class Sudoku {
    */
   isNormal() {
     for (let ci = 0; ci < DIGITS; ci++) {
-      const digit = decode(this._board[ci]);
+      const digit = decode(this._candidates[ci]);
       if (digit !== (ci + 1)) {
         return false;
       }
@@ -1509,14 +1498,14 @@ export class Sudoku {
     const abEncoded = (aEncoded | bEncoded);
     for (let ci = 0; ci < SPACES; ci++) {
       // Skip if cell has both candidates
-      if ((this._board[ci] & abEncoded) === abEncoded) continue;
+      if ((this._candidates[ci] & abEncoded) === abEncoded) continue;
 
-      if ((this._board[ci] & aEncoded) > 0) {
-        this._board[ci] &= ~aEncoded;
-        this._board[ci] |= bEncoded;
-      } else if ((this._board[ci] & bEncoded) > 0) {
-        this._board[ci] &= ~bEncoded;
-        this._board[ci] |= aEncoded;
+      if ((this._candidates[ci] & aEncoded) > 0) {
+        this._candidates[ci] &= ~aEncoded;
+        this._candidates[ci] |= bEncoded;
+      } else if ((this._candidates[ci] & bEncoded) > 0) {
+        this._candidates[ci] &= ~bEncoded;
+        this._candidates[ci] |= aEncoded;
       }
     }
   }
@@ -1552,7 +1541,7 @@ export class Sudoku {
    * Note: board constraints will be out of sync.
    */
   reflectOverHorizontal() {
-    reflectOverHorizontal(this._board, DIGITS);
+    reflectOverHorizontal(this._candidates, DIGITS);
     reflectOverHorizontal(this._digits, DIGITS);
   }
 
@@ -1562,7 +1551,7 @@ export class Sudoku {
    * Note: board constraints will be out of sync.
    */
   reflectOverVertical() {
-    reflectOverVertical(this._board, DIGITS);
+    reflectOverVertical(this._candidates, DIGITS);
     reflectOverVertical(this._digits, DIGITS);
   }
 
@@ -1572,7 +1561,7 @@ export class Sudoku {
    * Note: board constraints will be out of sync.
    */
   reflectOverDiagonal() {
-    reflectOverDiagonal(this._board);
+    reflectOverDiagonal(this._candidates);
     reflectOverDiagonal(this._digits);
   }
 
@@ -1582,7 +1571,7 @@ export class Sudoku {
    * Note: board constraints will be out of sync.
    */
   reflectOverAntidiagonal() {
-    reflectOverAntiDiagonal(this._board);
+    reflectOverAntiDiagonal(this._candidates);
     reflectOverAntiDiagonal(this._digits);
   }
 
@@ -1592,7 +1581,7 @@ export class Sudoku {
    * Note: board constraints will be out of sync.
    */
   rotate90() {
-    rotateArr90(this._board);
+    rotateArr90(this._candidates);
     rotateArr90(this._digits);
   }
 
@@ -1612,9 +1601,9 @@ export class Sudoku {
 
     const N = DIGITS * 3;
     const bands = [
-      this._board.slice(0, N),
-      this._board.slice(N, N*2),
-      this._board.slice(N*2, N*3)
+      this._candidates.slice(0, N),
+      this._candidates.slice(N, N*2),
+      this._candidates.slice(N*2, N*3)
     ];
     const digits = [
       this._digits.slice(0, N),
@@ -1624,7 +1613,7 @@ export class Sudoku {
 
     swap(bands, b1, b2);
     swap(digits, b1, b2);
-    this._board = bands.flat();
+    this._candidates = bands.flat();
     this._digits = digits.flat();
   }
 
@@ -1645,11 +1634,11 @@ export class Sudoku {
     }
 
     const N = DIGITS;
-    const rows = range(DIGITS).map(i => this._board.slice(N*i, N*(i+1)));
+    const rows = range(DIGITS).map(i => this._candidates.slice(N*i, N*(i+1)));
     const digitRows = range(DIGITS).map(i => this._digits.slice(N*i, N*(i+1)));
     swap(rows, r1, r2);
     swap(digitRows, r1, r2);
-    this._board = rows.flat();
+    this._candidates = rows.flat();
     this._digits = digitRows.flat();
   }
 
@@ -1671,9 +1660,9 @@ export class Sudoku {
 
     let temp;
     for (let r = 0; r < DIGITS; r++) {
-      temp = this._board[r * DIGITS + c1];
-      this._board[r * DIGITS + c1] = this._board[r * DIGITS + c2];
-      this._board[r * DIGITS + c2] = temp;
+      temp = this._candidates[r * DIGITS + c1];
+      this._candidates[r * DIGITS + c1] = this._candidates[r * DIGITS + c2];
+      this._candidates[r * DIGITS + c2] = temp;
 
       temp = this._digits[r * DIGITS + c1];
       this._digits[r * DIGITS + c1] = this._digits[r * DIGITS + c2];
@@ -1711,7 +1700,7 @@ export class Sudoku {
     this._isValid = true;
     for (let i = 0; i < SPACES; i++) {
       if (this._digits[i] > 0) {
-        if (this._cellConstraints(i) & this._board[i]) {
+        if (this._cellConstraints(i) & this._candidates[i]) {
           this._isValid = false;
         }
         this._addConstraint(i, this._digits[i]);
@@ -1725,7 +1714,7 @@ export class Sudoku {
   _resetEmptyCells() {
     for (let i = 0; i < SPACES; i++) {
       if (this._digits[i] === 0) {
-        this._board[i] = ALL;
+        this._candidates[i] = ALL;
       }
     }
   };
@@ -1765,22 +1754,22 @@ export class Sudoku {
    */
   _reduceCell(ci) {
     if (this._digits[ci] > 0) return false;
-    const originalCandidates = this._board[ci];
-    this._board[ci] &= ~this._cellConstraints(ci);
+    const originalCandidates = this._candidates[ci];
+    this._candidates[ci] &= ~this._cellConstraints(ci);
 
     // If there are no more candidates for the cell, the board is invalid.
-    if (this._board[ci] <= 0) {
+    if (this._candidates[ci] <= 0) {
       this._isValid = false;
       this.setDigit(0, ci);
       return false;
     }
 
-    if (isDigit(this._board[ci])) {
-      this.setDigit(decode(this._board[ci]), ci);
+    if (isDigit(this._candidates[ci])) {
+      this.setDigit(decode(this._candidates[ci]), ci);
     }
 
     // Propagate to neighboring cells if there was any reduction to the cell.
-    if (this._board[ci] < originalCandidates) {
+    if (this._candidates[ci] < originalCandidates) {
       for (let ni of CELL_NEIGHBORS[ci]) {
         if (this._digits[ni] === 0) this._reduceCell(ni);
       }
@@ -1794,10 +1783,10 @@ export class Sudoku {
    * @returns {number} The unique candidate digit; or 0 if none.
    */
   _checkHiddenSingles(ci) {
-    for (let candidate of CANDIDATES[this._board[ci]]) {
+    for (let candidate of CANDIDATES[this._candidates[ci]]) {
       let unique = true;
       for (let ni of ROW_NEIGHBORS[ci]) {
-        if (this._board[ni] & candidate) {
+        if (this._candidates[ni] & candidate) {
           unique = false;
           break;
         }
@@ -1806,7 +1795,7 @@ export class Sudoku {
 
       unique = true;
       for (let ni of COL_NEIGHBORS[ci]) {
-        if (this._board[ni] & candidate) {
+        if (this._candidates[ni] & candidate) {
           unique = false;
           break;
         }
@@ -1815,7 +1804,7 @@ export class Sudoku {
 
       unique = true;
       for (let ni of REGION_NEIGHBORS[ci]) {
-        if (this._board[ni] & candidate) {
+        if (this._candidates[ni] & candidate) {
           unique = false;
           break;
         }
@@ -1839,7 +1828,7 @@ export class Sudoku {
     let _minimums = [];
     for (let ci = 0; ci < SPACES; ci++) {
       if (this._digits[ci] === 0) {
-        const numCandidates = BIT_COUNT_MAP[this._board[ci]];
+        const numCandidates = BIT_COUNT_MAP[this._candidates[ci]];
         if (numCandidates < minNumCandidates) {
           minNumCandidates = numCandidates;
           _minimums = [ci];
@@ -1874,7 +1863,8 @@ export class Sudoku {
    */
   solutionsFlag() {
     if (!this.isValid()) return 0;
-    if (this.numEmptyCells > (SPACES - MIN_CLUES)) return 2;
+    if (this.numEmptyCells > (SPACES - MIN_CLUES)) return 3;
+    if (BIT_COUNT_MAP[this.digitsUsed()] < 8) return 4;
 
     const search = new SearchState(this);
     while (search.numSolutions < 2 && search.advanceToSolution());
@@ -2035,7 +2025,7 @@ export class Sudoku {
       // Get all empty cells of minimum candidates
       let minNumCandidates = DIGITS + 1;
       let candyBucket = [];
-      sudoku._board.forEach((candidates, ci) => {
+      sudoku._candidates.forEach((candidates, ci) => {
         const numCandidates = BIT_COUNT_MAP[candidates];
         if (numCandidates > 1) {
           if (numCandidates < minNumCandidates) {
@@ -2049,7 +2039,7 @@ export class Sudoku {
 
       // For each empty cell collected, create nodes for each candidate
       candyBucket.forEach(emptyCi => {
-        CANDIDATE_DECODINGS[sudoku._board[emptyCi]].forEach(digit => {
+        CANDIDATE_DECODINGS[sudoku._candidates[emptyCi]].forEach(digit => {
           const nextSudoku = new Sudoku(sudoku);
           nextSudoku.setDigit(digit, emptyCi);
           nextSudoku._reduce();
@@ -2092,6 +2082,23 @@ export class Sudoku {
     });
 
     return this;
+  }
+
+  /**
+   *
+   * @returns {number} Encoded number indicating which digits are in use in this grid.
+   */
+  digitsUsed() {
+    let ds = 0;
+    let bc = 0;
+    for (let ci = 0; ci < SPACES & bc < 9; ci++) {
+      const d = this._digits[ci];
+      if (d > 0 && (ds & ENCODER[d]) === 0) {
+        ds |= ENCODER[d];
+        bc++;
+      }
+    }
+    return ds;
   }
 }
 

@@ -444,6 +444,109 @@ export class SearchState {
  */
 export class Sudoku {
   /**
+   * Swaps the given bands by index (0, 1, or 2).
+   * @param {number[]} arr
+   * @param {number} band1
+   * @param {number} band2
+   * @returns {number[]}
+   */
+  static swapBands(arr, band1, band2) {
+    const b1 = band1 % 3;
+    const b2 = band2 % 3;
+    if (b1 === b2) return;
+
+    const band1Start = 27 * b1;
+    const band2Start = 27 * b2;
+    let temp;
+    for (let i = 0; i < 27; i++) {
+      temp = arr[band1Start + i];
+      arr[band1Start + i] = arr[band2Start + i];
+      arr[band2Start + i] = temp;
+    }
+
+    return arr;
+  }
+
+  /**
+   * Swaps the given rows by index (0 through 8).
+   * @param {number[]} arr
+   * @param {number} row1
+   * @param {number} row2
+   * @returns {number[]}
+   */
+  static swapRows(arr, row1, row2) {
+    const r1 = row1 % DIGITS;
+    const r2 = row2 % DIGITS;
+    if (r1 === r2) return;
+    if (((r1/3)|0) !== ((r2/3)|0)) throw Error('rows must be in the same band');
+
+    const r1Start = DIGITS * r1;
+    const r2Start = DIGITS * r2;
+    let temp;
+    for (let i = 0; i < DIGITS; i++) {
+      temp = arr[r1Start + i];
+      arr[r1Start + i] = arr[r2Start + i];
+      arr[r2Start + i] = temp;
+    }
+
+    return arr;
+  }
+
+  /**
+   * Swaps the given columns by index (0 through 8).
+   * @param {number[]} arr
+   * @param {number} col1
+   * @param {number} col2
+   * @returns {number[]}
+   */
+  static swapColumns(arr, col1, col2) {
+    const c1 = col1 % DIGITS;
+    const c2 = col2 % DIGITS;
+    if (c1 === c2) return;
+    if (((c1/3)|0) !== ((c2/3)|0)) throw Error(`columns must be in the same stack (${col1}, ${col2})`);
+
+    let temp;
+    for (let i = 0; i < SPACES; i+=DIGITS) {
+      temp = arr[i + c1];
+      arr[i + c1] = arr[i + c2];
+      arr[i + c2] = temp;
+    }
+
+    return arr;
+  }
+
+  /**
+   * Swaps the given stacks by index (0, 1, or 2).
+   * @param {number[]} arr
+   * @param {number} stack1
+   * @param {number} stack2
+   * @returns {number[]}
+   */
+  static swapStacks(arr, stack1, stack2) {
+    const s1 = stack1 % 3;
+    const s2 = stack2 % 3;
+    if (s1 === s2) return;
+
+    const col1Start = s1 * 3;
+    const col2Start = s2 * 3;
+    let temp;
+
+    for (let row = 0; row < DIGITS; row++) {
+      const rowOffset = row * DIGITS;
+      for (let col = 0; col < 3; col++) {
+        const idx1 = rowOffset + col1Start + col;
+        const idx2 = rowOffset + col2Start + col;
+
+        temp = arr[idx1];
+        arr[idx1] = arr[idx2];
+        arr[idx2] = temp;
+      }
+    }
+
+    return arr;
+  }
+
+  /**
    * Determines whether the given string represents a sudoku board, i.e. the
    * string is of proper length and contains only digits.
    *
@@ -1610,28 +1713,8 @@ export class Sudoku {
    * @param {number} band2
    */
   swapBands(band1, band2) {
-    const b1 = band1 % 3;
-    const b2 = band2 % 3;
-    if (b1 === b2) {
-      return;
-    }
-
-    const N = DIGITS * 3;
-    const bands = [
-      this._candidates.slice(0, N),
-      this._candidates.slice(N, N*2),
-      this._candidates.slice(N*2, N*3)
-    ];
-    const digits = [
-      this._digits.slice(0, N),
-      this._digits.slice(N, N*2),
-      this._digits.slice(N*2, N*3),
-    ];
-
-    swap(bands, b1, b2);
-    swap(digits, b1, b2);
-    this._candidates = bands.flat();
-    this._digits = digits.flat();
+    Sudoku.swapBands(this._digits, band1, band2);
+    Sudoku.swapBands(this._candidates, band1, band2);
   }
 
   /**
@@ -1644,19 +1727,8 @@ export class Sudoku {
    * @param {number} row2
    */
   swapRows(row1, row2) {
-    const r1 = row1 % DIGITS;
-    const r2 = row2 % DIGITS;
-    if (r1 === r2) {
-      return;
-    }
-
-    const N = DIGITS;
-    const rows = range(DIGITS).map(i => this._candidates.slice(N*i, N*(i+1)));
-    const digitRows = range(DIGITS).map(i => this._digits.slice(N*i, N*(i+1)));
-    swap(rows, r1, r2);
-    swap(digitRows, r1, r2);
-    this._candidates = rows.flat();
-    this._digits = digitRows.flat();
+    Sudoku.swapRows(this._digits, row1, row2);
+    Sudoku.swapRows(this._candidates, row1, row2);
   }
 
   /**
@@ -1669,22 +1741,8 @@ export class Sudoku {
    * @param {number} col2
    */
   swapColumns(col1, col2) {
-    const c1 = col1 % DIGITS;
-    const c2 = col2 % DIGITS;
-    if (c1 === c2) {
-      return;
-    }
-
-    let temp;
-    for (let r = 0; r < DIGITS; r++) {
-      temp = this._candidates[r * DIGITS + c1];
-      this._candidates[r * DIGITS + c1] = this._candidates[r * DIGITS + c2];
-      this._candidates[r * DIGITS + c2] = temp;
-
-      temp = this._digits[r * DIGITS + c1];
-      this._digits[r * DIGITS + c1] = this._digits[r * DIGITS + c2];
-      this._digits[r * DIGITS + c2] = temp;
-    }
+    Sudoku.swapColumns(this._digits, col1, col2);
+    Sudoku.swapColumns(this._candidates, col1, col2);
   }
 
   /**
@@ -1695,15 +1753,8 @@ export class Sudoku {
    * @param {number} stack2
    */
   swapStacks(stack1, stack2) {
-    const s1 = stack1 % 3;
-    const s2 = stack2 % 3;
-    if (s1 === s2) {
-      return;
-    }
-
-    this.swapColumns(s1*3, s2*3);
-    this.swapColumns(s1*3 + 1, s2*3 + 1);
-    this.swapColumns(s1*3 + 2, s2*3 + 2);
+    Sudoku.swapStacks(this._digits, stack1, stack2);
+    Sudoku.swapStacks(this._candidates, stack1, stack2);
   }
 
   /**

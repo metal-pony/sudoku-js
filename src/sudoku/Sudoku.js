@@ -10,10 +10,12 @@ import {
   swap,
   chooseRandom,
   countBigBits,
-  countBits
+  countBits,
+  randInt
 } from '../util/arrays.js';
 import { randomBitCombo } from '@metal-pony/counting-js';
 import SudokuSieve, { searchForItemsFromMask, seedSieveDc } from './SudokuSieve.js';
+import { NCK, randomBig } from '../util/combos.js';
 
 export const RANK = 3;
 /** The number of digits used in sudoku.*/
@@ -74,6 +76,17 @@ export function cellsFromMask(mask) {
 }
 
 const CELL_MASKS = range(SPACES).map((cellIndex) => (1n << (BigInt(SPACES - cellIndex - 1))));
+/**
+ * Maps each cell index to a mask representing it and its symmetric counterpart cell.
+ * If `ci` is a cell index, then its counterpart is at position 80 - ci.
+ */
+const CELL_MASK_COMPLEMENTS = range(SPACES).map((cellIndex) => {
+  return (
+    (1n << (BigInt(SPACES - cellIndex - 1))) |
+    (1n << (BigInt(cellIndex)))
+  );
+});
+
 /**
  * Encodes a cell index as a bitmask.
  *
@@ -1191,7 +1204,7 @@ export class Sudoku {
     }
 
     if (digit === 0) {
-      // PATCHED -- Newly added logic causing incorrect solutnionsFlags
+      // PATCHED -- Newly added logic causing incorrect solutionsFlags
       // this._candidates[index] = ALL ^ this._cellConstraints(index);
       this._candidates[index] = ALL;
     }
@@ -2060,12 +2073,13 @@ export class Sudoku {
    * until the board is as empty as possible without becoming unsolvable. This method
    * modifies the current Sudoku instance.
    *
-   * @returns {Sudoku} This Sudoku instance.
+   * @returns {boolean} Whether the sudoku instance was changed as a result of shaking.
    */
   shake() {
     // If this grid does not have a unique solution, return immediately.
-    if (!this.hasUniqueSolution()) return;
+    if (!this.hasUniqueSolution()) return false;
 
+    let removedCount = 0;
     const clonedSudoku = new Sudoku(this);
     shuffle(range(SPACES)).forEach((ci) => {
       // Skip if the cell is already empty.
@@ -2075,13 +2089,65 @@ export class Sudoku {
       clonedSudoku.setDigit(0, ci);
       if (clonedSudoku.hasUniqueSolution()) {
         this.setDigit(0, ci);
-      } else {
-        // Multiple solutions; revert clone state.
-        clonedSudoku.copyFrom(this);
+        removedCount++;
       }
+      clonedSudoku.copyFrom(this);
     });
 
-    return this;
+    return removedCount > 0;
+  }
+
+  /**
+   * Builds a random palindrome mask with the given bitCount.
+   * @param {number} bitCount
+   */
+  static randomPalindrome(bitCount) {
+    const n = 40;
+    if (bitCount < 0 || bitCount > SPACES) {
+      throw new Error(`bitCount out of range: ${bitCount}; (min: 0, max: ${SPACES})`);
+    }
+    const k = (bitCount / 2) | 0;
+    const rLimit = NCK(n, k);
+    return Sudoku.palindrome(bitCount, randomBig(rLimit));
+  }
+
+  /**
+   * Builds the r'th palindrome mask with the given bitCount.
+   * The binary of the returned uint_81 will read as a palindrome.
+   * @param {number} bitCount
+   * @param {bigint} r A number between 0 and (40 choose bitCount/2).
+   * @returns {bigint}
+   */
+  static palindrome(bitCount, r) {
+    const n = 40;
+    // Validate bitCount and r
+    if (bitCount < 0 || bitCount > SPACES) {
+      throw new Error(`bitCount out of range: ${bitCount}; (min: 0, max: ${SPACES})`);
+    }
+    const k = (bitCount / 2) | 0;
+    const nck = NCK(n, k);
+    if (r < 0n) throw new Error(`r must be nonnegative.`);
+    if (r >= nck) throw new Error(`r too large; (max: ${nck})`);
+
+    let bc = 0n;
+    let _r = Number(r);
+
+    for (let _n = n - 1, _k = k - 1; _n >= 0 && _k >= 0; _n--) {
+      const _nck = NCK(_n, _k);
+      if (_r < _nck) {
+        bc |= CELL_MASK_COMPLEMENTS[_n];
+        _k--;
+      } else {
+        _r -= _nck;
+      }
+    }
+
+    // If bitCount is odd, set the middle bit (40).
+    if ((bitCount % 2) > 0) {
+      bc |= (1n << 40n);
+    }
+
+    return bc;
   }
 
   /**

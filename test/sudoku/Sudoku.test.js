@@ -1,4 +1,4 @@
-import { randomCombo } from '@metal-pony/counting-js';
+import { nChooseK, randomCombo } from '@metal-pony/counting-js';
 import { Sudoku, sudoku17 } from '../../index.js';
 import puzzles from './puzzles24.json';
 import { range, shuffle } from '../../src/util/arrays.js';
@@ -239,6 +239,144 @@ describe('Sudoku', () => {
         expect(puzzle.solutionsFlag()).toBe(1);
       }
     });
+
+    describe('palindrome', () => {
+      describe('expected error', () => {
+        test('when bitCount is negative', () => {
+          expect(() => {Sudoku.palindrome(-1, 0n)}).toThrow(/bitCount out of range.+/);
+          expect(() => {Sudoku.palindrome(-2, 0n)}).toThrow(/bitCount out of range.+/);
+          expect(() => {Sudoku.palindrome(-100, 50n)}).toThrow(/bitCount out of range.+/);
+        });
+
+        test('when bitCount is too large', () => {
+          expect(() => {Sudoku.palindrome(82, 0n)}).toThrow(/bitCount out of range.+/);
+          expect(() => {Sudoku.palindrome(83, 0n)}).toThrow(/bitCount out of range.+/);
+          expect(() => {Sudoku.palindrome(100, 0n)}).toThrow(/bitCount out of range.+/);
+        });
+
+        test('when r is negative', () => {
+          expect(() => {Sudoku.palindrome(27, -1n)}).toThrow(/r must be nonnegative.+/);
+          expect(() => {Sudoku.palindrome(27, -2n)}).toThrow(/r must be nonnegative.+/);
+          expect(() => {Sudoku.palindrome(27, -100n)}).toThrow(/r must be nonnegative.+/);
+        });
+
+        test('when r is too large', () => {
+          expect(() => {Sudoku.palindrome(0, 1n)}).toThrow(/r too large.+/);
+          expect(() => {Sudoku.palindrome(81, 1n)}).toThrow(/r too large.+/);
+          expect(() => {Sudoku.palindrome(21, nChooseK(40,21))}).toThrow(/r too large.+/);
+          expect(() => {Sudoku.palindrome(27, nChooseK(40,27) + 1n)}).toThrow(/r too large.+/);
+        });
+      });
+
+      const FULL_MASK = (1n<<81n) - 1n;
+      const MIDDLE_BIT_MASK = 1n<<40n;
+      describe('when bitCount is min (0)', () => {
+        test('returns empty mask', () => {
+          expect(Sudoku.palindrome(0, 0n)).toBe(0n);
+        });
+      });
+      describe('when bitCount is 1', () => {
+        test('returns mask with middle bit set', () => {
+          expect(Sudoku.palindrome(1, 0n)).toBe(MIDDLE_BIT_MASK);
+        });
+      });
+      describe('when bitCount is 80', () => {
+        test('returns full mask with middle bit unset', () => {
+          expect(Sudoku.palindrome(80, 0n)).toBe(FULL_MASK & ~MIDDLE_BIT_MASK);
+        });
+      });
+      describe('when bitCount is max (81)', () => {
+        test('returns full mask', () => {
+          expect(Sudoku.palindrome(81, 0n)).toBe(FULL_MASK);
+        });
+      });
+
+      test('results in uint_81 binary read as palindrome', () => {
+        const bitCount = 6;
+        const k = (bitCount / 2) | 0;
+        const nck = nChooseK(40, k);
+
+        for (let r = 0n; r < nck; r++) {
+          const pali = Sudoku.palindrome(bitCount, r);
+          const paliStr = pali.toString(2).padStart(SPACES, '0');
+
+          // Check if string is a palindrome
+          for (let i = 0; i < 40; i++) {
+            if (paliStr.charAt(i) !== paliStr.charAt(SPACES - 1 - i)) {
+              throw Error(
+                `
+                Non-palindrome returned:
+                Sudoku.palindrome(${bitCount}, ${r}):
+                ${paliStr}
+                ${' '.repeat(i)}^${' '.repeat((40 - (i+1))*2 + 1)}^
+                `
+              );
+            }
+          }
+        }
+      });
+    });
+
+    describe('randomPalindrome', () => {
+      describe('expected error', () => {
+        test('when bitCount is negative', () => {
+          expect(() => {Sudoku.randomPalindrome(-1)}).toThrow(/bitCount out of range.+/);
+          expect(() => {Sudoku.randomPalindrome(-2)}).toThrow(/bitCount out of range.+/);
+          expect(() => {Sudoku.randomPalindrome(-100)}).toThrow(/bitCount out of range.+/);
+        });
+
+        test('when bitCount is too large', () => {
+          expect(() => {Sudoku.randomPalindrome(82)}).toThrow(/bitCount out of range.+/);
+          expect(() => {Sudoku.randomPalindrome(83)}).toThrow(/bitCount out of range.+/);
+          expect(() => {Sudoku.randomPalindrome(100)}).toThrow(/bitCount out of range.+/);
+        });
+      });
+
+      const FULL_MASK = (1n<<81n) - 1n;
+      const MIDDLE_BIT_MASK = 1n<<40n;
+      describe('when bitCount is min (0)', () => {
+        test('returns empty mask', () => {
+          expect(Sudoku.randomPalindrome(0)).toBe(0n);
+        });
+      });
+      describe('when bitCount is 1', () => {
+        test('returns mask with middle bit set', () => {
+          expect(Sudoku.randomPalindrome(1)).toBe(MIDDLE_BIT_MASK);
+        });
+      });
+      describe('when bitCount is 80', () => {
+        test('returns full mask with middle bit unset', () => {
+          expect(Sudoku.randomPalindrome(80)).toBe(FULL_MASK & ~MIDDLE_BIT_MASK);
+        });
+      });
+      describe('when bitCount is max (81)', () => {
+        test('returns full mask', () => {
+          expect(Sudoku.randomPalindrome(81)).toBe(FULL_MASK);
+        });
+      });
+
+      test('results in uint_81 binary read as palindrome', () => {
+        for (let t = 0; t < 100; t++) {
+          const bitCount = rand(SPACES + 1);
+          const pali = Sudoku.randomPalindrome(bitCount);
+          const paliStr = pali.toString(2).padStart(SPACES, '0');
+
+          // Check if string is a palindrome
+          for (let i = 0; i < 40; i++) {
+            if (paliStr.charAt(i) !== paliStr.charAt(SPACES - 1 - i)) {
+              throw Error(
+                `
+                Non-palindrome returned:
+                Sudoku.randomPalindrome(${bitCount}):
+                ${paliStr}
+                ${' '.repeat(i)}^${' '.repeat((40 - (i+1))*2 + 1)}^
+                `
+              );
+            }
+          }
+        }
+      });
+    });
   });
 
   describe('setBoard', () => {
@@ -460,9 +598,7 @@ describe('Sudoku', () => {
       const grid = new Sudoku();
       // Copy of grid to preserve original state for comparison.
       const originalGridCopy = new Sudoku(grid);
-
-      grid.shake();
-
+      expect(grid.shake()).toBe(false);
       expect(grid).toStrictEqual(originalGridCopy);
     });
 
@@ -473,21 +609,21 @@ describe('Sudoku', () => {
       grid.setDigit(1, 0);
       grid.setDigit(1, 1);
       const originalGridCopy = new Sudoku(grid);
-      grid.shake();
+      expect(grid.shake()).toBe(false);
       expect(grid).toStrictEqual(originalGridCopy);
 
       // Test with NO_SOLUTION_PUZZLES and MULTI_SOLUTION_PUZZLES
       NO_SOLUTION_PUZZLES.forEach(p => {
         const grid = new Sudoku(p);
         const originalGridCopy = new Sudoku(grid);
-        grid.shake();
+        expect(grid.shake()).toBe(false);
         expect(grid).toStrictEqual(originalGridCopy);
       });
 
       MULTI_SOLUTION_PUZZLES.forEach(({ puzzleStr }) => {
         const grid = new Sudoku(puzzleStr);
         const originalGridCopy = new Sudoku(grid);
-        grid.shake();
+        expect(grid.shake()).toBe(false);
         expect(grid).toStrictEqual(originalGridCopy);
       });
     });
@@ -505,12 +641,12 @@ describe('Sudoku', () => {
     };
 
     describe('when grid is valid', () => {
-      test('no remaining digit can be removed', () => {
+      test('no digit remaining after shake can be removed', () => {
         // Test with several puzzle from the sudoku-17 file.
         for (let i = 0; i < 10; i++) {
           const si = (Math.random() * sudoku17.length) | 0;
           const grid = new Sudoku(sudoku17[si]);
-          grid.shake();
+          expect(grid.shake()).toBe(false);
           expect(grid.solutionsFlag()).toBe(1);
           expectGridToBeIrreducable(grid);
         }
@@ -518,7 +654,7 @@ describe('Sudoku', () => {
         // Test several times with generated configs.
         for (let i = 0; i < 10; i++) {
           const grid = Sudoku.generateConfig();
-          grid.shake();
+          expect(grid.shake()).toBe(true);
           expect(grid.solutionsFlag()).toBe(1);
           expect(new Sudoku(grid.toString()).solutionsFlag()).toBe(1);
           expectGridToBeIrreducable(grid);
@@ -529,7 +665,13 @@ describe('Sudoku', () => {
         const ENDI = Math.min(10, SINGLE_SOLUTION_PUZZLES.length);
         for (let i = 0; i < ENDI; i++) {
           const grid = new Sudoku(SINGLE_SOLUTION_PUZZLES[i]);
-          grid.shake();
+          const origEmptyCells = grid.numEmptyCells;
+          const result = grid.shake();
+          if (result) {
+            expect(grid.numEmptyCells).toBeGreaterThan(origEmptyCells);
+          } else {
+            expect(grid.numEmptyCells).toBe(origEmptyCells);
+          }
           expect(grid.solutionsFlag()).toBe(1);
           expectGridToBeIrreducable(grid);
         }

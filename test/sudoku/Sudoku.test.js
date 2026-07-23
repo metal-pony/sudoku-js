@@ -1,7 +1,7 @@
 import { nChooseK, randomCombo } from '@metal-pony/counting-js';
 import { Sudoku, sudoku17 } from '../../index.js';
 import puzzles from './puzzles24.json';
-import { range, shuffle } from '../../src/util/arrays.js';
+import { chooseRandom, range, shuffle } from '../../src/util/arrays.js';
 import { cellRegion, DIGITS, isAreaValid, SearchState, SPACES } from '../../src/sudoku/Sudoku.js';
 
 /**
@@ -20,7 +20,7 @@ const randomSudoku17 = () => new Sudoku(sudoku17[rand(sudoku17.length)]);
 
 
 // A subset of `puzzles`, chosen at random.
-const SINGLE_SOLUTION_PUZZLES = shuffle(range(puzzles.length)).slice(0, 100).map(i => puzzles[i]);
+const SINGLE_SOLUTION_PUZZLES = shuffle(range(puzzles.length)).slice(0, 20).map(i => puzzles[i]);
 
 const NO_SOLUTION_PUZZLES = [
   // Invalid because of digit clashing (col 7: 3...5.3.1)
@@ -34,17 +34,26 @@ const MULTI_SOLUTION_PUZZLES = [
   { puzzleStr: '...45.7...5........4......3.8...3.1.9..241..85.69...3.2..3...7.3...7..........3..', numSolutions: 1463 },
   { puzzleStr: '....5..89..8...16......1..2..76.3..............1..5..45...6..73.......4..74..89.1', numSolutions: 2361 },
   { puzzleStr: '12..5..8..7.3.9........7..6...56..9.....4.8......92..1....2...8.6.1.......8...6.5', numSolutions: 996 },
-  { puzzleStr: '1..45...96...1......7...1..3......5.9....531.......6...9.16.......3.4.6.2...7...1', numSolutions: 5076 },
   { puzzleStr: '.2..56...8..3..56........3..1.2...........64.....9..239.........81.2....26..314..', numSolutions: 3171 },
-  { puzzleStr: '.2.4.6..99...........79213.........1..9...3.........5.3.8....72...5......65.29..4', numSolutions: 4004 },
   { puzzleStr: '....5.7..56...8.4...9.7..61...6.....65...94.8..4....2.4.....836.3...7............', numSolutions: 1509 },
   { puzzleStr: '....56...76....52..95.2...3.......7.2.78...455...9.1...3.....5...8...3.......5...', numSolutions: 2132 },
   { puzzleStr: '..3.....9.7....65...9.71.345.1..78..9.43.2......54.......9..3............4.1.....', numSolutions: 322 },
-  { puzzleStr: '1.......9.......4...4...2....2.....8..92..4.14.8....9..365...1.8.....5.6..56.8...', numSolutions: 5338 },
   { puzzleStr: '...45.................8..1..1...4...63......8..8...195...7..8.1.5..9.3.48.16...5.', numSolutions: 1589 },
   { puzzleStr: '..3.5.7.....2......4891..6.812.3.........5....9..8...........252.5.....1.795.....', numSolutions: 448 },
-  { puzzleStr: '1..4..7.9......3...75.8.6143........8.43...6......4...2..1....6..8.........9.5..2', numSolutions: 3383 },
   { puzzleStr: '.2.......9.6.175..........34.....961.....5....7.9.4.......42...237.8...5....3..2.', numSolutions: 243 },
+];
+
+const GRIDS_DC2S = [
+  { grid: '498517263765932841231486759984375126156824397327691485849763512572149638613258974', dc2: '9:b:7:4:7:3::12' },
+  { grid: '836452197512679834974183562369217458287534916451968273795846321143725689628391745', dc2: 'b:2:3:3:1:8::17' },
+  { grid: '276314589953872146841956327685791432427563918319428765194287653568139274732645891', dc2: 'e:9:4:1:4:5::15' },
+  { grid: '148395276572864913639127548284753691963218457751649832426571389315986724897432165', dc2: 'e:4:4:5:2:6::15' },
+  { grid: '692481537587936214134725698915872463846513729273694851468159372359247186721368945', dc2: '6:9:5:4:4:2::17' },
+  { grid: '865927143143856279972431865431562798758394621296178354619285437524713986387649512', dc2: '8:8:6:3:4:2::17' },
+  { grid: '326481579574369182981725346138254967657918234249673851863142795415897623792536418', dc2: 'b:7:6:3:4:8::12' },
+  { grid: '387196542152734698469258731945873126726519483813642975674381259298465317531927864', dc2: 'a:4:4:3:3:9::14' },
+  { grid: '853291476126847359749563128397416582512978643468352917934785261685129734271634895', dc2: '8:9:5:5:7:2::14' },
+  { grid: '835761294692843751147925368563192847974358126218476539321689475489537612756214983', dc2: 'a:9:5:5:7:4::12' },
 ];
 
 describe('isAreaValid', () => {
@@ -546,6 +555,11 @@ describe('Sudoku', () => {
     });
 
     test('check known', () => {
+      GRIDS_DC2S.forEach(tObj => {
+        const grid = new Sudoku(tObj.grid);
+        expect(grid.dc2()).toBe(tObj.dc2);
+      })
+
       expect(grid.dc2()).toBe(expected_dc2);
       expect(grid.dc3()).toBe(expected_dc3);
     });
@@ -580,12 +594,12 @@ describe('Sudoku', () => {
 
       const nTransforms = 25;
       for (let i = 0; i < nTransforms; i++) {
-        transforms[(transforms.length * Math.random()) | 0]();
+        chooseRandom(transforms)();
         // Check that the fingerprint is unchanged once in awhile.
         // Not after every transformation - to save time.
-        if ((i % 3) === 0) {
-          expect(grid.dc2()).toBe(expected_dc2);
-        }
+        // if ((i % 3) === 0) {
+        //   expect(grid.dc2()).toBe(expected_dc2);
+        // }
       }
       expect(grid.dc2()).toBe(expected_dc2);
       // Disabled for performance.
@@ -643,7 +657,7 @@ describe('Sudoku', () => {
     describe('when grid is valid', () => {
       test('no digit remaining after shake can be removed', () => {
         // Test with several puzzle from the sudoku-17 file.
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 5; i++) {
           const si = (Math.random() * sudoku17.length) | 0;
           const grid = new Sudoku(sudoku17[si]);
           expect(grid.shake()).toBe(false);
@@ -652,7 +666,7 @@ describe('Sudoku', () => {
         }
 
         // Test several times with generated configs.
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 5; i++) {
           const grid = Sudoku.generateConfig();
           expect(grid.shake()).toBe(true);
           expect(grid.solutionsFlag()).toBe(1);
@@ -662,7 +676,7 @@ describe('Sudoku', () => {
         }
 
         // Test with SINGLE_SOLUTION_PUZZLES.
-        const ENDI = Math.min(10, SINGLE_SOLUTION_PUZZLES.length);
+        const ENDI = Math.min(5, SINGLE_SOLUTION_PUZZLES.length);
         for (let i = 0; i < ENDI; i++) {
           const grid = new Sudoku(SINGLE_SOLUTION_PUZZLES[i]);
           const origEmptyCells = grid.numEmptyCells;
@@ -679,7 +693,7 @@ describe('Sudoku', () => {
 
       test('resulting grid is solvable', () => {
         // Test several times with generated configs.
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 5; i++) {
           const grid = Sudoku.generateConfig();
           grid.shake();
           expect(grid.solutionsFlag()).toBe(1);

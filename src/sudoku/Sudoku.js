@@ -1161,6 +1161,10 @@ export class Sudoku {
     return this._numEmptyCells;
   }
 
+  get numClues() {
+    return SPACES - this._numEmptyCells;
+  }
+
   /**
    * Returns a mapping of cell indices to a count of how
    * many areas the cell is invalid in.

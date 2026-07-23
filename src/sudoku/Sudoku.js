@@ -1575,6 +1575,8 @@ export class Sudoku {
       cols.push({ i, j: (Math.random() * (i+1)) | 0 });
     }
 
+    const rotations = ((Math.random() * 4) | 0);
+
     /** @type {number[]} */
     const order = [...shuffle(DIGIT_BAG)];
 
@@ -1586,6 +1588,7 @@ export class Sudoku {
       stacks.forEach(s => { sudoku.swapStacks(s.i, s.j); });
       rows.forEach(r => { sudoku.swapStacks(r.i, r.j); });
       cols.forEach(c => { sudoku.swapStacks(c.i, c.j); });
+      for (let r = 0; r < rotations; r++) sudoku.rotate90();
       sudoku.swapAllDigits(order);
     };
   }

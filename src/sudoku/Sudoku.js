@@ -241,13 +241,12 @@ export const cellRegion2D = (row, col) => CELL_REGIONS[row * DIGITS + col];
  */
 export function isAreaValid(areaDigits) {
   let reduced = 0;
-  const vals = areaDigits.filter(d => ((d > 0) && (d <= DIGITS)));
-  for (let vi = 0; vi < vals.length; vi++) {
-    const val = encode(vals[vi]);
-    if ((reduced & val) > 0) {
-      return false;
+  for (let d of areaDigits) {
+    if (d > 0 && d <= DIGITS) {
+      const e = encode(d);
+      if ((reduced & e) > 0) return false;
+      reduced |= e;
     }
-    reduced |= val;
   }
   return true;
 }
@@ -277,6 +276,7 @@ class SearchNode {
   }
 
   pickCell() {
+    this.candidates = -1;
     this.emptyCellIndex = this.sudoku._pickEmptyCell();
     if (this.emptyCellIndex != -1) {
       this.candidates = this.sudoku._candidates[this.emptyCellIndex];
@@ -1379,14 +1379,14 @@ export class Sudoku {
    */
   toFullString() {
     return this._digits.reduce((str, val, i) => {
-      str += ((val > 0) ? val : '.');
+      str += val || '.';
       str += (((((i+1)%3) === 0) && (((i+1)%9) !== 0)) ? ' | ' : '   ');
 
       if (((i+1)%9) === 0) {
         str += '\n';
 
         if (i < 80) {
-          str += ((((Math.floor((i+1)/9)%3) == 0) && ((Math.floor(i/9)%8) != 0)) ?
+          str += ((i === 26 || i === 53) ?
             ' -----------+-----------+------------' :
             '            |           |            '
           );

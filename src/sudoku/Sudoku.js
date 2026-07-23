@@ -1925,6 +1925,33 @@ export class Sudoku {
   }
 
   /**
+   * Finds the index of an empty cell that intersects the given mask and contains the fewest candidates.
+   * @param {bigint} mask
+   * @return {number} Cell index, or `-1` if there are no empty cells.
+   */
+  _pickEmptyCellFromMask(mask) {
+    if (this._numEmptyCells === 0) return -1;
+
+    // TODO Keep track of empty cells in state for instant lookup.
+    let min = DIGITS + 1;
+    let _minimums = [];
+    for (let ci = 0; ci < SPACES; ci++) {
+      if (this._digits[ci] === 0 && (mask & cellMask(ci)) > 0) {
+        const numCandidates = BIT_COUNT_MAP[this._candidates[ci]];
+        if (numCandidates === 1) return ci;
+        if (numCandidates < min) {
+          min = numCandidates;
+          _minimums = [ci];
+        } else if (numCandidates === min) {
+          _minimums.push(ci);
+        }
+      }
+    }
+
+    return _minimums.length ? chooseRandom(_minimums) : -1;
+  }
+
+  /**
    * Determines whether this puzzle has a single solution.
    * @returns {boolean} True if the puzzle has a unique solution; otherwise false.
    */

@@ -1835,9 +1835,8 @@ export class Sudoku {
       return false;
     }
 
-    if (isDigit(this._candidates[ci])) {
-      this.setDigit(decode(this._candidates[ci]), ci);
-    }
+    const d = decode(this._candidates[ci]);
+    if (d > 0) this.setDigit(d, ci);
 
     // Propagate to neighboring cells if there was any reduction to the cell.
     if (this._candidates[ci] < originalCandidates) {
@@ -1845,6 +1844,19 @@ export class Sudoku {
         if (this._digits[ni] === 0) this._reduceCell(ni);
       }
     }
+  };
+
+  /**
+   * Attempts to reduce the candidates of the given cell.
+   * Does nothing if the cell contains a digit.
+   * If reducing removes all candidates, marks the sudoku as invalid.
+   * If a single candidate remains, this will NOT set the cell digit.
+   * @param {number} ci cell index
+   */
+  reduceCandidates(ci) {
+    if (this._digits[ci] > 0) return;
+    this._candidates[ci] &= ~this._cellConstraints(ci);
+    if (this._candidates[ci] <= 0) this._isValid = false;
   };
 
   /**

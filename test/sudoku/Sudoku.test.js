@@ -598,9 +598,7 @@ describe('Sudoku', () => {
       const grid = new Sudoku();
       // Copy of grid to preserve original state for comparison.
       const originalGridCopy = new Sudoku(grid);
-
-      grid.shake();
-
+      expect(grid.shake()).toBe(false);
       expect(grid).toStrictEqual(originalGridCopy);
     });
 
@@ -611,21 +609,21 @@ describe('Sudoku', () => {
       grid.setDigit(1, 0);
       grid.setDigit(1, 1);
       const originalGridCopy = new Sudoku(grid);
-      grid.shake();
+      expect(grid.shake()).toBe(false);
       expect(grid).toStrictEqual(originalGridCopy);
 
       // Test with NO_SOLUTION_PUZZLES and MULTI_SOLUTION_PUZZLES
       NO_SOLUTION_PUZZLES.forEach(p => {
         const grid = new Sudoku(p);
         const originalGridCopy = new Sudoku(grid);
-        grid.shake();
+        expect(grid.shake()).toBe(false);
         expect(grid).toStrictEqual(originalGridCopy);
       });
 
       MULTI_SOLUTION_PUZZLES.forEach(({ puzzleStr }) => {
         const grid = new Sudoku(puzzleStr);
         const originalGridCopy = new Sudoku(grid);
-        grid.shake();
+        expect(grid.shake()).toBe(false);
         expect(grid).toStrictEqual(originalGridCopy);
       });
     });
@@ -643,12 +641,12 @@ describe('Sudoku', () => {
     };
 
     describe('when grid is valid', () => {
-      test('no remaining digit can be removed', () => {
+      test('no digit remaining after shake can be removed', () => {
         // Test with several puzzle from the sudoku-17 file.
         for (let i = 0; i < 10; i++) {
           const si = (Math.random() * sudoku17.length) | 0;
           const grid = new Sudoku(sudoku17[si]);
-          grid.shake();
+          expect(grid.shake()).toBe(false);
           expect(grid.solutionsFlag()).toBe(1);
           expectGridToBeIrreducable(grid);
         }
@@ -656,7 +654,7 @@ describe('Sudoku', () => {
         // Test several times with generated configs.
         for (let i = 0; i < 10; i++) {
           const grid = Sudoku.generateConfig();
-          grid.shake();
+          expect(grid.shake()).toBe(true);
           expect(grid.solutionsFlag()).toBe(1);
           expect(new Sudoku(grid.toString()).solutionsFlag()).toBe(1);
           expectGridToBeIrreducable(grid);
@@ -667,7 +665,13 @@ describe('Sudoku', () => {
         const ENDI = Math.min(10, SINGLE_SOLUTION_PUZZLES.length);
         for (let i = 0; i < ENDI; i++) {
           const grid = new Sudoku(SINGLE_SOLUTION_PUZZLES[i]);
-          grid.shake();
+          const origEmptyCells = grid.numEmptyCells;
+          const result = grid.shake();
+          if (result) {
+            expect(grid.numEmptyCells).toBeGreaterThan(origEmptyCells);
+          } else {
+            expect(grid.numEmptyCells).toBe(origEmptyCells);
+          }
           expect(grid.solutionsFlag()).toBe(1);
           expectGridToBeIrreducable(grid);
         }

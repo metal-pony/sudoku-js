@@ -2073,12 +2073,13 @@ export class Sudoku {
    * until the board is as empty as possible without becoming unsolvable. This method
    * modifies the current Sudoku instance.
    *
-   * @returns {Sudoku} This Sudoku instance.
+   * @returns {boolean} Whether the sudoku instance was changed as a result of shaking.
    */
   shake() {
     // If this grid does not have a unique solution, return immediately.
-    if (!this.hasUniqueSolution()) return;
+    if (!this.hasUniqueSolution()) return false;
 
+    let removedCount = 0;
     const clonedSudoku = new Sudoku(this);
     shuffle(range(SPACES)).forEach((ci) => {
       // Skip if the cell is already empty.
@@ -2088,13 +2089,12 @@ export class Sudoku {
       clonedSudoku.setDigit(0, ci);
       if (clonedSudoku.hasUniqueSolution()) {
         this.setDigit(0, ci);
-      } else {
-        // Multiple solutions; revert clone state.
-        clonedSudoku.copyFrom(this);
+        removedCount++;
       }
+      clonedSudoku.copyFrom(this);
     });
 
-    return this;
+    return removedCount > 0;
   }
 
   /**
